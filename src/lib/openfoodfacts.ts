@@ -130,10 +130,26 @@ export async function fetchProductMetadata(
  * @returns true if barcode format is valid
  */
 export function isValidBarcode(barcode: string): boolean {
+  // If barcode is empty or too short, reject
+  if (!barcode || barcode.trim().length < 3) {
+    return false
+  }
+  
   const cleanBarcode = barcode.replace(/\D/g, '')
   
-  // Common barcode lengths: EAN-13 (13), UPC-A (12), EAN-8 (8)
-  const validLengths = [8, 12, 13, 14]
+  // Accept if it's a standard numeric barcode with valid length
+  // EAN-8 (8), UPC-A (12), EAN-13 (13), ITF-14 (14)
+  const standardLengths = [8, 12, 13, 14]
+  if (standardLengths.includes(cleanBarcode.length)) {
+    return true
+  }
   
-  return validLengths.includes(cleanBarcode.length)
+  // Accept CODE-128, CODE-39, ITF barcodes (variable length, may contain letters)
+  // These can be 4-50 characters (numeric or alphanumeric)
+  // If ZXing successfully decoded it, it's valid!
+  if (barcode.length >= 4 && barcode.length <= 50) {
+    return true
+  }
+  
+  return false
 }

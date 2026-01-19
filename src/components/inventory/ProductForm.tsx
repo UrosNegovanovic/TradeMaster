@@ -93,8 +93,8 @@ export function ProductForm({
   const handleScanSuccess = async (barcode: string) => {
     // Validate barcode format
     if (!isValidBarcode(barcode)) {
-      toast.error('Invalid barcode format', {
-        description: 'Please scan a valid EAN-13 or UPC barcode.',
+      toast.error('Invalid barcode', {
+        description: 'The scanned barcode is too short or invalid. Please try again.',
       })
       return
     }

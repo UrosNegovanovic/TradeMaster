@@ -52,6 +52,17 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
 
     setError(null)
     
+    // Wait for DOM to be ready (React needs time to render the element)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Check if element exists before creating scanner
+    const element = document.getElementById(scannerElementId)
+    if (!element) {
+      console.error('Scanner element not found in DOM')
+      setError('Scanner initialization failed. Please try again.')
+      return
+    }
+    
     try {
       // Create scanner instance with optimized config for 1D barcodes
       const scanner = new Html5Qrcode(scannerElementId, {

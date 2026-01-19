@@ -57,3 +57,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Defensive CSS: Prevent modal-induced scroll freeze */
+html,
+body {
+  overflow: auto !important;
+  position: relative !important;
+}
+
+/* Allow modals to override only when explicitly needed */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Ensure scanner modal doesn't leave artifacts */
+.barcode-scanner-active {
+  overflow: hidden !important;
+}

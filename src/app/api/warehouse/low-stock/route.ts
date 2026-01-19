@@ -2,6 +2,9 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Force dynamic rendering (uses Clerk auth with headers)
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/warehouse/low-stock
  * Fetch products where quantity <= minStock

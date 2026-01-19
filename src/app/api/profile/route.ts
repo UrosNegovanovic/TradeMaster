@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { profileSchema } from '@/lib/validations'
 
+// Force dynamic rendering (uses Clerk auth with headers)
+export const dynamic = 'force-dynamic'
+
 // GET: Fetch profile for current user, create if doesn't exist
 export async function GET() {
   try {

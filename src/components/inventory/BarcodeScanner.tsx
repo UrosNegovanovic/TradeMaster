@@ -85,7 +85,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
       await scanner.start(
         backCamera?.id || { facingMode: 'environment' },
         {
-          fps: 20, // High FPS for smoother detection
+          fps: 30, // Increased FPS for better frame capture on mobile
           qrbox: { width: 300, height: 150 }, // Optimized for 1D barcodes (wide but short)
           aspectRatio: 1.77, // 16:9 aspect ratio to prevent stretching
           disableFlip: false, // Allow horizontal flip for mirrored barcodes

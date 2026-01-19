@@ -80,7 +80,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Catalog Not Found</h1>
           <p className="text-muted-foreground">
-            The catalog you're looking for doesn't exist or has been removed.
+            The catalog you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
         </div>
       </div>

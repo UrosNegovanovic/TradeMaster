@@ -7,6 +7,8 @@ export type Product = {
   price: Decimal
   imageUrl: string | null
   description: string | null
+  quantity: number
+  minStock: number
   createdAt: Date
   updatedAt: Date
   profileId: string

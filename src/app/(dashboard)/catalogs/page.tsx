@@ -57,8 +57,12 @@ export default function CatalogsPage() {
     }
   }
 
-  const formatDiscount = (discount: number | string) => {
-    const numDiscount = typeof discount === 'string' ? parseFloat(discount) : discount
+  const formatDiscount = (discount: number | string | { toString(): string }) => {
+    const numDiscount = typeof discount === 'string' 
+      ? parseFloat(discount) 
+      : typeof discount === 'number'
+      ? discount
+      : Number(discount.toString())
     return `${numDiscount.toFixed(2)}%`
   }
 

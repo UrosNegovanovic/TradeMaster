@@ -1,0 +1,207 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User profile linked to Clerk user ID
+model Profile {
+  id           String   @id @default(cuid())
+  clerkUserId  String   @unique // Clerk user ID
+  companyName  String?
+  contactEmail String?
+  contactPhone String?
+  address      String?
+  pib          String? // Tax ID (PIB)
+  logoUrl      String? // URL to uploaded logo (stored in Supabase Storage)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  products       Product[]
+  catalogs       Catalog[]
+  invoices       Invoice[]
+  stockMovements StockMovement[]
+
+  @@map("profiles")
+}
+
+// Product categories
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products Product[]
+
+  @@map("categories")
+}
+
+// Product inventory
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  sku         String
+  price       Decimal  @db.Decimal(10, 2) // Base price
+  imageUrl    String? // URL to product image (stored in Supabase Storage)
+  description String?
+  quantity    Int      @default(0) // Current stock quantity
+  minStock    Int      @default(10) // Minimum stock threshold for alerts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Foreign keys
+  profileId  String
+  categoryId String?
+
+  // Relations
+  profile        Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  catalogItems   CatalogItem[]
+  invoiceItems   InvoiceItem[]
+  stockMovements StockMovement[]
+
+  // Indexes
+  @@unique([profileId, sku]) // SKU must be unique per merchant
+  @@index([profileId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+// Catalog (collection of products with client-specific discount)
+model Catalog {
+  id         String   @id @default(cuid())
+  name       String // Catalog name/identifier
+  clientName String? // Client name (optional)
+  discount   Decimal  @db.Decimal(5, 2) // Discount percentage (e.g., 15.50 for 15.5%)
+  notes      String? // Additional notes
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Foreign keys
+  profileId String
+
+  // Relations
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items   CatalogItem[]
+
+  @@index([profileId])
+  @@map("catalogs")
+}
+
+// Junction table: Products in a catalog with their discounted prices
+model CatalogItem {
+  id String @id @default(cuid())
+
+  // Calculated prices (stored for historical reference)
+  originalPrice   Decimal @db.Decimal(10, 2) // Product price at time of catalog creation
+  discountedPrice Decimal @db.Decimal(10, 2) // Calculated discounted price
+
+  // Order/position in catalog
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  // Foreign keys
+  catalogId String
+  productId String
+
+  // Relations
+  catalog Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Ensure a product appears only once per catalog
+  @@unique([catalogId, productId])
+  @@index([catalogId])
+  @@index([productId])
+  @@map("catalog_items")
+}
+
+// Invoice model
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String // e.g., "2024-001"
+  createdAt     DateTime      @default(now())
+  dueDate       DateTime
+  clientName    String
+  clientAddress String?
+  status        InvoiceStatus @default(DRAFT)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+
+  // Foreign keys
+  profileId String
+
+  // Relations
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items   InvoiceItem[]
+
+  @@index([profileId])
+  @@index([invoiceNumber])
+  @@map("invoices")
+}
+
+// Invoice status enum
+enum InvoiceStatus {
+  DRAFT
+  PAID
+  UNPAID
+}
+
+// Invoice item model
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  discount    Decimal @db.Decimal(5, 2) @default(0) // Discount percentage (e.g., 15.50 for 15.5%)
+  total       Decimal @db.Decimal(10, 2) // quantity * unitPrice * (1 - discount/100)
+  productName String // Snapshot of product name (even if product is deleted)
+
+  // Foreign keys
+  invoiceId String
+  productId String? // Optional: links to Product if exists
+
+  // Relations
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@map("invoice_items")
+}
+
+// Stock Movement Type enum
+enum MovementType {
+  IN
+  OUT
+}
+
+// Stock Movement model - tracks inventory changes
+model StockMovement {
+  id        String       @id @default(cuid())
+  type      MovementType // IN or OUT
+  quantity  Int // Amount moved
+  reason    String // e.g., "Purchase", "Sale", "Damaged", "Return"
+  createdAt DateTime     @default(now())
+
+  // Foreign keys
+  profileId String
+  productId String
+
+  // Relations
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}

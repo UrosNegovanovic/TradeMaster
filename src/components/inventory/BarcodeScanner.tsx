@@ -7,6 +7,50 @@ import { Button } from '@/components/ui/button'
 import { X, Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+// #region agent log - Mobile Detection Helper
+/**
+ * Detect if running on mobile device (for optimizations)
+ */
+function isMobileDevice(): boolean {
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+  const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+  // #region agent log - Debug log
+  fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:18',message:'Mobile device detected',data:{isMobile,userAgent:userAgent.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'mobile-detection'})}).catch(()=>{});
+  // #endregion
+  return isMobile
+}
+// #endregion
+
+// #region agent log - EAN-13 Checksum Validation
+/**
+ * Validate EAN-13 barcode checksum (prevents false positives)
+ * Algorithm: https://en.wikipedia.org/wiki/International_Article_Number
+ */
+function validateEAN13Checksum(barcode: string): boolean {
+  if (barcode.length !== 13 || !/^\d+$/.test(barcode)) {
+    return false
+  }
+  
+  const digits = barcode.split('').map(Number)
+  const checkDigit = digits[12]
+  
+  // Calculate checksum: sum odd positions (1x) + even positions (3x)
+  let sum = 0
+  for (let i = 0; i < 12; i++) {
+    sum += digits[i] * (i % 2 === 0 ? 1 : 3)
+  }
+  
+  const calculatedCheck = (10 - (sum % 10)) % 10
+  const isValid = calculatedCheck === checkDigit
+  
+  // #region agent log - Debug log
+  fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:46',message:'EAN-13 checksum validation',data:{barcode,isValid,calculated:calculatedCheck,expected:checkDigit},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'checksum-validation'})}).catch(()=>{});
+  // #endregion
+  
+  return isValid
+}
+// #endregion
+
 interface BarcodeScannerProps {
   open: boolean
   onClose: () => void
@@ -113,6 +157,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
       try {
         console.log('🚀 Initializing bulletproof scanner...')
         
+        // #region agent log - Detect mobile device once at start
+        const isMobile = isMobileDevice()
+        // #endregion
+        
         // Wait for DOM to be fully mounted
         await new Promise(resolve => setTimeout(resolve, 200))
         
@@ -213,25 +261,50 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
           console.log('🔦 Torch supported')
         }
 
+        // #region agent log - PHASE 2: Mobile-specific optimizations
+        // Apply continuous focus mode for mobile (better for moving cameras)
+        if (isMobile) {
+          try {
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              await videoTrack.applyConstraints({
+                // @ts-ignore
+                advanced: [{ focusMode: 'continuous' }]
+              })
+              console.log('📱 Mobile: Continuous focus enabled')
+              // #region agent log - Debug log
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:281',message:'Mobile continuous focus enabled',data:{isMobile:true,focusMode:'continuous'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'mobile-focus'})}).catch(()=>{});
+              // #endregion
+            }
+          } catch (err) {
+            console.warn('⚠️ Could not enable continuous focus:', err)
+          }
+        }
+        // #endregion
+
         // STEP 4: NOW start ZXing decoder (video is already playing!)
         console.log('🔍 Creating ZXing decoder...')
         
+        // #region agent log - Optimize barcode formats (PHASE 1: Reduce false positives)
+        // Only enable essential retail formats (removed CODABAR, CODE_39, CODE_93, ITF)
+        // Added QR_CODE for modern product packaging
         const hints = new Map()
         hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-          BarcodeFormat.EAN_13,
-          BarcodeFormat.EAN_8,
-          BarcodeFormat.UPC_A,
-          BarcodeFormat.UPC_E,
-          BarcodeFormat.CODE_128,
-          BarcodeFormat.CODE_39,
-          BarcodeFormat.CODE_93,
-          BarcodeFormat.CODABAR,
-          BarcodeFormat.ITF,
+          BarcodeFormat.EAN_13,      // European Article Number (most common)
+          BarcodeFormat.EAN_8,       // Short EAN
+          BarcodeFormat.UPC_A,       // Universal Product Code (US)
+          BarcodeFormat.UPC_E,       // Short UPC
+          BarcodeFormat.CODE_128,    // Flexible alphanumeric
+          BarcodeFormat.QR_CODE,     // Modern 2D codes
         ])
         hints.set(DecodeHintType.TRY_HARDER, true)
 
         const reader = new BrowserMultiFormatReader(hints)
         codeReaderRef.current = reader
+        
+        // #region agent log - Debug log
+        fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:283',message:'ZXing decoder configured',data:{isMobile,formatCount:6,formats:['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','QR_CODE']},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'format-optimization'})}).catch(()=>{});
+        // #endregion
+        // #endregion
         
         // Create offscreen canvas for scanning (using larger ROI for reliability)
         if (!canvasRef.current) {
@@ -280,8 +353,11 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
 
           // CRITICAL: Check if video has data before decoding
           if (videoRef.current.readyState < 2) {
+            // #region agent log - PHASE 2: Dynamic interval for readyState wait
+            const waitInterval = isMobile ? 150 : 100
+            // #endregion
             if (mounted && isScanningRef.current) {
-              setTimeout(scan, 100)
+              setTimeout(scan, waitInterval)
             }
             return
           }
@@ -293,20 +369,30 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
             
             if (!ctx) {
               console.error('❌ Canvas context not available')
+              // #region agent log - PHASE 2: Dynamic interval for context retry
+              const retryInterval = isMobile ? 150 : 100
+              // #endregion
               if (mounted && isScanningRef.current) {
-                setTimeout(scan, 100)
+                setTimeout(scan, retryInterval)
               }
               return
             }
 
-            // Calculate center ROI - WIDENED to 80% of frame (was 25%)
-            // This gives ZXing a much larger area to detect barcodes
+            // #region agent log - PHASE 2: Dynamic ROI (larger for mobile)
+            // Mobile: 90% (less stable, need more area)
+            // Desktop: 80% (more stable, can be more precise)
+            const roiPercent = isMobile ? 0.9 : 0.8
             const videoWidth = video.videoWidth
             const videoHeight = video.videoHeight
-            const roiWidth = Math.floor(videoWidth * 0.8)   // 80% width (~1024 for 1280)
-            const roiHeight = Math.floor(videoHeight * 0.8) // 80% height (~576 for 720)
+            const roiWidth = Math.floor(videoWidth * roiPercent)
+            const roiHeight = Math.floor(videoHeight * roiPercent)
             const roiX = Math.floor((videoWidth - roiWidth) / 2)
             const roiY = Math.floor((videoHeight - roiHeight) / 2)
+            
+            // #region agent log - Debug log
+            fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:365',message:'ROI calculated',data:{isMobile,roiPercent,videoWidth,videoHeight,roiWidth,roiHeight},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'roi-optimization'})}).catch(()=>{});
+            // #endregion
+            // #endregion
 
             // Crop center 80% of frame to canvas
             ctx.drawImage(
@@ -345,10 +431,41 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               const barcode = result.getText()
               const format = result.getBarcodeFormat()
               
+              // #region agent log - PHASE 1: Validate barcode (prevent false positives)
+              // 1. Minimum length check (reject very short barcodes)
+              if (barcode.length < 8) {
+                console.log('⚠️ Barcode too short, ignoring:', barcode)
+                // #region agent log - Debug log
+                fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:418',message:'Barcode rejected (too short)',data:{barcode,length:barcode.length,format:BarcodeFormat[format]},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'length-validation'})}).catch(()=>{});
+                // #endregion
+                const scanInterval = isMobile ? 250 : 150
+                if (mounted && isScanningRef.current) {
+                  setTimeout(scan, scanInterval)
+                }
+                return
+              }
+              
+              // 2. EAN-13 checksum validation (most common retail barcode)
+              if (format === BarcodeFormat.EAN_13) {
+                if (!validateEAN13Checksum(barcode)) {
+                  console.log('⚠️ EAN-13 checksum failed, ignoring:', barcode)
+                  // #region agent log - Debug log
+                  fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:435',message:'Barcode rejected (checksum failed)',data:{barcode,format:'EAN_13'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'checksum-validation'})}).catch(()=>{});
+                  // #endregion
+                  const scanInterval = isMobile ? 250 : 150
+                  if (mounted && isScanningRef.current) {
+                    setTimeout(scan, scanInterval)
+                  }
+                  return
+                }
+              }
+              // #endregion
+              
               // Debounce (2 second cooldown to prevent duplicate scans)
               if (now - lastScanRef.current < 2000) {
+                const scanInterval = isMobile ? 250 : 150
                 if (mounted && isScanningRef.current) {
-                  setTimeout(scan, 50) // OPTIMIZED: 50ms = 20 FPS (was 100ms = 10 FPS)
+                  setTimeout(scan, scanInterval)
                 }
                 return
               }
@@ -356,6 +473,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               lastScanRef.current = now
               
               console.log('✅ Barcode scanned:', barcode, `[${BarcodeFormat[format]}]`)
+              
+              // #region agent log - Debug log
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:465',message:'Barcode ACCEPTED',data:{barcode,format:BarcodeFormat[format],length:barcode.length,isMobile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'scan-success'})}).catch(()=>{});
+              // #endregion
               
               // Beep sound (with autoplay policy handling)
               if (soundEnabled) {
@@ -405,18 +526,25 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               onCloseRef.current()
             } else {
               // No barcode found - continue scanning
+              // #region agent log - PHASE 2: Dynamic scan interval
+              const scanInterval = isMobile ? 250 : 150 // Mobile: slower (4 FPS), Desktop: faster (6.7 FPS)
+              // #endregion
               if (mounted && isScanningRef.current) {
-                setTimeout(scan, 150) // 150ms = ~6.7 FPS (balanced for reliability)
+                setTimeout(scan, scanInterval)
               }
             }
           } catch (err: any) {
+            // #region agent log - PHASE 2: Dynamic scan interval in error handling
+            const scanInterval = isMobile ? 250 : 150
+            // #endregion
+            
             // Suppress common non-errors
             if (err.message && (
               err.message.includes('already playing') ||
               err.message.includes('NotFoundException')
             )) {
               if (mounted && isScanningRef.current) {
-                setTimeout(scan, 150)
+                setTimeout(scan, scanInterval)
               }
               return
             }
@@ -430,7 +558,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
             
             // Other decode errors - continue silently
             if (mounted && isScanningRef.current) {
-              setTimeout(scan, 150)
+              setTimeout(scan, scanInterval)
             }
           }
         }

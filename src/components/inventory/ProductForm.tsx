@@ -127,13 +127,22 @@ export function ProductForm({
           setValue('imageUrl', metadata.imageUrl, { shouldValidate: true })
         }
         
+        // Show success message with source indication
+        const sourceLabels = {
+          food: '🍫 Food Database',
+          beauty: '💄 Beauty Database',
+          products: '🧴 Products Database',
+        }
+        const sourceLabel = metadata.source ? sourceLabels[metadata.source] : 'Database'
+        
         toast.success('Product found!', {
-          description: `${metadata.name}`,
+          description: `${metadata.name} (${sourceLabel})`,
           duration: 4000,
         })
       } else {
-        toast.info('Product not found in database', {
-          description: 'Please enter product details manually.',
+        toast.info('Product not found', {
+          description: 'Searched food, beauty & household databases. SKU saved - enter details manually.',
+          duration: 5000,
         })
       }
     } catch (error) {

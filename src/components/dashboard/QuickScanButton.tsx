@@ -30,8 +30,16 @@ export function QuickScanButton() {
       const metadata = await fetchProductMetadata(barcode)
       
       if (metadata && metadata.found) {
-        toast.success('Product found!', {
-          description: `${metadata.name} - Redirecting to add product...`,
+        // Show success message with source indication
+        const sourceLabels = {
+          food: '🍫 Food',
+          beauty: '💄 Beauty',
+          products: '🧴 Household',
+        }
+        const sourceLabel = metadata.source ? sourceLabels[metadata.source] : 'Database'
+        
+        toast.success(`Product found! (${sourceLabel})`, {
+          description: `${metadata.name} - Redirecting...`,
           duration: 3000,
         })
         
@@ -44,8 +52,9 @@ export function QuickScanButton() {
         })
         router.push(`/inventory?scan=true&${params.toString()}`)
       } else {
-        toast.info('Product not found in database', {
-          description: 'Redirecting to add product manually...',
+        toast.info('Product not found', {
+          description: 'Searched 3 databases (food, beauty, household). Enter details manually.',
+          duration: 5000,
         })
         router.push(`/inventory?scan=true&sku=${barcode}`)
       }

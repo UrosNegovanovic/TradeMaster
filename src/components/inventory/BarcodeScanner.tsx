@@ -59,6 +59,14 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const videoTrackRef = useRef<MediaStreamTrack | null>(null)
   const lastScanRef = useRef<number>(0)
+  const confirmationRef = useRef<{ barcode: string; timestamp: number } | null>(null)
+  const originalScrollY = useRef<number>(0)
+  const originalBodyStyle = useRef<{
+    overflow: string
+    position: string
+    top: string
+    width: string
+  } | null>(null)
   const scannerId = 'barcode-scanner-region'
   
   // Store callbacks in refs to avoid dependency issues
@@ -136,6 +144,20 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [open])
 
+  // SAFETY: Force unlock scroll on component unmount (navigation, etc.)
+  useEffect(() => {
+    return () => {
+      // Final cleanup - always unlock scroll when component is destroyed!
+      document.body.style.overflow = 'auto'
+      document.body.style.position = 'relative'
+      document.body.style.top = ''
+      document.body.style.width = ''
+      document.documentElement.style.overflow = 'auto'
+      
+      console.log('🔓 FINAL CLEANUP: Scroll unlocked on component unmount!')
+    }
+  }, [])
+
   const handleClose = () => {
     stopScanning()
     onCloseRef.current()
@@ -171,16 +193,33 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
     }
     
     videoTrackRef.current = null
+    confirmationRef.current = null // Reset confirmation state
     
     // Reset UI state
     setIsScanning(false)
     setIsLoading(false)
     setTorchEnabled(false)
     
-    // Restore body scroll
-    document.body.style.overflow = ''
-    document.body.style.position = ''
-    document.documentElement.style.overflow = ''
+    // BULLETPROOF: Restore body scroll (iOS + Android compatible!)
+    if (originalBodyStyle.current) {
+      requestAnimationFrame(() => {
+        document.body.style.overflow = originalBodyStyle.current?.overflow || ''
+        document.body.style.position = originalBodyStyle.current?.position || ''
+        document.body.style.top = originalBodyStyle.current?.top || ''
+        document.body.style.width = originalBodyStyle.current?.width || ''
+        document.documentElement.style.overflow = ''
+        
+        // Restore scroll position (iOS fix!)
+        if (originalScrollY.current > 0) {
+          window.scrollTo(0, originalScrollY.current)
+        }
+        
+        console.log('✅ Scroll restored:', {
+          scrollY: originalScrollY.current,
+          bodyOverflow: document.body.style.overflow
+        })
+      })
+    }
     
     console.log('✅ Scanner cleanup complete')
   }
@@ -193,9 +232,25 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
     try {
       console.log('📷 Loading available cameras...')
       
-      // Prevent body scroll on mobile
+      // BULLETPROOF: Save original scroll position and body styles
+      originalScrollY.current = window.scrollY
+      originalBodyStyle.current = {
+        overflow: document.body.style.overflow,
+        position: document.body.style.position,
+        top: document.body.style.top,
+        width: document.body.style.width
+      }
+      
+      console.log('💾 Saved scroll state:', {
+        scrollY: originalScrollY.current,
+        bodyOverflow: originalBodyStyle.current.overflow
+      })
+      
+      // Prevent body scroll on mobile (iOS + Android fix!)
       document.body.style.overflow = 'hidden'
       document.body.style.position = 'fixed'
+      document.body.style.top = `-${originalScrollY.current}px`
+      document.body.style.width = '100%'
       document.documentElement.style.overflow = 'hidden'
       
       const devices = await Html5Qrcode.getCameras()
@@ -265,9 +320,9 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
       
       scannerRef.current = scanner
       
-      // Samsung S24 Optimized Configuration
+      // Samsung S24 Optimized Configuration (ANTI-BLUR UPDATE!)
       const config = {
-        fps: 10, // Balance between speed and battery life
+        fps: 5, // REDUCED from 10 to 5 - gives camera MORE time to focus!
         qrbox: { width: 250, height: 250 }, // Scanning region (helps with focus feedback)
         aspectRatio: 1.0, // Square box for better barcode alignment
         disableFlip: false,
@@ -287,13 +342,13 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
         (decodedText, decodedResult) => {
           const now = Date.now()
           
-          // Debounce (prevent duplicate scans within 500ms)
-          if (now - lastScanRef.current < 500) {
+          // Quick debounce (prevent spam within 200ms)
+          if (now - lastScanRef.current < 200) {
             return
           }
+          lastScanRef.current = now
           
           const formatName = decodedResult.result?.format?.formatName || 'UNKNOWN'
-          console.log(`📊 Barcode detected: ${decodedText} (${formatName})`)
           
           // STRICT Checksum Validation (SILENT REJECT if fails!)
           const format = formatName
@@ -303,7 +358,6 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               console.warn(`❌ Invalid EAN-13 checksum: ${decodedText} - SILENTLY IGNORING`)
               return // SILENT REJECT - keep scanning!
             }
-            console.log('✅ EAN-13 checksum valid')
           }
           
           if (format === 'EAN_8') {
@@ -311,19 +365,39 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               console.warn(`❌ Invalid EAN-8 checksum: ${decodedText} - SILENTLY IGNORING`)
               return // SILENT REJECT - keep scanning!
             }
-            console.log('✅ EAN-8 checksum valid')
           }
           
-          // SUCCESS!
-          lastScanRef.current = now
-          playBeep()
-          toast.success(`Barcode scanned: ${decodedText}`)
+          // ✨ NEW: DOUBLE-SCAN CONFIRMATION (Anti-Blur Protection!)
+          const previousScan = confirmationRef.current
           
-          console.log(`✅ Valid barcode: ${decodedText}`)
-          
-          // Stop scanner and notify parent
-          stopScanning()
-          onScanSuccessRef.current(decodedText)
+          // Check if we have a previous scan within last 2 seconds
+          if (previousScan && (now - previousScan.timestamp < 2000)) {
+            // Check if SAME barcode
+            if (previousScan.barcode === decodedText) {
+              // ✅ CONFIRMED! Same barcode scanned twice - HIGH CONFIDENCE!
+              console.log(`✅✅ CONFIRMED! Barcode validated twice: ${decodedText}`)
+              
+              playBeep()
+              toast.success(`Barcode confirmed: ${decodedText}`)
+              
+              // Reset confirmation
+              confirmationRef.current = null
+              
+              // Stop scanner and notify parent
+              stopScanning()
+              onScanSuccessRef.current(decodedText)
+            } else {
+              // ⚠️ DIFFERENT barcode - reset and start fresh
+              console.log(`⚠️ Different barcode detected. Previous: ${previousScan.barcode}, New: ${decodedText}`)
+              confirmationRef.current = { barcode: decodedText, timestamp: now }
+              toast.info('Hold steady... confirming scan')
+            }
+          } else {
+            // First scan or timeout - save and wait for confirmation
+            console.log(`📊 First scan detected: ${decodedText} (${formatName}) - waiting for confirmation...`)
+            confirmationRef.current = { barcode: decodedText, timestamp: now }
+            toast.info('Hold steady... confirming scan')
+          }
         },
         (errorMessage) => {
           // SILENT - normal scanning errors (no barcode found)
@@ -374,10 +448,37 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
   // Initialize when dialog opens
   useEffect(() => {
     if (!open) {
+      // AGGRESSIVE: Force scroll unlock when dialog closes!
       stopScanning()
       setError(null)
       setCameras([])
       setSelectedCamera('')
+      
+      // FORCE UNLOCK SCROLL (even if stopScanning didn't do it!)
+      setTimeout(() => {
+        if (originalBodyStyle.current) {
+          document.body.style.overflow = originalBodyStyle.current.overflow || 'auto'
+          document.body.style.position = originalBodyStyle.current.position || 'relative'
+          document.body.style.top = originalBodyStyle.current.top || ''
+          document.body.style.width = originalBodyStyle.current.width || ''
+          
+          if (originalScrollY.current > 0) {
+            window.scrollTo(0, originalScrollY.current)
+          }
+          
+          console.log('🔓 FORCE UNLOCKED scroll on dialog close!')
+        } else {
+          // Fallback: Just unlock everything!
+          document.body.style.overflow = 'auto'
+          document.body.style.position = 'relative'
+          document.body.style.top = ''
+          document.body.style.width = ''
+          document.documentElement.style.overflow = 'auto'
+          
+          console.log('🔓 FORCE UNLOCKED (fallback)!')
+        }
+      }, 50) // Small delay to override Dialog's cleanup
+      
       return
     }
 
@@ -385,6 +486,17 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
 
     return () => {
       stopScanning()
+      
+      // CLEANUP: Force unlock on unmount!
+      setTimeout(() => {
+        document.body.style.overflow = 'auto'
+        document.body.style.position = 'relative'
+        document.body.style.top = ''
+        document.body.style.width = ''
+        document.documentElement.style.overflow = 'auto'
+        
+        console.log('🔓 Cleanup: Force unlocked on unmount!')
+      }, 50)
     }
   }, [open])
 

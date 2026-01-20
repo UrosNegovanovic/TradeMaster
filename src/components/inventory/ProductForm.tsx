@@ -157,8 +157,8 @@ export function ProductForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           <DialogDescription>
             {product
@@ -166,8 +166,8 @@ export function ProductForm({
               : 'Add a new product to your inventory. All fields marked with * are required.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 min-h-0">
+          <div className="grid gap-4 py-4 px-6 overflow-y-auto flex-1">
             <div className="grid gap-2">
               <Label htmlFor="name">
                 Product Name <span className="text-destructive">*</span>
@@ -262,7 +262,7 @@ export function ProductForm({
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t bg-background flex-shrink-0">
             <Button
               type="button"
               variant="outline"

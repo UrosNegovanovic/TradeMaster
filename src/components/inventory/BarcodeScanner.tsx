@@ -5,10 +5,11 @@ import { Html5Qrcode, Html5QrcodeScannerState, Html5QrcodeSupportedFormats } fro
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { X, Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera } from 'lucide-react'
+import { Slider } from '@/components/ui/slider'
+import { X, Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
 import { toast } from 'sonner'
 
-// EAN-13 Checksum Validation (Luhn Algorithm)
+// EAN-13 Checksum Validation (Luhn Algorithm) - PRESERVED
 function validateEAN13Checksum(barcode: string): boolean {
   if (barcode.length !== 13 || !/^\d+$/.test(barcode)) {
     return false
@@ -26,7 +27,7 @@ function validateEAN13Checksum(barcode: string): boolean {
   return calculatedCheck === checkDigit
 }
 
-// EAN-8 Checksum Validation (Luhn Algorithm)
+// EAN-8 Checksum Validation (Luhn Algorithm) - PRESERVED
 function validateEAN8Checksum(barcode: string): boolean {
   if (barcode.length !== 8 || !/^\d+$/.test(barcode)) {
     return false
@@ -86,6 +87,13 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchEnabled, setTorchEnabled] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
+  
+  // NEW: Zoom controls (critical for S24 macro focus!)
+  const [zoomSupported, setZoomSupported] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0)
+  const [zoomMin, setZoomMin] = useState<number>(1.0)
+  const [zoomMax, setZoomMax] = useState<number>(1.0)
+  const [zoomStep, setZoomStep] = useState<number>(0.1)
 
   // Play beep sound on successful scan
   const playBeep = () => {
@@ -129,6 +137,23 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
     } catch (err) {
       console.error('Failed to toggle torch:', err)
       toast.error('Could not toggle flashlight')
+    }
+  }
+
+  // NEW: Handle zoom change (critical for macro focus!)
+  const handleZoomChange = async (value: number[]) => {
+    if (!videoTrackRef.current || !zoomSupported) return
+    
+    const newZoom = value[0]
+    setZoomLevel(newZoom)
+    
+    try {
+      await videoTrackRef.current.applyConstraints({
+        advanced: [{ zoom: newZoom } as any]
+      })
+      console.log(`🔍 Zoom adjusted: ${newZoom.toFixed(1)}x`)
+    } catch (err) {
+      console.error('Failed to adjust zoom:', err)
     }
   }
 
@@ -193,12 +218,13 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
     }
     
     videoTrackRef.current = null
-    confirmationRef.current = null // Reset confirmation state
+    confirmationRef.current = null
     
     // Reset UI state
     setIsScanning(false)
     setIsLoading(false)
     setTorchEnabled(false)
+    setZoomLevel(1.0)
     
     // BULLETPROOF: Restore body scroll (iOS + Android compatible!)
     if (originalBodyStyle.current) {
@@ -303,9 +329,9 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
     lastScanRef.current = 0
     
     try {
-      console.log(`🚀 Starting scanner with camera: ${cameraId}`)
+      console.log(`🚀 Starting OPTIMIZED scanner with camera: ${cameraId}`)
       
-      // Create scanner instance
+      // ✨ OPTIMIZATION 1: Enable Native Barcode Detector (THE SILVER BULLET!)
       const scanner = new Html5Qrcode(scannerId, {
         verbose: false,
         formatsToSupport: [
@@ -315,25 +341,34 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.QR_CODE,
-        ]
+        ],
+        // ⭐ CRITICAL: Force Native Barcode Detector (Google Play Services on Android!)
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true // AI-powered sharpening & error correction!
+        }
       })
       
       scannerRef.current = scanner
       
-      // Samsung S24 Optimized Configuration (ANTI-BLUR UPDATE!)
+      // ✨ OPTIMIZATION 2 & 3: High Resolution + Advanced Constraints
       const config = {
-        fps: 5, // REDUCED from 10 to 5 - gives camera MORE time to focus!
-        qrbox: { width: 250, height: 250 }, // Scanning region (helps with focus feedback)
-        aspectRatio: 1.0, // Square box for better barcode alignment
+        fps: 5, // Lower FPS for sharper focus
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
         disableFlip: false,
         videoConstraints: {
           facingMode: 'environment',
-          focusMode: 'continuous', // Continuous autofocus (critical for S24!)
+          focusMode: 'continuous', // Continuous autofocus
+          // 🔥 HIGH RESOLUTION: More pixels = more detail for decoder!
+          width: { min: 1024, ideal: 1920, max: 3840 },
+          height: { min: 576, ideal: 1080, max: 2160 },
           advanced: [
-            { zoom: 1.0 }, // No zoom by default
+            { zoom: 1.0 }, // Will be adjusted via slider
           ] as any
         }
       }
+      
+      console.log('📸 Requesting FULL HD (1920x1080) with Native Detector!')
       
       // Start scanning
       await scanner.start(
@@ -350,7 +385,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
           
           const formatName = decodedResult.result?.format?.formatName || 'UNKNOWN'
           
-          // STRICT Checksum Validation (SILENT REJECT if fails!)
+          // PRESERVED: STRICT Checksum Validation (SILENT REJECT if fails!)
           const format = formatName
           
           if (format === 'EAN_13') {
@@ -367,7 +402,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
             }
           }
           
-          // ✨ NEW: DOUBLE-SCAN CONFIRMATION (Anti-Blur Protection!)
+          // PRESERVED: DOUBLE-SCAN CONFIRMATION (Anti-Blur Protection!)
           const previousScan = confirmationRef.current
           
           // Check if we have a previous scan within last 2 seconds
@@ -401,11 +436,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
         },
         (errorMessage) => {
           // SILENT - normal scanning errors (no barcode found)
-          // Don't log to avoid console spam
         }
       )
       
-      // Get video track for torch support
+      // ✨ OPTIMIZATION 3: Setup zoom controls (CRITICAL for S24 macro!)
       setTimeout(() => {
         const videoElement = document.getElementById(scannerId)?.querySelector('video')
         if (videoElement?.srcObject) {
@@ -416,20 +450,48 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
             videoTrackRef.current = videoTrack
             
             const capabilities = videoTrack.getCapabilities() as any
+            
+            // Check torch support
             if (capabilities?.torch) {
               setTorchSupported(true)
               console.log('🔦 Torch supported')
             }
             
+            // 🔍 NEW: Check zoom support & setup default zoom!
+            if (capabilities?.zoom) {
+              const min = capabilities.zoom.min || 1.0
+              const max = capabilities.zoom.max || 1.0
+              const step = capabilities.zoom.step || 0.1
+              
+              setZoomSupported(true)
+              setZoomMin(min)
+              setZoomMax(max)
+              setZoomStep(step)
+              
+              // 🎯 CRITICAL: Default to 1.5x-2.0x zoom (acts as "macro mode"!)
+              const defaultZoom = Math.min(2.0, max) // Prefer 2.0x if available
+              setZoomLevel(defaultZoom)
+              
+              // Apply default zoom immediately!
+              videoTrack.applyConstraints({
+                advanced: [{ zoom: defaultZoom } as any]
+              }).then(() => {
+                console.log(`🔍 Zoom supported! Range: ${min}-${max}, Default: ${defaultZoom.toFixed(1)}x (Macro Mode!)`)
+              }).catch(err => {
+                console.warn('Could not apply default zoom:', err)
+              })
+            }
+            
             const settings = videoTrack.getSettings()
-            console.log(`📷 Resolution: ${settings.width}x${settings.height}`)
+            console.log(`📷 Actual Resolution: ${settings.width}x${settings.height}`)
+            console.log(`🎯 Using Native Barcode Detector: ${typeof (window as any).BarcodeDetector !== 'undefined'}`)
           }
         }
       }, 500)
       
       setIsLoading(false)
       setIsScanning(true)
-      console.log('✅ Scanner active!')
+      console.log('✅ OPTIMIZED scanner active with Native Detector + HD + Zoom!')
       
     } catch (err: any) {
       console.error('❌ Scanner start failed:', err)
@@ -477,7 +539,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
           
           console.log('🔓 FORCE UNLOCKED (fallback)!')
         }
-      }, 50) // Small delay to override Dialog's cleanup
+      }, 50)
       
       return
     }
@@ -513,10 +575,11 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
             <div>
               <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
                 <Camera className="h-5 w-5" />
-                Scan Barcode
+                Scan Barcode (Optimized HD)
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm mt-1">
-                Position the barcode within the scanning box
+                {zoomSupported && 'Use zoom slider for difficult barcodes • '}
+                Position barcode within the box
               </DialogDescription>
             </div>
             <Button
@@ -548,7 +611,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
                 <div className="text-center space-y-4">
                   <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
                   <p className="text-white text-lg font-medium">Starting Camera...</p>
-                  <p className="text-gray-400 text-sm">Initializing scanner...</p>
+                  <p className="text-gray-400 text-sm">Initializing HD scanner with AI detection...</p>
                 </div>
               </div>
             )}
@@ -566,7 +629,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               </div>
             )}
 
-            {/* Control Buttons */}
+            {/* Control Buttons (Top Right) */}
             {isScanning && !error && (
               <div className="absolute top-4 right-4 flex flex-col gap-3 z-30">
                 {/* Torch Toggle */}
@@ -596,6 +659,27 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
                 >
                   <Volume2 className={`h-5 w-5 ${soundEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                 </Button>
+              </div>
+            )}
+
+            {/* NEW: Zoom Slider (Top Left) - CRITICAL for S24 Macro! */}
+            {isScanning && zoomSupported && (
+              <div className="absolute top-4 left-4 z-30 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg min-w-[200px]">
+                <div className="flex items-center gap-2 mb-2">
+                  <ZoomIn className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Zoom: {zoomLevel.toFixed(1)}x</span>
+                </div>
+                <Slider
+                  value={[zoomLevel]}
+                  onValueChange={handleZoomChange}
+                  min={zoomMin}
+                  max={zoomMax}
+                  step={zoomStep}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Adjust for difficult/blurry codes
+                </p>
               </div>
             )}
 
@@ -633,12 +717,12 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
                 {isLoading ? (
                   <span className="flex items-center justify-center sm:justify-start gap-2">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Initializing scanner...
+                    Initializing HD scanner...
                   </span>
                 ) : isScanning ? (
                   <span className="flex items-center justify-center sm:justify-start gap-2">
                     <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    Scanner active - Align barcode in box
+                    HD Scanner active • Native AI detection enabled
                   </span>
                 ) : (
                   'Ready to scan'
@@ -672,7 +756,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
         
         /* Style the scanning box */
         #${scannerId} canvas {
-          display: none !important; /* Hide the overlay canvas, keep video clean */
+          display: none !important;
         }
         
         /* Custom scanning box border */

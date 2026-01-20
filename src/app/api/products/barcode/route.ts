@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Force dynamic rendering (required for searchParams usage)
+export const dynamic = 'force-dynamic'
+
 /**
  * Server-side API route for barcode lookup
  * Prevents CORS issues by proxying external API calls through Next.js server

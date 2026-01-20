@@ -53,7 +53,7 @@ export function QuickScanButton() {
         router.push(`/inventory?scan=true&${params.toString()}`)
       } else {
         toast.info('Product not found', {
-          description: 'Searched 3 databases (food, beauty, household). Enter details manually.',
+          description: 'Searched 4 databases (food, beauty, household, global). Enter details manually.',
           duration: 5000,
         })
         router.push(`/inventory?scan=true&sku=${barcode}`)

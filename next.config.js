@@ -18,6 +18,42 @@ const nextConfig = {
         pathname: '/images/products/**',
       },
       {
+        protocol: 'https',
+        hostname: 'images.openbeautyfacts.org',
+        pathname: '/images/products/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.openproductsfacts.org',
+        pathname: '/images/products/**',
+      },
+      // UPCitemdb image sources (Walmart, Amazon, eBay, etc.)
+      {
+        protocol: 'https',
+        hostname: '**.walmartimages.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ssl-images-amazon.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.media-amazon.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ebayimg.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.target.com',
+        pathname: '/**',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
         port: '3000',

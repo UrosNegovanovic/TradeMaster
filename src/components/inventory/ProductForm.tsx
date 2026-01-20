@@ -141,7 +141,7 @@ export function ProductForm({
         })
       } else {
         toast.info('Product not found', {
-          description: 'Searched food, beauty & household databases. SKU saved - enter details manually.',
+          description: 'Searched 4 databases (food, beauty, household, global). SKU saved - enter details manually.',
           duration: 5000,
         })
       }

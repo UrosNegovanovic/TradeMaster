@@ -378,10 +378,13 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               return
             }
 
-            // #region agent log - PHASE 2: Dynamic ROI (larger for mobile)
-            // Mobile: 90% (less stable, need more area)
+            // #region agent log - PHASE 2: Dynamic ROI (REDUCED for mobile to prevent noise)
+            // Mobile: 70% (focus on center only, avoid edge noise) - REDUCED from 90%
             // Desktop: 80% (more stable, can be more precise)
-            const roiPercent = isMobile ? 0.9 : 0.8
+            const roiPercent = isMobile ? 0.7 : 0.8
+            // #region agent log - ROI optimization
+            fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:ROI',message:'ROI percent set for scan',data:{isMobile,roiPercent,videoWidth:video.videoWidth,videoHeight:video.videoHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'mobile-debug',hypothesisId:'H2_ROI'})}).catch(()=>{});
+            // #endregion
             const videoWidth = video.videoWidth
             const videoHeight = video.videoHeight
             const roiWidth = Math.floor(videoWidth * roiPercent)
@@ -433,12 +436,29 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               
               // #region agent log - PHASE 1: Validate barcode (prevent false positives)
               // 1. Minimum length check (reject very short barcodes)
+              // #region agent log - Mobile scan attempt
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:SCAN_ATTEMPT',message:'ZXing decoded barcode',data:{barcode,length:barcode.length,format:BarcodeFormat[format],isMobile},timestamp:Date.now(),sessionId:'debug-session',runId:'mobile-debug',hypothesisId:'H4_PARTIAL_READ'})}).catch(()=>{});
+              // #endregion
+              
               if (barcode.length < 8) {
                 console.log('⚠️ Barcode too short, ignoring:', barcode)
                 // #region agent log - Debug log
                 fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:418',message:'Barcode rejected (too short)',data:{barcode,length:barcode.length,format:BarcodeFormat[format]},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'length-validation'})}).catch(()=>{});
                 // #endregion
-                const scanInterval = isMobile ? 250 : 150
+                const scanInterval = isMobile ? 500 : 150  // Increased mobile interval
+                if (mounted && isScanningRef.current) {
+                  setTimeout(scan, scanInterval)
+                }
+                return
+              }
+              
+              // Mobile-specific: Detect partial EAN-13 reads (should be 13 digits)
+              if (isMobile && format === BarcodeFormat.EAN_13 && barcode.length !== 13) {
+                console.log('⚠️ [MOBILE] Partial EAN-13 read, ignoring:', barcode, `(${barcode.length}/13 digits)`)
+                // #region agent log - Partial read detection
+                fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:PARTIAL_EAN13',message:'Mobile partial EAN-13 read rejected',data:{barcode,actualLength:barcode.length,expectedLength:13,isMobile:true},timestamp:Date.now(),sessionId:'debug-session',runId:'mobile-debug',hypothesisId:'H4_PARTIAL_READ'})}).catch(()=>{});
+                // #endregion
+                const scanInterval = isMobile ? 500 : 150  // Increased mobile interval
                 if (mounted && isScanningRef.current) {
                   setTimeout(scan, scanInterval)
                 }
@@ -447,12 +467,17 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               
               // 2. EAN-13 checksum validation (most common retail barcode)
               if (format === BarcodeFormat.EAN_13) {
-                if (!validateEAN13Checksum(barcode)) {
+                const checksumValid = validateEAN13Checksum(barcode)
+                // #region agent log - Checksum validation result
+                fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:CHECKSUM',message:'EAN-13 checksum validation',data:{barcode,checksumValid,isMobile},timestamp:Date.now(),sessionId:'debug-session',runId:'mobile-debug',hypothesisId:'H3_CHECKSUM'})}).catch(()=>{});
+                // #endregion
+                
+                if (!checksumValid) {
                   console.log('⚠️ EAN-13 checksum failed, ignoring:', barcode)
                   // #region agent log - Debug log
                   fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:435',message:'Barcode rejected (checksum failed)',data:{barcode,format:'EAN_13'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'checksum-validation'})}).catch(()=>{});
                   // #endregion
-                  const scanInterval = isMobile ? 250 : 150
+                  const scanInterval = isMobile ? 500 : 150  // Increased mobile interval
                   if (mounted && isScanningRef.current) {
                     setTimeout(scan, scanInterval)
                   }
@@ -463,7 +488,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               
               // Debounce (2 second cooldown to prevent duplicate scans)
               if (now - lastScanRef.current < 2000) {
-                const scanInterval = isMobile ? 250 : 150
+                const scanInterval = isMobile ? 500 : 150  // Increased mobile interval
                 if (mounted && isScanningRef.current) {
                   setTimeout(scan, scanInterval)
                 }
@@ -475,7 +500,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               console.log('✅ Barcode scanned:', barcode, `[${BarcodeFormat[format]}]`)
               
               // #region agent log - Debug log
-              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:465',message:'Barcode ACCEPTED',data:{barcode,format:BarcodeFormat[format],length:barcode.length,isMobile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'scan-success'})}).catch(()=>{});
+              const timeSinceLastScan = now - lastScanRef.current
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:465',message:'Barcode ACCEPTED',data:{barcode,format:BarcodeFormat[format],length:barcode.length,isMobile,timeSinceLastScan},timestamp:Date.now(),sessionId:'debug-session',runId:'mobile-debug',hypothesisId:'scan-success'})}).catch(()=>{});
               // #endregion
               
               // Beep sound (with autoplay policy handling)
@@ -526,9 +552,12 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               onCloseRef.current()
             } else {
               // No barcode found - continue scanning
-              // #region agent log - PHASE 2: Dynamic scan interval
-              const scanInterval = isMobile ? 250 : 150 // Mobile: slower (4 FPS), Desktop: faster (6.7 FPS)
-              // #endregion
+            // #region agent log - PHASE 2: Dynamic scan interval (FURTHER INCREASED for Samsung S24)
+            const scanInterval = isMobile ? 800 : 150 // Mobile: 800ms (1.25 FPS) - FURTHER INCREASED for Samsung S24, Desktop: 150ms (6.7 FPS)
+            // #region agent log - Scan timing log
+            fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:SCAN_LOOP',message:'Scan loop continuing (no barcode)',data:{isMobile,scanInterval},timestamp:Date.now(),sessionId:'debug-session',runId:'mobile-debug-v2',hypothesisId:'H10_SLOWER'})}).catch(()=>{});
+            // #endregion
+            // #endregion
               if (mounted && isScanningRef.current) {
                 setTimeout(scan, scanInterval)
               }

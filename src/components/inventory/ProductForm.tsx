@@ -99,6 +99,9 @@ export function ProductForm({
       return
     }
 
+    // ✅ CLOSE SCANNER IMMEDIATELY (UX Improvement!)
+    setScannerOpen(false)
+
     // Set SKU immediately
     setValue('sku', barcode, { shouldValidate: true })
     toast.success('Barcode scanned', {
@@ -215,15 +218,15 @@ export function ProductForm({
 
             <div className="grid gap-2">
               <Label htmlFor="price">
-                Price <span className="text-destructive">*</span>
+                Price (Optional - can be added later)
               </Label>
               <Input
                 id="price"
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="0.00"
-                {...register('price', { valueAsNumber: true })}
+                placeholder="0.00 (leave empty for quick intake)"
+                {...register('price', { valueAsNumber: true, setValueAs: v => v === '' ? 0 : v })}
               />
               {errors.price && (
                 <p className="text-sm text-destructive">{errors.price.message}</p>

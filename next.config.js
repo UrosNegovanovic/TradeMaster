@@ -53,6 +53,12 @@ const nextConfig = {
         hostname: '**.target.com',
         pathname: '/**',
       },
+      // CDN for scanned product images
+      {
+        protocol: 'https',
+        hostname: 's.cdnsbn.com',
+        pathname: '/**',
+      },
       {
         protocol: 'http',
         hostname: 'localhost',

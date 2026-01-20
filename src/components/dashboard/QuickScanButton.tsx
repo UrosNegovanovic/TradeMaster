@@ -21,6 +21,9 @@ export function QuickScanButton() {
       return
     }
 
+    // ✅ CLOSE SCANNER IMMEDIATELY (UX Improvement!)
+    setScannerOpen(false)
+
     toast.success('Barcode scanned', {
       description: `SKU: ${barcode}`,
     })

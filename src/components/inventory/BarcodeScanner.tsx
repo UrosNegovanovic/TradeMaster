@@ -261,22 +261,80 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
           console.log('🔦 Torch supported')
         }
 
+        // #region agent log - H11: Check ALL camera capabilities (especially focus)
+        console.log('📷 Camera capabilities:', JSON.stringify(capabilities, null, 2))
+        fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:CAPABILITIES',message:'Camera capabilities check',data:{isMobile,torch:!!capabilities.torch,focusMode:capabilities.focusMode,focusDistance:capabilities.focusDistance,zoom:capabilities.zoom,allCapabilities:capabilities},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H11_CAPABILITIES'})}).catch(()=>{});
+        // #endregion
+
         // #region agent log - PHASE 2: Mobile-specific optimizations
-        // Apply continuous focus mode for mobile (better for moving cameras)
+        // Apply ADVANCED focus strategy for mobile (Samsung S24 fix)
         if (isMobile) {
+          let focusApplied = false
+          
+          // Strategy 1: Try continuous focus mode (best for scanning)
           try {
             if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
               await videoTrack.applyConstraints({
                 // @ts-ignore
                 advanced: [{ focusMode: 'continuous' }]
               })
-              console.log('📱 Mobile: Continuous focus enabled')
+              focusApplied = true
+              console.log('✅ Mobile: Continuous focus enabled (Strategy 1)')
               // #region agent log - Debug log
-              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:281',message:'Mobile continuous focus enabled',data:{isMobile:true,focusMode:'continuous'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'mobile-focus'})}).catch(()=>{});
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:FOCUS_S1',message:'Continuous focus SUCCESS',data:{isMobile:true,focusMode:'continuous',strategy:1},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H12_FOCUS_S1'})}).catch(()=>{});
               // #endregion
             }
           } catch (err) {
-            console.warn('⚠️ Could not enable continuous focus:', err)
+            console.warn('⚠️ Continuous focus failed:', err)
+            // #region agent log - Debug log
+            fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:FOCUS_S1_FAIL',message:'Continuous focus FAILED',data:{error:String(err),strategy:1},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H12_FOCUS_S1_FAIL'})}).catch(()=>{});
+            // #endregion
+          }
+          
+          // Strategy 2: Try manual focus with minimum distance (for close-up scanning)
+          if (!focusApplied && capabilities.focusMode && capabilities.focusMode.includes('manual')) {
+            try {
+              const constraints: any = { advanced: [{ focusMode: 'manual' }] }
+              
+              // If focusDistance is supported, set to minimum (close-up)
+              if (capabilities.focusDistance && capabilities.focusDistance.min !== undefined) {
+                constraints.advanced[0].focusDistance = capabilities.focusDistance.min
+                console.log('📏 Setting focus distance to minimum:', capabilities.focusDistance.min)
+              }
+              
+              await videoTrack.applyConstraints(constraints)
+              focusApplied = true
+              console.log('✅ Mobile: Manual focus enabled (Strategy 2)')
+              // #region agent log - Debug log
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:FOCUS_S2',message:'Manual focus SUCCESS',data:{focusMode:'manual',focusDistance:capabilities.focusDistance?.min,strategy:2},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H13_FOCUS_S2'})}).catch(()=>{});
+              // #endregion
+            } catch (err) {
+              console.warn('⚠️ Manual focus failed:', err)
+              // #region agent log - Debug log
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:FOCUS_S2_FAIL',message:'Manual focus FAILED',data:{error:String(err),strategy:2},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H13_FOCUS_S2_FAIL'})}).catch(()=>{});
+              // #endregion
+            }
+          }
+          
+          // Strategy 3: Try basic autofocus (last resort)
+          if (!focusApplied) {
+            try {
+              await videoTrack.applyConstraints({
+                // @ts-ignore - try basic autofocus without advanced
+                focusMode: 'continuous'
+              })
+              focusApplied = true
+              console.log('✅ Mobile: Basic autofocus enabled (Strategy 3)')
+              // #region agent log - Debug log
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:FOCUS_S3',message:'Basic autofocus SUCCESS',data:{strategy:3},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H14_FOCUS_S3'})}).catch(()=>{});
+              // #endregion
+            } catch (err) {
+              console.warn('⚠️ Basic autofocus failed:', err)
+              console.warn('⚠️ ALL FOCUS STRATEGIES FAILED - camera may not support autofocus')
+              // #region agent log - Debug log
+              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarcodeScanner.tsx:FOCUS_ALL_FAIL',message:'ALL focus strategies FAILED',data:{error:String(err),availableModes:capabilities.focusMode},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H14_FOCUS_ALL_FAIL'})}).catch(()=>{});
+              // #endregion
+            }
           }
         }
         // #endregion

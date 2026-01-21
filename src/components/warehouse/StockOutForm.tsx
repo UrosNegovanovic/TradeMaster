@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { useMemo, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -135,7 +136,8 @@ export function StockOutForm({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
                     setProductSearchOpen(!productSearchOpen)
                     if (!productSearchOpen) {
                       setSearchQuery('')
@@ -162,7 +164,7 @@ export function StockOutForm({
                         type="text"
                         placeholder="Search products..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         className="h-9"
                         autoFocus
                       />
@@ -181,7 +183,8 @@ export function StockOutForm({
                         filteredProducts.map((product) => (
                           <div
                             key={product.id}
-                            onClick={() => {
+                            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                              e.stopPropagation();
                               // #region agent log
                               fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StockOutForm.tsx:NATIVE_onClick',message:'NATIVE dropdown clicked',data:{productId:product.id,productName:product.name,sku:product.sku},timestamp:Date.now(),sessionId:'debug-session',runId:'native-dropdown',hypothesisId:'NATIVE'})}).catch(()=>{});
                               // #endregion
@@ -220,7 +223,8 @@ export function StockOutForm({
                 {productSearchOpen && (
                   <div
                     className="fixed inset-0 z-40"
-                    onClick={() => {
+                    onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                      e.stopPropagation();
                       setProductSearchOpen(false)
                       setSearchQuery('')
                     }}

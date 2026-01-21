@@ -82,12 +82,20 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = productSchema.parse(body)
 
-    // ✅ INVENTORY UPSERT LOGIC: Check if SKU already exists for this profile
-    const existingProduct = await prisma.product.findUnique({
+    // ✅ DAILY BATCHING LOGIC: Check if SKU was scanned TODAY for this profile
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
+
+    const existingProductToday = await prisma.product.findFirst({
       where: {
-        profileId_sku: {
-          profileId: profile.id,
-          sku: validatedData.sku,
+        profileId: profile.id,
+        sku: validatedData.sku,
+        createdAt: {
+          gte: startOfToday,
+          lte: endOfToday,
         },
       },
       include: {
@@ -98,12 +106,15 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+      orderBy: {
+        createdAt: 'desc', // Get the most recent entry from today
+      },
     })
 
-    if (existingProduct) {
-      // ✅ PRODUCT EXISTS: Update stock quantity instead of throwing error
+    if (existingProductToday) {
+      // ✅ PRODUCT SCANNED TODAY: Increment quantity in today's batch
       const quantityToAdd = validatedData.quantity ?? 1
-      const newQuantity = existingProduct.quantity + quantityToAdd
+      const newQuantity = existingProductToday.quantity + quantityToAdd
 
       // Prepare update data
       const updateData: {
@@ -126,9 +137,9 @@ export async function POST(request: NextRequest) {
         updateData.categoryId = validatedData.categoryId
       }
 
-      // Update the existing product
+      // Update today's batch entry
       const updatedProduct = await prisma.product.update({
-        where: { id: existingProduct.id },
+        where: { id: existingProductToday.id },
         data: updateData,
         include: {
           category: {
@@ -144,14 +155,15 @@ export async function POST(request: NextRequest) {
         {
           ...updatedProduct,
           action: 'updated' as const,
+          batchMode: 'daily',
           quantityAdded: quantityToAdd,
-          previousQuantity: existingProduct.quantity,
+          previousQuantity: existingProductToday.quantity,
         },
         { status: 200 }
       )
     }
 
-    // ✅ PRODUCT DOES NOT EXIST: Create new product
+    // ✅ NEW DAILY BATCH: Create new product entry for today
     const product = await prisma.product.create({
       data: {
         name: validatedData.name,

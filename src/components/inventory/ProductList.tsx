@@ -40,6 +40,15 @@ export function ProductList({
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
+    }).format(dateObj)
+  }
+
+  const formatDateTime = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    return new Intl.DateTimeFormat('sr-RS', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     }).format(dateObj)
@@ -76,8 +85,9 @@ export function ProductList({
               <TableHead className="min-w-[150px]">Name</TableHead>
               <TableHead className="min-w-[100px]">SKU</TableHead>
               <TableHead className="min-w-[120px]">Category</TableHead>
+              <TableHead className="text-right min-w-[80px]">Quantity</TableHead>
               <TableHead className="text-right min-w-[100px]">Price</TableHead>
-              <TableHead className="min-w-[140px] hidden lg:table-cell">Created</TableHead>
+              <TableHead className="min-w-[110px]">Date Added</TableHead>
               <TableHead className="w-[120px] sm:w-[150px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -115,10 +125,15 @@ export function ProductList({
                   <span className="text-muted-foreground">—</span>
                 )}
               </TableCell>
-              <TableCell className="text-right font-medium">
-            {formatPrice(Number(product.price))}
+              <TableCell className="text-right font-semibold">
+                <span className="inline-flex items-center justify-center min-w-[40px] px-2 py-1 rounded-md bg-primary/10 text-primary">
+                  {product.quantity}
+                </span>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
+              <TableCell className="text-right font-medium">
+                {formatPrice(Number(product.price))}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground" title={formatDateTime(product.createdAt)}>
                 {formatDate(product.createdAt)}
               </TableCell>
               <TableCell>

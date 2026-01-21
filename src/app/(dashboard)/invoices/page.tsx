@@ -3,10 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, FileText, Trash2, Download, Loader2 } from 'lucide-react'
+import { Plus, FileText, Trash2, Download, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { Invoice, InvoiceStatus } from '@/types/invoice'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 
 async function fetchInvoices() {
   const response = await fetch('/api/invoices')
@@ -67,10 +68,16 @@ export default function InvoicesPage() {
     mutationFn: deleteInvoice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      alert('Invoice deleted successfully!')
+      toast.success('Invoice deleted successfully!', {
+        description: 'The invoice has been removed from your records.',
+        duration: 5000,
+      })
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to delete invoice')
+      toast.error('Failed to delete invoice', {
+        description: error.message || 'An unexpected error occurred',
+        duration: 5000,
+      })
     },
   })
 
@@ -157,6 +164,14 @@ export default function InvoicesPage() {
                       <Button variant="outline" size="sm" className="w-full">
                         <Download className="mr-2 h-4 w-4" />
                         PDF
+                      </Button>
+                    </Link>
+                    <Link href={`/invoices/${invoice.id}/edit`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
                     </Link>
                     <Button

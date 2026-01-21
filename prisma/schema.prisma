@@ -71,9 +71,12 @@ model Product {
   stockMovements StockMovement[]
 
   // Indexes
-  @@unique([profileId, sku]) // SKU must be unique per merchant
+  // ✅ REMOVED unique constraint to allow daily batching (multiple entries per SKU from different days)
+  // @@unique([profileId, sku])
   @@index([profileId])
+  @@index([sku]) // Added index for SKU lookups
   @@index([categoryId])
+  @@index([createdAt]) // Added index for date-based queries
   @@map("products")
 }
 

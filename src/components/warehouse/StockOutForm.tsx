@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,15 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Loader2, AlertTriangle } from 'lucide-react'
+// Removed Popover and Command - using native dropdown instead
+import { Loader2, AlertTriangle, Check, ChevronsUpDown } from 'lucide-react'
 import { Product } from '@/types/product'
+import { cn } from '@/lib/utils'
 
 // Base schema - we'll add dynamic validation
 const baseStockOutSchema = z.object({
@@ -50,6 +45,21 @@ export function StockOutForm({
   onSubmit,
   isLoading = false,
 }: StockOutFormProps) {
+  const [productSearchOpen, setProductSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Filter products based on search
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery) return products;
+    const query = searchQuery.toLowerCase();
+    return products.filter(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.sku.toLowerCase().includes(query)
+    );
+  }, [products, searchQuery])
+
+  // Native dropdown - no need for portal fixes anymore!
+
   // ✅ Dynamic schema with "Prevent Negative Stock" policy - defined once
   const dynamicSchema = useMemo(() => {
     return baseStockOutSchema.refine(
@@ -120,31 +130,110 @@ export function StockOutForm({
               <Label htmlFor="productId">
                 Product <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={selectedProductId}
-                onValueChange={(value) => {
-                  setValue('productId', value, { shouldValidate: true })
-                  setValue('quantity', 1) // Reset quantity when product changes
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a product" />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} ({product.sku}) - Stock: {product.quantity || 0}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* NATIVE DROPDOWN - No Radix, No cmdk */}
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setProductSearchOpen(!productSearchOpen)
+                    if (!productSearchOpen) {
+                      setSearchQuery('')
+                    }
+                  }}
+                  className="justify-between w-full font-normal"
+                >
+                  <span className="truncate">
+                    {selectedProduct
+                      ? `${selectedProduct.name} (${selectedProduct.sku})`
+                      : "Select a product..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+                
+                {productSearchOpen && (
+                  <div 
+                    className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md"
+                    style={{ maxHeight: '300px', overflow: 'hidden' }}
+                  >
+                    {/* Search Input */}
+                    <div className="p-2 border-b">
+                      <Input
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-9"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {/* Product List */}
+                    <div 
+                      className="overflow-y-auto"
+                      style={{ maxHeight: '250px' }}
+                    >
+                      {filteredProducts.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          No product found.
+                        </div>
+                      ) : (
+                        filteredProducts.map((product) => (
+                          <div
+                            key={product.id}
+                            onClick={() => {
+                              // #region agent log
+                              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StockOutForm.tsx:NATIVE_onClick',message:'NATIVE dropdown clicked',data:{productId:product.id,productName:product.name,sku:product.sku},timestamp:Date.now(),sessionId:'debug-session',runId:'native-dropdown',hypothesisId:'NATIVE'})}).catch(()=>{});
+                              // #endregion
+                              setValue('productId', product.id, { shouldValidate: true })
+                              setValue('quantity', 1)
+                              setProductSearchOpen(false)
+                              setSearchQuery('')
+                            }}
+                            className={cn(
+                              "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+                              selectedProductId === product.id && "bg-accent"
+                            )}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedProductId === product.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate font-medium">
+                                {product.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                SKU: {product.sku} • Stock: {product.quantity || 0}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Backdrop to close dropdown */}
+                {productSearchOpen && (
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => {
+                      setProductSearchOpen(false)
+                      setSearchQuery('')
+                    }}
+                  />
+                )}
+              </div>
               {errors.productId && (
                 <p className="text-sm text-destructive">{errors.productId.message}</p>
               )}
               {selectedProduct && (
                 <Badge 
                   variant={availableStock === 0 ? 'destructive' : availableStock <= 10 ? 'outline' : 'outline'}
-                  className={availableStock === 0 ? '' : availableStock <= 10 ? 'border-yellow-500 text-yellow-700' : 'border-green-500 text-green-700'}
+                  className={availableStock === 0 ? '' : availableStock <= 10 ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400' : 'border-green-500 text-green-700 dark:text-green-400'}
                 >
                   Available Stock: {availableStock} units
                 </Badge>

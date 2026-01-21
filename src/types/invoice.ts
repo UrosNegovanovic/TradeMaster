@@ -60,5 +60,6 @@ export type InvoiceCreateInput = {
     quantity: number
     unitPrice: number
     discount?: number
+    total: number
   }[]
 }

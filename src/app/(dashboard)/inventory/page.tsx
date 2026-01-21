@@ -86,7 +86,13 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [scannedData, setScannedData] = useState<Partial<ProductFormData> | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  
+  // ✅ Default to TODAY for daily batching view
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Normalize to midnight
+    return today
+  })
 
   // Handle Quick Scan from Dashboard - automatically open form with pre-filled data
   useEffect(() => {

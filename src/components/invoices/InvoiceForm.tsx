@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +14,7 @@ interface InvoiceFormProps {
   products: Product[]
   onSubmit: (data: InvoiceCreateInput) => Promise<void>
   isLoading?: boolean
+  initialData?: any // Invoice data for edit mode
 }
 
 interface InvoiceItemRow {
@@ -26,7 +27,7 @@ interface InvoiceItemRow {
   total: number
 }
 
-export function InvoiceForm({ products, onSubmit, isLoading = false }: InvoiceFormProps) {
+export function InvoiceForm({ products, onSubmit, isLoading = false, initialData }: InvoiceFormProps) {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [dueDate, setDueDate] = useState(() => {
     // Default to 30 days from now
@@ -39,6 +40,30 @@ export function InvoiceForm({ products, onSubmit, isLoading = false }: InvoiceFo
   const [items, setItems] = useState<InvoiceItemRow[]>([
     { id: '1', productId: null, productName: '', quantity: 1, unitPrice: 0, discount: 0, total: 0 },
   ])
+
+  // ✅ Populate form with initial data for edit mode
+  useEffect(() => {
+    if (initialData) {
+      setInvoiceNumber(initialData.invoiceNumber || '')
+      setDueDate(initialData.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : '')
+      setClientName(initialData.clientName || '')
+      setClientAddress(initialData.clientAddress || '')
+      
+      if (initialData.items && initialData.items.length > 0) {
+        setItems(
+          initialData.items.map((item: any, index: number) => ({
+            id: item.id || `${Date.now()}-${index}`,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: Number(item.unitPrice),
+            discount: item.discount || 0,
+            total: Number(item.total),
+          }))
+        )
+      }
+    }
+  }, [initialData])
 
   // Calculate grand total
   const grandTotal = useMemo(() => {
@@ -128,9 +153,10 @@ export function InvoiceForm({ products, onSubmit, isLoading = false }: InvoiceFo
       items: validItems.map((item) => ({
         productId: item.productId || null,
         productName: item.productName.trim(),
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        discount: Number(item.discount) || 0,
+        total: Number(item.total),
       })),
     }
 

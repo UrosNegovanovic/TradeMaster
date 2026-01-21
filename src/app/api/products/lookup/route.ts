@@ -43,13 +43,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Look up product by SKU (scoped to user's profile)
-    const product = await prisma.product.findUnique({
+    // ✅ Look up product by SKU (scoped to user's profile)
+    // With daily batching, there may be multiple entries for the same SKU
+    // We return the MOST RECENT entry for auto-fill purposes
+    const product = await prisma.product.findFirst({
       where: {
-        profileId_sku: {
-          profileId: profile.id,
-          sku: sku.trim(),
-        },
+        profileId: profile.id,
+        sku: sku.trim(),
       },
       include: {
         category: {
@@ -58,6 +58,9 @@ export async function GET(request: NextRequest) {
             name: true,
           },
         },
+      },
+      orderBy: {
+        createdAt: 'desc', // Most recent entry first
       },
     })
 

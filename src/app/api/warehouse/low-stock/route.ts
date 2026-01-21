@@ -26,13 +26,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
-    // Fetch products with low stock (quantity <= minStock)
-    const lowStockProducts = await prisma.product.findMany({
+    // ✅ Fetch ALL products and aggregate by SKU (for daily batching)
+    const allProducts = await prisma.product.findMany({
       where: {
         profileId: profile.id,
-        quantity: {
-          lte: prisma.product.fields.minStock, // quantity <= minStock
-        },
       },
       select: {
         id: true,
@@ -41,16 +38,56 @@ export async function GET() {
         quantity: true,
         minStock: true,
         imageUrl: true,
+        createdAt: true,
       },
-      orderBy: [
-        {
-          quantity: 'asc', // Most critical first (lowest quantity)
-        },
-        {
-          name: 'asc',
-        },
-      ],
+      orderBy: {
+        createdAt: 'desc', // Most recent first
+      },
     })
+
+    // ✅ Aggregate products by SKU (sum quantities from different days)
+    const productMap = new Map<string, typeof allProducts[0] & { totalQuantity: number }>()
+
+    allProducts.forEach((product) => {
+      const existing = productMap.get(product.sku)
+      
+      if (existing) {
+        // SKU already exists, sum the quantity
+        existing.totalQuantity += product.quantity
+        // Keep the most recent entry's details
+        if (new Date(product.createdAt) > new Date(existing.createdAt)) {
+          productMap.set(product.sku, {
+            ...product,
+            totalQuantity: existing.totalQuantity,
+          })
+        }
+      } else {
+        // First entry for this SKU
+        productMap.set(product.sku, {
+          ...product,
+          totalQuantity: product.quantity,
+        })
+      }
+    })
+
+    // ✅ Filter for low stock (totalQuantity <= minStock)
+    const lowStockProducts = Array.from(productMap.values())
+      .filter((product) => product.totalQuantity <= product.minStock)
+      .map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        quantity: product.totalQuantity, // Use aggregated total
+        minStock: product.minStock,
+        imageUrl: product.imageUrl,
+      }))
+      .sort((a, b) => {
+        // Sort by quantity (most critical first), then by name
+        if (a.quantity !== b.quantity) {
+          return a.quantity - b.quantity
+        }
+        return a.name.localeCompare(b.name)
+      })
 
     return NextResponse.json(lowStockProducts)
   } catch (error) {

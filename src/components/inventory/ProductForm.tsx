@@ -19,6 +19,7 @@ import { Loader2, ScanBarcode } from 'lucide-react'
 import { Product } from '@/types/product'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { BarcodeScanner } from './BarcodeScanner'
+import { ProductActionToast } from './ProductActionToast'
 import { CategorySelect } from './CategorySelect'
 import { fetchProductMetadata, isValidBarcode } from '@/lib/openfoodfacts'
 import { toast } from 'sonner'
@@ -50,12 +51,14 @@ export function ProductForm({
     reset,
     setValue,
     watch,
+    getValues,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: initialData?.name ?? product?.name ?? '',
       sku: initialData?.sku ?? product?.sku ?? '',
       price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+      quantity: initialData?.quantity ?? product?.quantity ?? 1,
       description: initialData?.description ?? product?.description ?? '',
       imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
       categoryId: product?.categoryId ?? null,
@@ -74,6 +77,7 @@ export function ProductForm({
         name: initialData?.name ?? product?.name ?? '',
         sku: initialData?.sku ?? product?.sku ?? '',
         price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+        quantity: initialData?.quantity ?? product?.quantity ?? 1,
         description: initialData?.description ?? product?.description ?? '',
         imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
         categoryId: product?.categoryId ?? null,
@@ -102,14 +106,99 @@ export function ProductForm({
     // ✅ CLOSE SCANNER IMMEDIATELY (UX Improvement!)
     setScannerOpen(false)
 
-    // Set SKU immediately
-    setValue('sku', barcode, { shouldValidate: true })
-    toast.success('Barcode scanned', {
-      description: `SKU: ${barcode}`,
-    })
+    // ✅ SMART QUANTITY INCREMENT LOGIC (Warehouse Mode)
+    const currentSku = getValues('sku')
+    const currentQuantity = getValues('quantity') || 0
+    
+    // Check if this is the same barcode being scanned again
+    if (currentSku === barcode && currentSku !== '') {
+      // Same item scanned again - increment quantity
+      const newQuantity = currentQuantity + 1
+      setValue('quantity', newQuantity, { shouldValidate: true })
+      
+      // Show quantity increment toast
+      toast.custom((id) => (
+        <ProductActionToast
+          variant="scan"
+          product={{
+            name: currentName || 'Current Product',
+            sku: barcode,
+            imageUrl: currentImageUrl,
+          }}
+          onDismiss={() => toast.dismiss(id)}
+        />
+      ), {
+        duration: 2000,
+      })
+      
+      // Show additional success message
+      toast.success(`Quantity updated to ${newQuantity}`, {
+        description: `Scanned ${barcode} again`,
+        duration: 2000,
+      })
+      
+      return // Exit early - no need to fetch metadata again
+    }
 
-    // Fetch product metadata from OpenFoodFacts
+    // Different barcode - set new SKU and reset quantity to 1
+    setValue('sku', barcode, { shouldValidate: true })
+    setValue('quantity', 1, { shouldValidate: true })
+
+    // ✅ INSTANT PRODUCT LOOKUP: Check if we already have this product in our database
     setIsFetchingMetadata(true)
+    
+    try {
+      const lookupResponse = await fetch(`/api/products/lookup?sku=${encodeURIComponent(barcode)}`)
+      
+      if (lookupResponse.ok) {
+        const lookupData = await lookupResponse.json()
+        
+        if (lookupData.found && lookupData.product) {
+          // ✅ PRODUCT FOUND IN OUR DATABASE: Auto-fill form
+          const existingProduct = lookupData.product
+          
+          setValue('name', existingProduct.name, { shouldValidate: true })
+          setValue('price', Number(existingProduct.price), { shouldValidate: true })
+          setValue('quantity', 1, { shouldValidate: true }) // Reset to 1 for new scan
+          
+          if (existingProduct.imageUrl) {
+            setValue('imageUrl', existingProduct.imageUrl, { shouldValidate: true })
+          }
+          
+          if (existingProduct.description) {
+            setValue('description', existingProduct.description, { shouldValidate: true })
+          }
+          
+          if (existingProduct.categoryId) {
+            setValue('categoryId', existingProduct.categoryId, { shouldValidate: true })
+          }
+          
+          // Show rich toast (contains all context needed)
+          toast.custom((id) => (
+            <ProductActionToast
+              variant="scan"
+              product={{
+                name: existingProduct.name,
+                sku: barcode,
+                imageUrl: existingProduct.imageUrl,
+              }}
+              onDismiss={() => toast.dismiss(id)}
+            />
+          ), {
+            duration: 3000,
+          })
+          
+          setIsFetchingMetadata(false)
+          return // Exit early - product found in database
+        }
+      }
+    } catch (error) {
+      console.error('Error looking up product in database:', error)
+      // Continue to OpenFoodFacts lookup if database lookup fails
+    }
+
+    // ✅ PRODUCT NOT IN DATABASE: Try OpenFoodFacts lookup
+    // Fetch product metadata from OpenFoodFacts
     
     try {
       const metadata = await fetchProductMetadata(barcode)
@@ -130,19 +219,35 @@ export function ProductForm({
           setValue('imageUrl', metadata.imageUrl, { shouldValidate: true })
         }
         
-        // Show success message with source indication
-        const sourceLabels = {
-          food: '🍫 Food Database',
-          beauty: '💄 Beauty Database',
-          products: '🧴 Products Database',
-        }
-        const sourceLabel = metadata.source ? sourceLabels[metadata.source] : 'Database'
-        
-        toast.success('Product found!', {
-          description: `${metadata.name} (${sourceLabel})`,
+        // Show rich toast for scanned product
+        toast.custom((id) => (
+          <ProductActionToast
+            variant="scan"
+            product={{
+              name: metadata.name,
+              sku: barcode,
+              imageUrl: metadata.imageUrl,
+            }}
+            onDismiss={() => toast.dismiss(id)}
+          />
+        ), {
           duration: 4000,
         })
       } else {
+        // Show rich toast for scanned product (not found in database)
+        toast.custom((id) => (
+          <ProductActionToast
+            variant="scan"
+            product={{
+              name: 'Unknown Product',
+              sku: barcode,
+            }}
+            onDismiss={() => toast.dismiss(id)}
+          />
+        ), {
+          duration: 4000,
+        })
+        
         toast.info('Product not found', {
           description: 'Searched 4 databases (food, beauty, household, global). SKU saved - enter details manually.',
           duration: 5000,
@@ -150,6 +255,21 @@ export function ProductForm({
       }
     } catch (error) {
       console.error('Error fetching product metadata:', error)
+      
+      // Show rich toast for error case
+      toast.custom((id) => (
+        <ProductActionToast
+          variant="scan"
+          product={{
+            name: 'Unknown Product',
+            sku: barcode,
+          }}
+          onDismiss={() => toast.dismiss(id)}
+        />
+      ), {
+        duration: 3000,
+      })
+      
       toast.error('Failed to fetch product info', {
         description: 'Please enter product details manually.',
       })
@@ -214,6 +334,26 @@ export function ProductForm({
               {errors.sku && (
                 <p className="text-sm text-destructive">{errors.sku.message}</p>
               )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="quantity">
+                Quantity <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="1"
+                {...register('quantity', { valueAsNumber: true })}
+              />
+              {errors.quantity && (
+                <p className="text-sm text-destructive">{errors.quantity.message}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                💡 Tip: Scan the same barcode multiple times to auto-increment
+              </p>
             </div>
 
             <div className="grid gap-2">

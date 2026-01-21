@@ -24,6 +24,7 @@ import { StockMovement, LowStockProduct, StockMovementCreateInput } from '@/type
 import { Product } from '@/types/product'
 import { StockInForm } from '@/components/warehouse/StockInForm'
 import { StockOutForm } from '@/components/warehouse/StockOutForm'
+import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
 import { MovementType } from '@prisma/client'
 import { toast } from 'sonner'
 import Image from 'next/image'
@@ -260,6 +261,22 @@ export default function WarehousePage() {
           Register Stock Out
         </Button>
       </div>
+
+      {/* Current Inventory Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Trenutno Stanje (Current Inventory Status)
+          </CardTitle>
+          <CardDescription>
+            Real-time overview of all products and their stock levels
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CurrentStockTable products={products} />
+        </CardContent>
+      </Card>
 
       {/* Stock Movement History */}
       <Card>

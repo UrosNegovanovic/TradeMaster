@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -22,16 +23,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertTriangle } from 'lucide-react'
 import { Product } from '@/types/product'
 
-const stockOutSchema = z.object({
+// Base schema - we'll add dynamic validation
+const baseStockOutSchema = z.object({
   productId: z.string().min(1, 'Please select a product'),
   quantity: z.coerce.number().int().positive('Quantity must be a positive number'),
   reason: z.string().min(1, 'Please enter a reason').max(200, 'Reason is too long'),
 })
 
-type StockOutFormData = z.infer<typeof stockOutSchema>
+type StockOutFormData = z.infer<typeof baseStockOutSchema>
 
 interface StockOutFormProps {
   open: boolean
@@ -48,6 +50,32 @@ export function StockOutForm({
   onSubmit,
   isLoading = false,
 }: StockOutFormProps) {
+  // ✅ Dynamic schema with "Prevent Negative Stock" policy - defined once
+  const dynamicSchema = useMemo(() => {
+    return baseStockOutSchema.refine(
+      (data) => {
+        if (!data.productId) return true // Will be caught by base validation
+        const product = products.find((p) => p.id === data.productId)
+        if (!product) return true
+        
+        const availableStock = product.quantity || 0
+        
+        // ✅ PREVENT NEGATIVE STOCK: Cannot remove more than available
+        return data.quantity <= availableStock
+      },
+      (data) => {
+        // Dynamic error message based on current product
+        const product = products.find((p) => p.id === data.productId)
+        const availableStock = product?.quantity || 0
+        
+        return {
+          message: `Cannot remove more than available stock (${availableStock}). Current inventory: ${availableStock} units.`,
+          path: ['quantity'],
+        }
+      }
+    )
+  }, [products])
+
   const {
     register,
     handleSubmit,
@@ -56,7 +84,7 @@ export function StockOutForm({
     setValue,
     watch,
   } = useForm<StockOutFormData>({
-    resolver: zodResolver(stockOutSchema),
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       productId: '',
       quantity: 1,
@@ -64,8 +92,10 @@ export function StockOutForm({
     },
   })
 
+  // ✅ Now watch is available - use it after useForm
   const selectedProductId = watch('productId')
   const selectedProduct = products.find((p) => p.id === selectedProductId)
+  const availableStock = selectedProduct?.quantity || 0
 
   const handleFormSubmit = async (data: StockOutFormData) => {
     await onSubmit(data)
@@ -92,7 +122,10 @@ export function StockOutForm({
               </Label>
               <Select
                 value={selectedProductId}
-                onValueChange={(value) => setValue('productId', value, { shouldValidate: true })}
+                onValueChange={(value) => {
+                  setValue('productId', value, { shouldValidate: true })
+                  setValue('quantity', 1) // Reset quantity when product changes
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a product" />
@@ -109,9 +142,12 @@ export function StockOutForm({
                 <p className="text-sm text-destructive">{errors.productId.message}</p>
               )}
               {selectedProduct && (
-                <p className="text-sm text-muted-foreground">
-                  Current stock: <span className="font-semibold">{selectedProduct.quantity || 0}</span> units
-                </p>
+                <Badge 
+                  variant={availableStock === 0 ? 'destructive' : availableStock <= 10 ? 'outline' : 'outline'}
+                  className={availableStock === 0 ? '' : availableStock <= 10 ? 'border-yellow-500 text-yellow-700' : 'border-green-500 text-green-700'}
+                >
+                  Available Stock: {availableStock} units
+                </Badge>
               )}
             </div>
 
@@ -123,11 +159,23 @@ export function StockOutForm({
                 id="quantity"
                 type="number"
                 min="1"
-                max={selectedProduct?.quantity || undefined}
+                max={availableStock || undefined}
                 step="1"
                 placeholder="Enter quantity"
+                disabled={availableStock === 0}
                 {...register('quantity')}
               />
+              {selectedProduct && availableStock === 0 && (
+                <p className="text-sm text-destructive">
+                  <AlertTriangle className="inline h-3 w-3 mr-1" />
+                  Out of stock! Cannot register stock out.
+                </p>
+              )}
+              {selectedProduct && availableStock > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Maximum removable: <strong>{availableStock}</strong> units
+                </p>
+              )}
               {errors.quantity && (
                 <p className="text-sm text-destructive">{errors.quantity.message}</p>
               )}

@@ -7,10 +7,12 @@ import { Product } from '@/types/product'
 import { ProductForm } from '@/components/inventory/ProductForm'
 import { ProductList } from '@/components/inventory/ProductList'
 import { InventoryFilters } from '@/components/inventory/InventoryFilters'
+import { ProductActionToast } from '@/components/inventory/ProductActionToast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search } from 'lucide-react'
 import { ProductFormData } from '@/lib/validations'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -154,16 +156,57 @@ export default function InventoryPage() {
     return filtered
   }, [products, searchQuery, selectedCategory, selectedDate])
 
-  // Create product mutation
+  // Create product mutation (with inventory upsert support)
   const createMutation = useMutation({
     mutationFn: createProduct,
-    onSuccess: () => {
+    onSuccess: (response: Product & { action?: 'created' | 'updated'; quantityAdded?: number; previousQuantity?: number }) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
-      alert('Product created successfully!')
+      setScannedData(null)
+      
+      // Check if this was an update (stock increment) or a new product creation
+      if (response.action === 'updated') {
+        // Show stock increment toast
+        toast.custom((id) => (
+          <ProductActionToast
+            variant="scan"
+            product={{
+              name: response.name,
+              sku: response.sku,
+              imageUrl: response.imageUrl,
+            }}
+            onDismiss={() => toast.dismiss(id)}
+          />
+        ), {
+          duration: 4000,
+        })
+        
+        // Show additional info about stock update
+        toast.success('Stock updated!', {
+          description: `Added ${response.quantityAdded || 0} units. Total stock: ${response.quantity}`,
+          duration: 4000,
+        })
+      } else {
+        // Show product created toast (default)
+        toast.custom((id) => (
+          <ProductActionToast
+            variant="create"
+            product={{
+              name: response.name,
+              sku: response.sku,
+              imageUrl: response.imageUrl,
+            }}
+            onDismiss={() => toast.dismiss(id)}
+          />
+        ), {
+          duration: 4000,
+        })
+      }
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to create product')
+      toast.error('Failed to create product', {
+        description: error.message || 'An error occurred while creating the product.',
+      })
     },
   })
 
@@ -175,23 +218,41 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setEditingProduct(null)
-      alert('Product updated successfully!')
+      toast.success('Product updated successfully!')
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to update product')
+      toast.error('Failed to update product', {
+        description: error.message || 'An error occurred while updating the product.',
+      })
     },
   })
 
   // Delete product mutation
   const deleteMutation = useMutation({
-    mutationFn: deleteProduct,
-    onSuccess: () => {
+    mutationFn: ({ id, product }: { id: string; product: Product }) => deleteProduct(id),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setDeleteConfirm(null)
-      alert('Product deleted successfully!')
+      
+      // Show rich toast for deleted product
+      toast.custom((id) => (
+        <ProductActionToast
+          variant="delete"
+          product={{
+            name: variables.product.name,
+            sku: variables.product.sku,
+            imageUrl: variables.product.imageUrl,
+          }}
+          onDismiss={() => toast.dismiss(id)}
+        />
+      ), {
+        duration: 4000,
+      })
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to delete product')
+      toast.error('Failed to delete product', {
+        description: error.message || 'An error occurred while deleting the product.',
+      })
     },
   })
 
@@ -214,7 +275,10 @@ export default function InventoryPage() {
 
   const confirmDelete = () => {
     if (deleteConfirm) {
-      deleteMutation.mutate(deleteConfirm)
+      const product = products.find((p) => p.id === deleteConfirm)
+      if (product) {
+        deleteMutation.mutate({ id: deleteConfirm, product })
+      }
     }
   }
 

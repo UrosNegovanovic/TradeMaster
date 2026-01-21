@@ -5,6 +5,7 @@ export const productSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   sku: z.string().min(1, 'SKU is required').max(100),
   price: z.number().min(0, 'Price cannot be negative').default(0), // ✅ Allow 0 for quick warehouse intake!
+  quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([
       z.string().url('Invalid URL'),

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -22,16 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, AlertTriangle, ScanBarcode } from 'lucide-react'
 import { Product } from '@/types/product'
 
-const stockInSchema = z.object({
+// Base schema - we'll add dynamic validation
+const baseStockInSchema = z.object({
   productId: z.string().min(1, 'Please select a product'),
   quantity: z.coerce.number().int().positive('Quantity must be a positive number'),
   reason: z.string().min(1, 'Please enter a reason').max(200, 'Reason is too long'),
 })
 
-type StockInFormData = z.infer<typeof stockInSchema>
+type StockInFormData = z.infer<typeof baseStockInSchema>
 
 interface StockInFormProps {
   open: boolean
@@ -48,6 +51,32 @@ export function StockInForm({
   onSubmit,
   isLoading = false,
 }: StockInFormProps) {
+  // ✅ Dynamic schema with "Scanner First" policy - defined once
+  const dynamicSchema = useMemo(() => {
+    return baseStockInSchema.refine(
+      (data) => {
+        if (!data.productId) return true // Will be caught by base validation
+        const product = products.find((p) => p.id === data.productId)
+        if (!product) return true
+        
+        const maxAllowed = product.quantity || 0
+        
+        // ✅ SCANNER FIRST POLICY: Cannot manually add more than current stock
+        return data.quantity <= maxAllowed
+      },
+      (data) => {
+        // Dynamic error message based on current product
+        const product = products.find((p) => p.id === data.productId)
+        const maxAllowed = product?.quantity || 0
+        
+        return {
+          message: `Manual limit exceeded. Cannot add more than current stock (${maxAllowed}). Use Inventory Scanner for large additions.`,
+          path: ['quantity'],
+        }
+      }
+    )
+  }, [products])
+
   const {
     register,
     handleSubmit,
@@ -56,7 +85,7 @@ export function StockInForm({
     setValue,
     watch,
   } = useForm<StockInFormData>({
-    resolver: zodResolver(stockInSchema),
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       productId: '',
       quantity: 1,
@@ -64,7 +93,10 @@ export function StockInForm({
     },
   })
 
+  // ✅ Now watch is available - use it after useForm
   const selectedProductId = watch('productId')
+  const selectedProduct = products.find((p) => p.id === selectedProductId)
+  const maxAllowed = selectedProduct?.quantity || 0
 
   const handleFormSubmit = async (data: StockInFormData) => {
     await onSubmit(data)
@@ -83,6 +115,16 @@ export function StockInForm({
             Add stock to inventory. This will increase the product quantity.
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Scanner First Policy Warning */}
+        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+          <ScanBarcode className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Scanner First Policy:</strong> Manual additions are limited to current stock level. 
+            For large stock increases, use the Inventory Scanner.
+          </AlertDescription>
+        </Alert>
+
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -91,7 +133,10 @@ export function StockInForm({
               </Label>
               <Select
                 value={selectedProductId}
-                onValueChange={(value) => setValue('productId', value, { shouldValidate: true })}
+                onValueChange={(value) => {
+                  setValue('productId', value, { shouldValidate: true })
+                  setValue('quantity', 1) // Reset quantity when product changes
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a product" />
@@ -99,13 +144,23 @@ export function StockInForm({
                 <SelectContent>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name} ({product.sku})
+                      {product.name} ({product.sku}) - Stock: {product.quantity || 0}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {errors.productId && (
                 <p className="text-sm text-destructive">{errors.productId.message}</p>
+              )}
+              {selectedProduct && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    Current Stock: {selectedProduct.quantity || 0} units
+                  </Badge>
+                  <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-500">
+                    Manual Limit: {maxAllowed} max
+                  </Badge>
+                </div>
               )}
             </div>
 
@@ -117,10 +172,17 @@ export function StockInForm({
                 id="quantity"
                 type="number"
                 min="1"
+                max={maxAllowed || undefined}
                 step="1"
                 placeholder="Enter quantity"
                 {...register('quantity')}
               />
+              {selectedProduct && (
+                <p className="text-xs text-muted-foreground">
+                  <AlertTriangle className="inline h-3 w-3 mr-1" />
+                  Available for manual entry: <strong>{maxAllowed}</strong> units
+                </p>
+              )}
               {errors.quantity && (
                 <p className="text-sm text-destructive">{errors.quantity.message}</p>
               )}

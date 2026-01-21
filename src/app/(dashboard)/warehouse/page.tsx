@@ -19,10 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { AlertTriangle, ArrowDown, ArrowUp, Package, Plus, Minus, ChevronDown, ChevronRight } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, Package, Minus, ChevronDown, ChevronRight } from 'lucide-react'
 import { StockMovement, LowStockProduct, StockMovementCreateInput } from '@/types/warehouse'
 import { Product } from '@/types/product'
-import { StockInForm } from '@/components/warehouse/StockInForm'
 import { StockOutForm } from '@/components/warehouse/StockOutForm'
 import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
 import { MovementType } from '@prisma/client'
@@ -87,7 +86,6 @@ function formatDate(date: Date | string): string {
 
 export default function WarehousePage() {
   const queryClient = useQueryClient()
-  const [stockInOpen, setStockInOpen] = useState(false)
   const [stockOutOpen, setStockOutOpen] = useState(false)
   const [lowStockOpen, setLowStockOpen] = useState(false)
 
@@ -107,7 +105,7 @@ export default function WarehousePage() {
     queryFn: fetchStockMovements,
   })
 
-  // Create stock movement mutation
+  // Create stock movement mutation (OUT only - IN is handled by Scanner)
   const createMovementMutation = useMutation({
     mutationFn: createStockMovement,
     onSuccess: (data) => {
@@ -115,9 +113,8 @@ export default function WarehousePage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
-      const actionText = data.type === MovementType.IN ? 'added to' : 'removed from'
       toast.success('Stock movement registered', {
-        description: `${data.quantity} units ${actionText} ${data.product.name}`,
+        description: `${data.quantity} units removed from ${data.product.name}`,
       })
     },
     onError: (error: Error) => {
@@ -126,13 +123,6 @@ export default function WarehousePage() {
       })
     },
   })
-
-  const handleStockIn = async (data: any) => {
-    await createMovementMutation.mutateAsync({
-      ...data,
-      type: MovementType.IN,
-    })
-  }
 
   const handleStockOut = async (data: any) => {
     await createMovementMutation.mutateAsync({
@@ -246,20 +236,20 @@ export default function WarehousePage() {
         </Collapsible>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Button - Stock OUT Only (IN is handled by Inventory Scanner) */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button onClick={() => setStockInOpen(true)} className="flex-1 sm:flex-none">
-          <Plus className="mr-2 h-4 w-4" />
-          Register Stock In
-        </Button>
         <Button
           onClick={() => setStockOutOpen(true)}
           variant="destructive"
+          size="lg"
           className="flex-1 sm:flex-none"
         >
-          <Minus className="mr-2 h-4 w-4" />
-          Register Stock Out
+          <Minus className="mr-2 h-5 w-5" />
+          Register Stock Out / Movement
         </Button>
+        <p className="text-sm text-muted-foreground self-center">
+          💡 <strong>Note:</strong> To increase stock, use the <strong>Inventory Scanner</strong>
+        </p>
       </div>
 
       {/* Current Inventory Status */}
@@ -293,7 +283,7 @@ export default function WarehousePage() {
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 mb-3 opacity-50 text-muted-foreground" />
               <p className="text-muted-foreground">
-                No stock movements yet. Register your first stock in or out above.
+                No stock movements yet. Use the Inventory Scanner to add products, or register stock out movements above.
               </p>
             </div>
           ) : (
@@ -351,16 +341,7 @@ export default function WarehousePage() {
         </CardContent>
       </Card>
 
-      {/* Stock In Form */}
-      <StockInForm
-        open={stockInOpen}
-        onOpenChange={setStockInOpen}
-        products={products}
-        onSubmit={handleStockIn}
-        isLoading={createMovementMutation.isPending}
-      />
-
-      {/* Stock Out Form */}
+      {/* Stock Out / Movement Form */}
       <StockOutForm
         open={stockOutOpen}
         onOpenChange={setStockOutOpen}

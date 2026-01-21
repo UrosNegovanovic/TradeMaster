@@ -101,7 +101,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()', // Blocks unnecessary permissions
+            value: 'camera=(self), microphone=(), geolocation=()', // Allow camera for barcode scanning, block others
           },
         ],
       },

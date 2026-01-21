@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma'
  * Query params: ?sku=...
  * Returns: Product details if found (200 OK) or 404 if not found
  */
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()

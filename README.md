@@ -99,10 +99,6 @@ TradeMaster/
 - `npm run db:studio` - Open Prisma Studio
 - `npm run db:seed` - Seed the database
 
-## Development Phases
-
-See `project-spec.md` for detailed implementation plan and architecture decisions.
-
 ## License
 
 Private - All rights reserved

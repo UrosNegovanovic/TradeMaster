@@ -1,0 +1,23 @@
+# robots.txt - TradeMaster
+# This file tells search engines which pages they can crawl
+
+# Allow all search engines to crawl public pages
+User-agent: *
+
+# Allow public pages
+Allow: /
+Allow: /shared/catalog/*
+
+# Block private/authenticated pages
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /inventory
+Disallow: /warehouse
+Disallow: /invoices
+Disallow: /catalogs
+Disallow: /settings
+Disallow: /sign-in
+Disallow: /sign-up
+
+# Sitemap location (update with your production domain)
+Sitemap: https://trade-master-git-main-uros-projects-fe7ff8aa.vercel.app/sitemap.xml

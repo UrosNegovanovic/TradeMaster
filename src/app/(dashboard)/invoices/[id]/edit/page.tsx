@@ -121,7 +121,7 @@ export default function EditInvoicePage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Invoice Not Found</h1>
           <p className="text-muted-foreground mt-2">
-            The invoice you're looking for doesn't exist.
+            The invoice you&apos;re looking for doesn&apos;t exist.
           </p>
         </div>
         <a href="/invoices" className="text-primary hover:underline">

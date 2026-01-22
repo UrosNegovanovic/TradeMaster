@@ -49,6 +49,7 @@ interface BarcodeScannerProps {
   open: boolean
   onClose: () => void
   onScanSuccess: (barcode: string) => void
+  continuousMode?: boolean // If true, scanner stays open after successful scan
 }
 
 interface CameraDevice {
@@ -56,7 +57,7 @@ interface CameraDevice {
   label: string
 }
 
-export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerProps) {
+export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = false }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const videoTrackRef = useRef<MediaStreamTrack | null>(null)
   const lastScanRef = useRef<number>(0)
@@ -418,9 +419,18 @@ export function BarcodeScanner({ open, onClose, onScanSuccess }: BarcodeScannerP
               // Reset confirmation
               confirmationRef.current = null
               
-              // Stop scanner and notify parent
-              stopScanning()
+              // Notify parent (always)
               onScanSuccessRef.current(decodedText)
+              
+              // In continuous mode, keep scanning; otherwise stop
+              if (continuousMode) {
+                // Reset state for next scan but keep scanner running
+                lastScanRef.current = 0
+                console.log('🔄 Continuous mode: Scanner stays open for next scan')
+              } else {
+                // Stop scanner (default behavior for Inventory flow)
+                stopScanning()
+              }
             } else {
               // ⚠️ DIFFERENT barcode - reset and start fresh
               console.log(`⚠️ Different barcode detected. Previous: ${previousScan.barcode}, New: ${decodedText}`)

@@ -23,6 +23,7 @@ export function QuickScanButton() {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const processingRef = useRef(false) // Prevent duplicate processing
+  const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null) // Smart cooldown tracking
   const queryClient = useQueryClient()
 
   /**
@@ -97,14 +98,37 @@ export function QuickScanButton() {
       return
     }
 
+    // Clean barcode for comparison (remove spaces, non-numeric characters)
+    const cleanBarcode = barcode.replace(/\D/g, '')
+
+    // ✅ SMART COOLDOWN: Prevent duplicate scans of the same barcode within 3 seconds
+    const now = Date.now()
+    const cooldownMs = 3000 // 3 seconds cooldown for same barcode
+    
+    if (lastScanRef.current) {
+      const { barcode: lastBarcode, timestamp: lastTimestamp } = lastScanRef.current
+      const timeSinceLastScan = now - lastTimestamp
+      
+      // Check if it's the SAME barcode AND too soon (within cooldown period)
+      if (cleanBarcode === lastBarcode && timeSinceLastScan < cooldownMs) {
+        console.log(`🚫 Duplicate scan prevented: ${cleanBarcode} (scanned ${timeSinceLastScan}ms ago, cooldown: ${cooldownMs}ms)`)
+        // Silently ignore - no toast, no API call, no processing
+        return
+      }
+      
+      // Different barcode OR enough time passed - proceed normally
+      if (cleanBarcode !== lastBarcode) {
+        console.log(`✅ Different barcode detected: ${lastBarcode} → ${cleanBarcode} (instant processing)`)
+      } else {
+        console.log(`✅ Cooldown expired for ${cleanBarcode} (${timeSinceLastScan}ms passed)`)
+      }
+    }
+
     // Mark as processing
     processingRef.current = true
     setIsProcessing(true)
 
     try {
-      // Clean barcode (remove spaces, non-numeric characters)
-      const cleanBarcode = barcode.replace(/\D/g, '')
-      
       // ✅ UNIFIED PRODUCT LOOKUP: Check local DB first, then external APIs
       const response = await fetch(`/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`)
       
@@ -154,12 +178,19 @@ export function QuickScanButton() {
             description: `${metadata.name} - ${sourceMessage}`,
             duration: 2000,
           })
+          
+          // ✅ Update last scan tracking after successful save
+          lastScanRef.current = {
+            barcode: cleanBarcode,
+            timestamp: Date.now(),
+          }
         } else {
           // Save failed but product was found
           toast.error('Failed to save product', {
             description: 'Product found but could not be saved. Please try again.',
             duration: 3000,
           })
+          // Don't update lastScanRef on failure - allow retry
         }
       } else {
         // ❌ PRODUCT NOT FOUND: Show error but keep scanner open
@@ -167,6 +198,11 @@ export function QuickScanButton() {
           description: 'Searched your inventory and 4 external databases. Scan another item or close to add manually.',
           duration: 4000,
         })
+        // Update lastScanRef even on "not found" to prevent spam scanning unknown products
+        lastScanRef.current = {
+          barcode: cleanBarcode,
+          timestamp: Date.now(),
+        }
       }
     } catch (error) {
       console.error('Error in continuous scan:', error)
@@ -175,6 +211,7 @@ export function QuickScanButton() {
         description: 'Failed to process barcode. Please try again.',
         duration: 3000,
       })
+      // Don't update lastScanRef on error - allow retry
     } finally {
       // Reset processing state after a brief delay (allows user to see feedback)
       setTimeout(() => {
@@ -202,6 +239,8 @@ export function QuickScanButton() {
           setScannerOpen(false)
           processingRef.current = false
           setIsProcessing(false)
+          // Reset cooldown when scanner closes
+          lastScanRef.current = null
         }}
         onScanSuccess={handleScanSuccess}
         continuousMode={true} // ✅ Enable continuous scanning mode

@@ -28,7 +28,7 @@ export interface ProductMetadata {
   imageUrl: string | null
   found: boolean
   barcode: string
-  source?: 'food' | 'beauty' | 'products' // Which API found the product
+  source?: 'local' | 'food' | 'beauty' | 'pet' | 'products' // Which API found the product
 }
 
 /**
@@ -400,7 +400,8 @@ export async function fetchProductMetadata(
     console.log(`🔍 Searching for barcode via API: ${cleanBarcode}`)
 
     // Call server-side API route (no CORS issues!)
-    const apiUrl = `/api/products/barcode?code=${encodeURIComponent(cleanBarcode)}`
+    // Updated to use the unified fetch-by-barcode endpoint
+    const apiUrl = `/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`
     
     // #region agent log
     fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchProductMetadata:API_CALL',message:'Calling server API route',data:{apiUrl:apiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-v2',hypothesisId:'CORS_FIX'})}).catch(()=>{});

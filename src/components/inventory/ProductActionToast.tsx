@@ -13,9 +13,11 @@ interface ProductActionToastProps {
     imageUrl?: string | null
   }
   onDismiss?: () => void
+  customBadge?: string // Optional custom badge text (e.g., "AŽURIRANO (+2)")
+  customSubBadge?: string // Optional custom sub-badge text
 }
 
-export function ProductActionToast({ variant, product, onDismiss }: ProductActionToastProps) {
+export function ProductActionToast({ variant, product, onDismiss, customBadge, customSubBadge }: ProductActionToastProps) {
   const [imageError, setImageError] = useState(false)
   
   // Determine styling and content based on variant
@@ -25,8 +27,8 @@ export function ProductActionToast({ variant, product, onDismiss }: ProductActio
       iconColor: 'text-blue-500 dark:text-blue-400',
       borderColor: 'border-blue-500 dark:border-blue-600',
       bgColor: 'bg-blue-500 dark:bg-blue-600',
-      badge: 'SCANNED',
-      subBadge: '(+1)',
+      badge: customBadge || 'SKENIRANO',
+      subBadge: customSubBadge || '(+1)',
     },
     create: {
       icon: CheckCircle2,

@@ -62,6 +62,11 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
   const videoTrackRef = useRef<MediaStreamTrack | null>(null)
   const lastScanRef = useRef<number>(0)
   const confirmationRef = useRef<{ barcode: string; timestamp: number } | null>(null)
+  // ✅ Fast 2-Frame Validation for continuous mode (prevents ghost reads from motion blur)
+  const scanBufferRef = useRef<{ barcode: string; count: number } | null>(null)
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null) // Timeout to reset to idle when no barcode detected
+  const audioContextRef = useRef<AudioContext | null>(null) // ✅ Reusable AudioContext for reliable beep
+  const lastBeepTimeRef = useRef<number>(0) // ✅ Prevent beep spam (minimum 100ms between beeps)
   const originalScrollY = useRef<number>(0)
   const originalBodyStyle = useRef<{
     overflow: string
@@ -71,14 +76,16 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
   } | null>(null)
   const scannerId = 'barcode-scanner-region'
   
-  // Store callbacks in refs to avoid dependency issues
+  // Store callbacks and props in refs to avoid dependency issues
   const onScanSuccessRef = useRef(onScanSuccess)
   const onCloseRef = useRef(onClose)
+  const continuousModeRef = useRef(continuousMode)
   
   useEffect(() => {
     onScanSuccessRef.current = onScanSuccess
     onCloseRef.current = onClose
-  }, [onScanSuccess, onClose])
+    continuousModeRef.current = continuousMode
+  }, [onScanSuccess, onClose, continuousMode])
   
   const [isScanning, setIsScanning] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -88,6 +95,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchEnabled, setTorchEnabled] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
+  // ✅ Visual feedback state for "reticle" overlay (idle -> detecting -> success)
+  const [scanStatus, setScanStatus] = useState<'idle' | 'detecting' | 'success'>('idle')
   
   // NEW: Zoom controls (critical for S24 macro focus!)
   const [zoomSupported, setZoomSupported] = useState(false)
@@ -96,12 +105,37 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
   const [zoomMax, setZoomMax] = useState<number>(1.0)
   const [zoomStep, setZoomStep] = useState<number>(0.1)
 
-  // Play beep sound on successful scan
-  const playBeep = () => {
-    if (!soundEnabled) return
+  // ✅ Improved beep sound - reliable playback for every successful scan
+  const playBeep = async () => {
+    if (!soundEnabled) {
+      console.log('🔇 Beep disabled by user')
+      return
+    }
+    
+    // ✅ Prevent beep spam (minimum 100ms between beeps)
+    const now = Date.now()
+    if (now - lastBeepTimeRef.current < 100) {
+      console.log('⏸️ Beep throttled (too soon)')
+      return
+    }
+    lastBeepTimeRef.current = now
     
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      // ✅ Reuse AudioContext or create new one if needed
+      let audioContext = audioContextRef.current
+      
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        audioContextRef.current = audioContext
+      }
+      
+      // ✅ Resume AudioContext if suspended (browser autoplay policy)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume()
+        console.log('🔊 AudioContext resumed')
+      }
+      
+      // ✅ Create new oscillator for each beep (prevents conflicts)
       const oscillator = audioContext.createOscillator()
       const gainNode = audioContext.createGain()
       
@@ -111,13 +145,18 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       oscillator.frequency.value = 800
       oscillator.type = 'sine'
       
+      // ✅ Clear, audible beep (slightly longer for better audibility)
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15)
       
       oscillator.start(audioContext.currentTime)
-      oscillator.stop(audioContext.currentTime + 0.1)
+      oscillator.stop(audioContext.currentTime + 0.15)
+      
+      console.log('🔊 Beep played successfully')
     } catch (err) {
-      console.warn('Could not play beep:', err)
+      console.error('❌ Could not play beep:', err)
+      // ✅ Fallback: Try to recreate AudioContext on next attempt
+      audioContextRef.current = null
     }
   }
 
@@ -220,6 +259,16 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
     
     videoTrackRef.current = null
     confirmationRef.current = null
+    scanBufferRef.current = null // ✅ Reset scan buffer on stop
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current)
+      idleTimeoutRef.current = null
+    }
+    // ✅ Cleanup AudioContext on stop (optional - can keep it for faster beeps)
+    // audioContextRef.current?.close().catch(() => {})
+    // audioContextRef.current = null
+    lastBeepTimeRef.current = 0 // ✅ Reset beep throttle
+    setScanStatus('idle') // ✅ Reset visual feedback on stop
     
     // Reset UI state
     setIsScanning(false)
@@ -251,10 +300,30 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
     console.log('✅ Scanner cleanup complete')
   }
 
+  // ✅ Initialize AudioContext on first user interaction (unlock browser audio)
+  const initializeAudio = () => {
+    if (!audioContextRef.current && soundEnabled) {
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        audioContextRef.current = audioContext
+        // ✅ Resume immediately to unlock audio (browser autoplay policy)
+        audioContext.resume().catch(() => {
+          // Silent fail - will retry on first beep
+        })
+        console.log('🔊 AudioContext initialized')
+      } catch (err) {
+        console.warn('Could not initialize AudioContext:', err)
+      }
+    }
+  }
+
   // Load available cameras
   const loadCameras = async () => {
     setIsLoading(true)
     setError(null)
+    
+    // ✅ Initialize audio when scanner opens (user interaction)
+    initializeAudio()
     
     try {
       console.log('📷 Loading available cameras...')
@@ -328,6 +397,12 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
     setIsLoading(true)
     setError(null)
     lastScanRef.current = 0
+    scanBufferRef.current = null // ✅ Reset scan buffer on start
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current)
+      idleTimeoutRef.current = null
+    }
+    setScanStatus('idle') // ✅ Reset visual feedback on start
     
     try {
       console.log(`🚀 Starting OPTIMIZED scanner with camera: ${cameraId}`)
@@ -352,8 +427,9 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       scannerRef.current = scanner
       
       // ✨ OPTIMIZATION 2 & 3: High Resolution + Advanced Constraints
+      const isContinuous = continuousModeRef.current
       const config = {
-        fps: 5, // Lower FPS for sharper focus
+        fps: isContinuous ? 10 : 5, // ✅ Higher FPS (10) for continuous mode, lower (5) for single scan
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
         disableFlip: false,
@@ -378,8 +454,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
         (decodedText, decodedResult) => {
           const now = Date.now()
           
-          // Quick debounce (prevent spam within 200ms)
-          if (now - lastScanRef.current < 200) {
+          // ✅ OPTIMIZED DEBOUNCE: Shorter for continuous mode (100ms) vs single scan (200ms)
+          const isContinuous = continuousModeRef.current
+          const debounceMs = isContinuous ? 100 : 200
+          if (now - lastScanRef.current < debounceMs) {
             return
           }
           lastScanRef.current = now
@@ -403,7 +481,69 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
             }
           }
           
-          // PRESERVED: DOUBLE-SCAN CONFIRMATION (Anti-Blur Protection!)
+          // ✅ CONTINUOUS MODE: Fast 2-Frame Validation (prevents ghost reads from motion blur)
+          if (isContinuous) {
+            const buffer = scanBufferRef.current
+            
+            // Clear any existing idle timeout (barcode detected)
+            if (idleTimeoutRef.current) {
+              clearTimeout(idleTimeoutRef.current)
+              idleTimeoutRef.current = null
+            }
+            
+            // Check if this matches the previous scan
+            if (buffer && buffer.barcode === decodedText) {
+              // Same code detected again - increment counter
+              buffer.count += 1
+              
+              // ✅ VALIDATION: Only emit if we've seen this code in 2 consecutive frames
+              if (buffer.count >= 2) {
+                console.log(`✅✅ Continuous mode: Validated (${buffer.count} frames) - ${decodedText}`)
+                
+                // ✅ Visual feedback: Success (green flash)
+                setScanStatus('success')
+                
+                // ✅ Only beep and emit when validated (prevents false positives)
+                // ✅ Play beep asynchronously to ensure it's not blocked
+                playBeep().catch(err => {
+                  console.warn('Beep playback failed:', err)
+                })
+                onScanSuccessRef.current(decodedText)
+                
+                // Reset buffer for next scan (allow new code to be detected)
+                scanBufferRef.current = null
+                // Reset debounce timer for next scan
+                lastScanRef.current = now
+                
+                // Reset to idle after brief success flash (500ms)
+                setTimeout(() => {
+                  setScanStatus('idle')
+                  // Set timeout to reset to idle if no barcode detected for 1 second
+                  idleTimeoutRef.current = setTimeout(() => {
+                    setScanStatus('idle')
+                  }, 1000)
+                }, 500)
+              } else {
+                // Not enough frames yet - wait for more
+                // ✅ Visual feedback: Still detecting (keep yellow)
+                setScanStatus('detecting')
+                console.log(`⏳ Continuous mode: Frame ${buffer.count}/2 - ${decodedText}`)
+              }
+            } else {
+              // Different code or first detection - reset buffer
+              scanBufferRef.current = {
+                barcode: decodedText,
+                count: 1,
+              }
+              // ✅ Visual feedback: First frame detected (yellow)
+              setScanStatus('detecting')
+              console.log(`📊 Continuous mode: First frame detected - ${decodedText}`)
+            }
+            
+            return // Don't proceed to double-scan logic
+          }
+          
+          // ✅ SINGLE SCAN MODE: Double-scan confirmation (Anti-Blur Protection!)
           const previousScan = confirmationRef.current
           
           // Check if we have a previous scan within last 2 seconds
@@ -413,34 +553,37 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               // ✅ CONFIRMED! Same barcode scanned twice - HIGH CONFIDENCE!
               console.log(`✅✅ CONFIRMED! Barcode validated twice: ${decodedText}`)
               
-              playBeep()
+              // ✅ Visual feedback: Success (green flash)
+              setScanStatus('success')
+              
+              // ✅ Play beep asynchronously to ensure it's not blocked
+              playBeep().catch(err => {
+                console.warn('Beep playback failed:', err)
+              })
               toast.success(`Barcode confirmed: ${decodedText}`)
               
               // Reset confirmation
               confirmationRef.current = null
               
-              // Notify parent (always)
+              // Notify parent
               onScanSuccessRef.current(decodedText)
               
-              // In continuous mode, keep scanning; otherwise stop
-              if (continuousMode) {
-                // Reset state for next scan but keep scanner running
-                lastScanRef.current = 0
-                console.log('🔄 Continuous mode: Scanner stays open for next scan')
-              } else {
-                // Stop scanner (default behavior for Inventory flow)
-                stopScanning()
-              }
+              // Stop scanner (single scan mode)
+              stopScanning()
             } else {
               // ⚠️ DIFFERENT barcode - reset and start fresh
               console.log(`⚠️ Different barcode detected. Previous: ${previousScan.barcode}, New: ${decodedText}`)
               confirmationRef.current = { barcode: decodedText, timestamp: now }
+              // ✅ Visual feedback: Detecting (yellow)
+              setScanStatus('detecting')
               toast.info('Hold steady... confirming scan')
             }
           } else {
             // First scan or timeout - save and wait for confirmation
             console.log(`📊 First scan detected: ${decodedText} (${formatName}) - waiting for confirmation...`)
             confirmationRef.current = { barcode: decodedText, timestamp: now }
+            // ✅ Visual feedback: Detecting (yellow)
+            setScanStatus('detecting')
             toast.info('Hold steady... confirming scan')
           }
         },
@@ -614,6 +757,34 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                 display: isLoading || error ? 'none' : 'block'
               }}
             />
+
+            {/* ✅ Visual Reticle Overlay (Aiming Feedback) */}
+            {isScanning && !error && !isLoading && (
+              <div 
+                className={`absolute inset-0 pointer-events-none z-25 transition-all duration-200 ${
+                  scanStatus === 'idle' 
+                    ? 'border-4 border-white/50' 
+                    : scanStatus === 'detecting' 
+                    ? 'border-4 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)]' 
+                    : 'border-4 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.7)]'
+                }`}
+                style={{
+                  borderRadius: '8px',
+                }}
+              >
+                {/* Status Badge (Top Center) */}
+                {scanStatus === 'detecting' && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-400/90 text-yellow-900 px-4 py-2 rounded-full text-sm font-semibold shadow-lg animate-pulse">
+                    Detecting...
+                  </div>
+                )}
+                {scanStatus === 'success' && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                    ✓ Scanned
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Loading Overlay */}
             {isLoading && !error && (

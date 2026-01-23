@@ -8,10 +8,14 @@ export const dynamic = 'force-dynamic'
 /**
  * Unified barcode lookup API route
  * 
- * Flow:
+ * Waterfall Strategy (sequential lookup until found):
  * 1. Check local Prisma database first (user's products)
- * 2. If not found, query external APIs (OpenFoodFacts, UPCitemdb, etc.)
- * 3. Return standardized ProductMetadata object
+ * 2. If not found, query OpenFoodFacts (Food & Beverages)
+ * 3. If not found, query OpenBeautyFacts (Cosmetics & Personal Care)
+ * 4. If not found, query OpenPetFoodFacts (Pet Food & Supplies)
+ * 5. If not found, query OpenProductsFacts (Household products)
+ * 6. If not found, query UPCitemdb (Global database - fallback)
+ * 7. Return standardized ProductMetadata object or "Not Found"
  * 
  * GET /api/products/fetch-by-barcode?barcode={barcode}
  */
@@ -22,7 +26,7 @@ interface ProductMetadata {
   imageUrl: string | null
   found: boolean
   barcode: string
-  source?: 'local' | 'food' | 'beauty' | 'products' // 'local' = from our DB, others = external APIs
+  source?: 'local' | 'food' | 'beauty' | 'pet' | 'products' // 'local' = from our DB, others = external APIs
   categoryId?: string | null // Only present if found in local DB
 }
 
@@ -59,7 +63,7 @@ interface UPCItemDBResponse {
  */
 async function fetchFromOpenFoodFacts(barcode: string): Promise<ProductMetadata | null> {
   try {
-    const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`
+    const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
       signal: AbortSignal.timeout(5000),
@@ -97,7 +101,7 @@ async function fetchFromOpenFoodFacts(barcode: string): Promise<ProductMetadata 
  */
 async function fetchFromOpenBeautyFacts(barcode: string): Promise<ProductMetadata | null> {
   try {
-    const url = `https://world.openbeautyfacts.org/api/v2/product/${barcode}.json`
+    const url = `https://world.openbeautyfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
       signal: AbortSignal.timeout(5000),
@@ -130,11 +134,49 @@ async function fetchFromOpenBeautyFacts(barcode: string): Promise<ProductMetadat
 }
 
 /**
+ * Fetch from Open Pet Food Facts (Pet Food & Supplies)
+ */
+async function fetchFromOpenPetFoodFacts(barcode: string): Promise<ProductMetadata | null> {
+  try {
+    const url = `https://world.openpetfoodfacts.org/api/v0/product/${barcode}.json`
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
+      signal: AbortSignal.timeout(5000),
+    })
+
+    if (!response.ok) return null
+
+    const data: OpenFoodFactsResponse = await response.json()
+    if (data.status !== 1 || !data.product) return null
+
+    const product = data.product
+    const name = product.product_name_en || product.product_name || product.generic_name || ''
+    if (!name) return null
+
+    const descriptionParts: string[] = []
+    if (product.brands) descriptionParts.push(`Brand: ${product.brands}`)
+    if (product.quantity) descriptionParts.push(`Quantity: ${product.quantity}`)
+    if (product.categories) descriptionParts.push(`Categories: ${product.categories}`)
+
+    return {
+      name: name.trim(),
+      description: descriptionParts.join(' | ').trim(),
+      imageUrl: product.image_front_url || product.image_url || product.image_small_url || null,
+      found: true,
+      barcode,
+      source: 'pet',
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Fetch from Open Products Facts (Household products)
  */
 async function fetchFromOpenProductsFacts(barcode: string): Promise<ProductMetadata | null> {
   try {
-    const url = `https://world.openproductsfacts.org/api/v2/product/${barcode}.json`
+    const url = `https://world.openproductsfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
       signal: AbortSignal.timeout(5000),
@@ -293,36 +335,45 @@ export async function GET(request: NextRequest) {
       } as ProductMetadata)
     }
 
-    // ✅ STEP 2: Not found locally - query external APIs
-    console.log(`[Fetch By Barcode] Not in local DB, querying external APIs...`)
+    // ✅ STEP 2: Not found locally - query external APIs in waterfall order
+    console.log(`[Fetch By Barcode] Not in local DB, querying external APIs (waterfall)...`)
 
-    // Try APIs in parallel for speed
-    const [foodResult, beautyResult, productsResult, upcResult] = await Promise.allSettled([
-      fetchFromOpenFoodFacts(cleanBarcode),
-      fetchFromOpenBeautyFacts(cleanBarcode),
-      fetchFromOpenProductsFacts(cleanBarcode),
-      fetchFromUPCItemDB(cleanBarcode),
-    ])
-
-    // Check results in priority order
-    if (foodResult.status === 'fulfilled' && foodResult.value?.found) {
+    // Waterfall strategy: Check each API sequentially until we find a match
+    // This is more efficient than parallel calls when we expect early success
+    
+    // Step 2.1: Check OpenFoodFacts (Food & Beverages)
+    const foodResult = await fetchFromOpenFoodFacts(cleanBarcode)
+    if (foodResult?.found) {
       console.log(`[Fetch By Barcode] Found in OpenFoodFacts`)
-      return NextResponse.json(foodResult.value)
+      return NextResponse.json(foodResult)
     }
 
-    if (beautyResult.status === 'fulfilled' && beautyResult.value?.found) {
+    // Step 2.2: Check OpenBeautyFacts (Cosmetics & Personal Care)
+    const beautyResult = await fetchFromOpenBeautyFacts(cleanBarcode)
+    if (beautyResult?.found) {
       console.log(`[Fetch By Barcode] Found in Open Beauty Facts`)
-      return NextResponse.json(beautyResult.value)
+      return NextResponse.json(beautyResult)
     }
 
-    if (productsResult.status === 'fulfilled' && productsResult.value?.found) {
+    // Step 2.3: Check OpenPetFoodFacts (Pet Food & Supplies)
+    const petResult = await fetchFromOpenPetFoodFacts(cleanBarcode)
+    if (petResult?.found) {
+      console.log(`[Fetch By Barcode] Found in Open Pet Food Facts`)
+      return NextResponse.json(petResult)
+    }
+
+    // Step 2.4: Check OpenProductsFacts (Household products)
+    const productsResult = await fetchFromOpenProductsFacts(cleanBarcode)
+    if (productsResult?.found) {
       console.log(`[Fetch By Barcode] Found in Open Products Facts`)
-      return NextResponse.json(productsResult.value)
+      return NextResponse.json(productsResult)
     }
 
-    if (upcResult.status === 'fulfilled' && upcResult.value?.found) {
+    // Step 2.5: Check UPCitemdb (Global database - fallback)
+    const upcResult = await fetchFromUPCItemDB(cleanBarcode)
+    if (upcResult?.found) {
       console.log(`[Fetch By Barcode] Found in UPCitemdb`)
-      return NextResponse.json(upcResult.value)
+      return NextResponse.json(upcResult)
     }
 
     // Not found in any database (local or external)

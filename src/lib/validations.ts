@@ -1,5 +1,135 @@
 import { z } from 'zod'
 
+export const invoiceStatusSchema = z.enum(['DRAFT', 'PAID', 'UNPAID'])
+
+const MONEY_INPUT_PATTERN = /^-?\d+(\.\d{1,2})?$/
+const QUANTITY_MIN = 1
+const QUANTITY_MAX = 2147483647
+const UNIT_PRICE_MIN = 0
+const MONEY_MAX = 99999999.99
+const DISCOUNT_MIN = 0
+const DISCOUNT_MAX = 100
+
+function normalizeMoneyInput(value: number | string): string | null {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return null
+    }
+    return String(value)
+  }
+
+  const trimmed = value.trim()
+  return MONEY_INPUT_PATTERN.test(trimmed) || /^-?\d+\.\d+$/.test(trimmed) ? trimmed : null
+}
+
+function assertMoneyInput(
+  value: number | string,
+  ctx: z.RefinementCtx,
+  field: 'unitPrice' | 'discount',
+  min: number,
+  max: number
+) {
+  const text = normalizeMoneyInput(value)
+  if (!text) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${field} must be a valid decimal`,
+    })
+    return
+  }
+
+  if (!MONEY_INPUT_PATTERN.test(text)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${field} cannot have more than 2 decimal places`,
+    })
+    return
+  }
+
+  const amount = Number(text)
+  if (field === 'unitPrice' && amount < 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'unitPrice must be greater than or equal to 0',
+    })
+  }
+  if (amount < min || amount > max) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${field} is outside the supported range`,
+    })
+  }
+}
+
+const unitPriceSchema = z
+  .union([z.number(), z.string()])
+  .superRefine((value, ctx) => {
+    assertMoneyInput(value, ctx, 'unitPrice', UNIT_PRICE_MIN, MONEY_MAX)
+  })
+
+const discountSchema = z
+  .union([z.number(), z.string()])
+  .optional()
+  .superRefine((value, ctx) => {
+    if (value === undefined) {
+      return
+    }
+    assertMoneyInput(value, ctx, 'discount', DISCOUNT_MIN, DISCOUNT_MAX)
+  })
+  .transform((value) => (value === undefined ? 0 : value))
+
+const dueDateSchema = z.string().min(1, 'dueDate is required').superRefine((value, ctx) => {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'dueDate must be a valid date',
+    })
+  }
+})
+
+export const invoiceItemWriteSchema = z.object({
+  productId: z.string().min(1, 'productId must be a non-empty string').nullable().optional(),
+  productName: z.string().trim().min(1, 'productName is required').max(255),
+  quantity: z
+    .number({ invalid_type_error: 'quantity must be a number' })
+    .int('quantity must be an integer')
+    .gte(QUANTITY_MIN, 'quantity must be a positive integer')
+    .lte(QUANTITY_MAX, 'quantity is outside the supported range'),
+  unitPrice: unitPriceSchema,
+  discount: discountSchema,
+})
+
+export const invoiceWriteSchema = z.object({
+  invoiceNumber: z.string().trim().min(1, 'invoiceNumber is required').max(255),
+  dueDate: dueDateSchema,
+  clientName: z.string().trim().min(1, 'clientName is required').max(255),
+  clientAddress: z.string().max(500).nullable().optional(),
+  status: invoiceStatusSchema.optional(),
+  items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
+})
+
+export const invoicePatchSchema = z
+  .object({
+    status: invoiceStatusSchema.optional(),
+    invoiceNumber: z.string().trim().min(1, 'invoiceNumber is required').max(255).optional(),
+    dueDate: dueDateSchema.optional(),
+    clientName: z.string().trim().min(1, 'clientName is required').max(255).optional(),
+    clientAddress: z.string().max(500).nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      value.status !== undefined ||
+      value.invoiceNumber !== undefined ||
+      value.dueDate !== undefined ||
+      value.clientName !== undefined ||
+      value.clientAddress !== undefined,
+    { message: 'At least one supported field is required' }
+  )
+
+export type InvoiceWriteInput = z.infer<typeof invoiceWriteSchema>
+export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
+
 // Product validations
 export const productSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),

@@ -1,8 +1,35 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import {
+  InvoiceClientError,
+  assertOwnedProducts,
+  computeInvoiceAmounts,
+  invoiceErrorResponse,
+  parseInvoicePatchBody,
+  parseInvoiceWriteBody,
+  parseJsonBody,
+} from '@/lib/invoice-service'
 
-// GET: Fetch a single invoice by ID
+const invoiceInclude = {
+  items: {
+    include: {
+      product: {
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          price: true,
+        },
+      },
+    },
+    orderBy: {
+      id: 'asc' as const,
+    },
+  },
+  profile: true,
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -17,7 +44,6 @@ export async function GET(
       )
     }
 
-    // Get user's profile
     const profile = await prisma.profile.findUnique({
       where: { clerkUserId: userId },
     })
@@ -31,30 +57,12 @@ export async function GET(
 
     const { id } = await context.params
 
-    // Fetch invoice with items
     const invoice = await prisma.invoice.findFirst({
       where: {
         id,
         profileId: profile.id,
       },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                sku: true,
-                price: true,
-              },
-            },
-          },
-          orderBy: {
-            id: 'asc',
-          },
-        },
-        profile: true,
-      },
+      include: invoiceInclude,
     })
 
     if (!invoice) {
@@ -74,7 +82,6 @@ export async function GET(
   }
 }
 
-// PUT: Full invoice update (including items)
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -101,25 +108,10 @@ export async function PUT(
     }
 
     const { id } = await context.params
-    const body = await request.json()
+    const body = await parseJsonBody(request)
+    const parsed = parseInvoiceWriteBody(body)
+    const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
 
-    // ✅ Validate required fields
-    if (!body.invoiceNumber || !body.dueDate || !body.clientName) {
-      return NextResponse.json(
-        { error: 'Missing required fields: invoiceNumber, dueDate, or clientName' },
-        { status: 400 }
-      )
-    }
-
-    // ✅ Validate items array
-    if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json(
-        { error: 'Invoice must have at least one item' },
-        { status: 400 }
-      )
-    }
-
-    // Check if invoice exists and belongs to user
     const existingInvoice = await prisma.invoice.findFirst({
       where: {
         id,
@@ -134,92 +126,47 @@ export async function PUT(
       )
     }
 
-    // ✅ Calculate total amount from items (server-side validation)
-    const totalAmount = body.items.reduce((sum: number, item: any) => {
-      const quantity = Number(item.quantity) || 0
-      const unitPrice = Number(item.unitPrice) || 0
-      const discount = Number(item.discount) || 0
-      const subtotal = quantity * unitPrice
-      const discountedTotal = subtotal * (1 - discount / 100)
-      return sum + discountedTotal
-    }, 0)
-
-    // ✅ Update invoice and replace all items in a transaction
     const updatedInvoice = await prisma.$transaction(async (tx) => {
-      // Step 1: Delete all existing items for this invoice
+      await assertOwnedProducts(profile.id, items, tx)
+
       await tx.invoiceItem.deleteMany({
         where: { invoiceId: id },
       })
 
-      // Step 2: Update invoice with new data and create new items
-      return await tx.invoice.update({
+      return tx.invoice.update({
         where: { id },
         data: {
-          invoiceNumber: body.invoiceNumber,
-          dueDate: new Date(body.dueDate),
-          clientName: body.clientName,
-          clientAddress: body.clientAddress || null,
-          status: body.status || 'DRAFT',
+          invoiceNumber: parsed.invoiceNumber,
+          dueDate: new Date(parsed.dueDate),
+          clientName: parsed.clientName,
+          clientAddress: parsed.clientAddress || null,
           totalAmount,
           items: {
-            create: body.items.map((item: any) => ({
-              productId: item.productId || null,
+            create: items.map((item) => ({
+              productId: item.productId,
               productName: item.productName,
-              quantity: Number(item.quantity),
-              unitPrice: Number(item.unitPrice),
-              discount: Number(item.discount) || 0,
-              total: Number(item.total),
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discount: item.discount,
+              total: item.total,
             })),
           },
         },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  sku: true,
-                  price: true,
-                },
-              },
-            },
-            orderBy: {
-              id: 'asc',
-            },
-          },
-          profile: true,
-        },
+        include: invoiceInclude,
       })
     })
 
     return NextResponse.json(updatedInvoice)
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof InvoiceClientError || (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError')) {
+      return invoiceErrorResponse(error)
+    }
+
     console.error('Error updating invoice:', error)
-    
-    // ✅ Provide more specific error messages
-    if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'Invoice number already exists' },
-        { status: 400 }
-      )
-    }
-    
-    if (error.code === 'P2025') {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: error.message || 'Failed to update invoice. Please check your data and try again.' },
-      { status: 500 }
-    )
+    return invoiceErrorResponse(error)
   }
 }
 
-// PATCH: Update invoice status
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -234,7 +181,6 @@ export async function PATCH(
       )
     }
 
-    // Get user's profile
     const profile = await prisma.profile.findUnique({
       where: { clerkUserId: userId },
     })
@@ -247,9 +193,9 @@ export async function PATCH(
     }
 
     const { id } = await context.params
-    const body = await request.json()
+    const body = await parseJsonBody(request)
+    const parsed = parseInvoicePatchBody(body)
 
-    // Check if invoice exists and belongs to user
     const existingInvoice = await prisma.invoice.findFirst({
       where: {
         id,
@@ -264,15 +210,14 @@ export async function PATCH(
       )
     }
 
-    // Update invoice
     const updatedInvoice = await prisma.invoice.update({
       where: { id },
       data: {
-        ...(body.status && { status: body.status as 'DRAFT' | 'PAID' | 'UNPAID' }),
-        ...(body.invoiceNumber && { invoiceNumber: body.invoiceNumber }),
-        ...(body.dueDate && { dueDate: new Date(body.dueDate) }),
-        ...(body.clientName && { clientName: body.clientName }),
-        ...(body.clientAddress !== undefined && { clientAddress: body.clientAddress }),
+        ...(parsed.status && { status: parsed.status }),
+        ...(parsed.invoiceNumber && { invoiceNumber: parsed.invoiceNumber }),
+        ...(parsed.dueDate && { dueDate: new Date(parsed.dueDate) }),
+        ...(parsed.clientName && { clientName: parsed.clientName }),
+        ...(parsed.clientAddress !== undefined && { clientAddress: parsed.clientAddress }),
       },
       include: {
         items: {
@@ -292,15 +237,15 @@ export async function PATCH(
 
     return NextResponse.json(updatedInvoice)
   } catch (error) {
+    if (error instanceof InvoiceClientError || (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError')) {
+      return invoiceErrorResponse(error)
+    }
+
     console.error('Error updating invoice:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return invoiceErrorResponse(error)
   }
 }
 
-// DELETE: Delete an invoice
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -315,7 +260,6 @@ export async function DELETE(
       )
     }
 
-    // Get user's profile
     const profile = await prisma.profile.findUnique({
       where: { clerkUserId: userId },
     })
@@ -329,7 +273,6 @@ export async function DELETE(
 
     const { id } = await context.params
 
-    // Check if invoice exists and belongs to user
     const existingInvoice = await prisma.invoice.findFirst({
       where: {
         id,
@@ -344,7 +287,6 @@ export async function DELETE(
       )
     }
 
-    // Delete invoice (items will be deleted via cascade)
     await prisma.invoice.delete({
       where: { id },
     })

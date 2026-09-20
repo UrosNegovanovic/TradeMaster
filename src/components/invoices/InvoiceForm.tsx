@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, Loader2 } from 'lucide-react'
 import { Product } from '@/types/product'
-import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
-import { Decimal } from '@prisma/client/runtime/library'
+import { InvoiceCreateInput } from '@/types/invoice'
+import { invoiceWriteSchema } from '@/lib/validations'
 
 interface InvoiceFormProps {
   products: Product[]
@@ -40,6 +40,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
   const [items, setItems] = useState<InvoiceItemRow[]>([
     { id: '1', productId: null, productName: '', quantity: 1, unitPrice: 0, discount: 0, total: 0 },
   ])
+  const [formError, setFormError] = useState<string | null>(null)
 
   // ✅ Populate form with initial data for edit mode
   useEffect(() => {
@@ -128,35 +129,41 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
 
-    // Validation
-    if (!invoiceNumber.trim() || !clientName.trim() || !dueDate) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    const validItems = items.filter(
-      (item) => item.productName.trim() && item.quantity > 0 && item.unitPrice > 0 && item.discount >= 0 && item.discount <= 100
-    )
-
-    if (validItems.length === 0) {
-      alert('Please add at least one valid item')
-      return
-    }
-
-    const formData: InvoiceCreateInput = {
+    const payload = {
       invoiceNumber: invoiceNumber.trim(),
       dueDate,
       clientName: clientName.trim(),
       clientAddress: clientAddress.trim() || undefined,
-      status: InvoiceStatus.DRAFT,
-      items: validItems.map((item) => ({
+      items: items.map((item) => ({
         productId: item.productId || null,
         productName: item.productName.trim(),
-        quantity: Number(item.quantity),
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount,
+      })),
+    }
+
+    const validation = invoiceWriteSchema.safeParse(payload)
+    if (!validation.success) {
+      const firstIssue = validation.error.errors[0]
+      setFormError(firstIssue?.message || 'Please correct the invalid invoice items')
+      return
+    }
+
+    const formData: InvoiceCreateInput = {
+      invoiceNumber: validation.data.invoiceNumber,
+      dueDate: validation.data.dueDate,
+      clientName: validation.data.clientName,
+      clientAddress: validation.data.clientAddress || undefined,
+      items: validation.data.items.map((item) => ({
+        productId: item.productId ?? null,
+        productName: item.productName,
+        quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
-        discount: Number(item.discount) || 0,
-        total: Number(item.total),
+        discount: Number(item.discount),
+        total: 0,
       })),
     }
 
@@ -348,6 +355,12 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
           </div>
         </CardContent>
       </Card>
+
+      {formError && (
+        <p className="text-sm text-destructive" role="alert">
+          {formError}
+        </p>
+      )}
 
       {/* Submit Button */}
       <div className="flex justify-end gap-4">

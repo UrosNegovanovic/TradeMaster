@@ -1,8 +1,15 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import {
+  InvoiceClientError,
+  assertOwnedProducts,
+  computeInvoiceAmounts,
+  invoiceErrorResponse,
+  parseInvoiceWriteBody,
+  parseJsonBody,
+} from '@/lib/invoice-service'
 
-// GET: Fetch all invoices for the current user
 export async function GET() {
   try {
     const { userId } = await auth()
@@ -14,7 +21,6 @@ export async function GET() {
       )
     }
 
-    // Get user's profile
     const profile = await prisma.profile.findUnique({
       where: { clerkUserId: userId },
     })
@@ -26,7 +32,6 @@ export async function GET() {
       )
     }
 
-    // Fetch all invoices for this profile
     const invoices = await prisma.invoice.findMany({
       where: { profileId: profile.id },
       include: {
@@ -57,7 +62,6 @@ export async function GET() {
   }
 }
 
-// POST: Create a new invoice
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -69,7 +73,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's profile
     const profile = await prisma.profile.findUnique({
       where: { clerkUserId: userId },
     })
@@ -81,66 +84,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const {
-      invoiceNumber,
-      dueDate,
-      clientName,
-      clientAddress,
-      status = 'DRAFT',
-      items,
-    } = body
+    const body = await parseJsonBody(request)
+    const parsed = parseInvoiceWriteBody(body)
+    const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
 
-    // Validate required fields
-    if (!invoiceNumber || !dueDate || !clientName || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-
-    // Calculate total amount from items (with discount)
-    const totalAmount = items.reduce((sum: number, item: any) => {
-      const itemTotal = Number(item.quantity) * Number(item.unitPrice)
-      const discount = Number(item.discount || 0)
-      const itemTotalWithDiscount = itemTotal * (1 - discount / 100)
-      return sum + itemTotalWithDiscount
-    }, 0)
-
-    // Create invoice with items in a transaction
     const invoice = await prisma.$transaction(async (tx) => {
-      // Create invoice
+      await assertOwnedProducts(profile.id, items, tx)
+
       const newInvoice = await tx.invoice.create({
         data: {
-          invoiceNumber,
-          dueDate: new Date(dueDate),
-          clientName,
-          clientAddress: clientAddress || null,
-          status: status as 'DRAFT' | 'PAID' | 'UNPAID',
+          invoiceNumber: parsed.invoiceNumber,
+          dueDate: new Date(parsed.dueDate),
+          clientName: parsed.clientName,
+          clientAddress: parsed.clientAddress || null,
+          status: parsed.status ?? 'DRAFT',
           totalAmount,
           profileId: profile.id,
         },
       })
 
-      // Create invoice items
       const invoiceItems = await Promise.all(
-        items.map((item: any) => {
-          const itemSubtotal = Number(item.quantity) * Number(item.unitPrice)
-          const discount = Number(item.discount || 0)
-          const itemTotal = itemSubtotal * (1 - discount / 100)
-          
-          return tx.invoiceItem.create({
+        items.map((item) =>
+          tx.invoiceItem.create({
             data: {
-              quantity: Number(item.quantity),
-              unitPrice: Number(item.unitPrice),
-              discount: discount,
-              total: itemTotal,
-              productName: item.productName || 'Unknown Product',
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discount: item.discount,
+              total: item.total,
+              productName: item.productName,
               invoiceId: newInvoice.id,
-              productId: item.productId || null,
+              productId: item.productId,
             },
           })
-        })
+        )
       )
 
       return {
@@ -151,10 +127,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(invoice, { status: 201 })
   } catch (error) {
+    if (error instanceof InvoiceClientError || (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError')) {
+      return invoiceErrorResponse(error)
+    }
+
     console.error('Error creating invoice:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return invoiceErrorResponse(error)
   }
 }

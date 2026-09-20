@@ -6,7 +6,7 @@ import { InvoiceForm } from '@/components/invoices/InvoiceForm'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -50,7 +50,7 @@ export default function NewInvoicePage() {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       
       // Professional success toast
-      toast.success('Invoice created successfully!', {
+      notify.success('Invoice created', {
         description: `Invoice #${data.invoiceNumber || 'N/A'} has been saved.`,
         duration: 5000,
       })
@@ -58,7 +58,7 @@ export default function NewInvoicePage() {
       router.push('/invoices')
     },
     onError: (error: Error) => {
-      toast.error('Failed to create invoice', {
+      notify.error('Failed to create invoice', {
         description: error.message || 'An unexpected error occurred',
         duration: 5000,
       })

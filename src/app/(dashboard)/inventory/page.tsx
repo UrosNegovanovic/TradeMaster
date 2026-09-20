@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Plus, Search } from 'lucide-react'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 import {
   Dialog,
   DialogContent,
@@ -185,15 +186,14 @@ export default function InventoryPage() {
           />
         ), {
           duration: 4000,
+          unstyled: true,
         })
         
-        // Show additional info about stock update
-        toast.success('Stock updated!', {
+        notify.success('Stock updated', {
           description: `Added ${response.quantityAdded || 0} units. Total stock: ${response.quantity}`,
           duration: 4000,
         })
       } else {
-        // Show product created toast (default)
         toast.custom((id) => (
           <ProductActionToast
             variant="create"
@@ -206,11 +206,12 @@ export default function InventoryPage() {
           />
         ), {
           duration: 4000,
+          unstyled: true,
         })
       }
     },
     onError: (error: Error) => {
-      toast.error('Failed to create product', {
+      notify.error('Failed to create product', {
         description: error.message || 'An error occurred while creating the product.',
       })
     },
@@ -224,10 +225,12 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setEditingProduct(null)
-      toast.success('Product updated successfully!')
+      notify.success('Product updated', {
+        description: 'Inventory changes have been saved.',
+      })
     },
     onError: (error: Error) => {
-      toast.error('Failed to update product', {
+      notify.error('Failed to update product', {
         description: error.message || 'An error occurred while updating the product.',
       })
     },
@@ -253,10 +256,11 @@ export default function InventoryPage() {
         />
       ), {
         duration: 4000,
+        unstyled: true,
       })
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete product', {
+      notify.error('Failed to delete product', {
         description: error.message || 'An error occurred while deleting the product.',
       })
     },

@@ -8,6 +8,7 @@ import { BarcodeScanner } from '@/components/inventory/BarcodeScanner'
 import { ProductActionToast } from '@/components/inventory/ProductActionToast'
 import { isValidBarcode } from '@/lib/openfoodfacts'
 import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 import { useQueryClient } from '@tanstack/react-query'
 
 interface ProductMetadata {
@@ -119,7 +120,7 @@ export function QuickScanButton() {
   const handleScanSuccess = async (barcode: string) => {
     // Validate barcode format FIRST
     if (!isValidBarcode(barcode)) {
-      toast.error('Nevažeći barkod', {
+      notify.error('Nevažeći barkod', {
         description: 'Skenirani barkod je prekratak ili nevažeći. Pokušajte ponovo.',
         duration: 2000,
       })
@@ -323,12 +324,12 @@ export function QuickScanButton() {
               onDismiss={() => toast.dismiss(id)}
             />
           ), {
-            id: SUCCESS_TOAST_ID, // ✅ Fixed ID ensures new scans replace old toast instantly
-            duration: 3000, // ✅ Longer duration for better visibility
+            id: SUCCESS_TOAST_ID,
+            duration: 3000,
+            unstyled: true,
           })
         } else {
-          // Save failed but product was found
-          toast.error('Greška pri čuvanju', {
+          notify.error('Greška pri čuvanju', {
             description: 'Proizvod je pronađen ali nije mogao biti sačuvan. Pokušajte ponovo.',
             duration: 3000,
           })
@@ -340,7 +341,7 @@ export function QuickScanButton() {
       } else {
         // ❌ PRODUCT NOT FOUND: Redirect to Inventory Add Product page
         // ✅ Keep error toast visible (user needs to know why redirect happened)
-        toast.error('Proizvod nije pronađen', {
+        notify.error('Proizvod nije pronađen', {
           description: 'Preusmjeravanje na stranicu za dodavanje proizvoda...',
           duration: 3000,
         })
@@ -364,7 +365,7 @@ export function QuickScanButton() {
     } catch (error) {
       console.error('Error in continuous scan:', error)
       
-      toast.error('Greška pri skeniranju', {
+      notify.error('Greška pri skeniranju', {
         description: 'Neuspešna obrada barkoda. Pokušajte ponovo.',
         duration: 3000,
       })

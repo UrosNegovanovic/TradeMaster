@@ -25,7 +25,7 @@ import { Product } from '@/types/product'
 import { StockOutForm } from '@/components/warehouse/StockOutForm'
 import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
 import { MovementType } from '@prisma/client'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 import Image from 'next/image'
 
 // Fetch products for the user
@@ -113,12 +113,12 @@ export default function WarehousePage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
-      toast.success('Stock movement registered', {
+      notify.success('Stock movement registered', {
         description: `${data.quantity} units removed from ${data.product.name}`,
       })
     },
     onError: (error: Error) => {
-      toast.error('Failed to register stock movement', {
+      notify.error('Failed to register stock movement', {
         description: error.message,
       })
     },

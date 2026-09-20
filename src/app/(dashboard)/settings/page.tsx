@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react'
 import React from 'react'
 import { ImageUpload } from '@/components/shared/ImageUpload'
+import { notify } from '@/lib/notify'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -51,11 +52,14 @@ export default function SettingsPage() {
     mutationFn: updateProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      // Simple alert for now - can be replaced with toast library later
-      alert('Profile updated successfully!')
+      notify.success('Profile updated', {
+        description: 'Your company details have been saved.',
+      })
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to update profile')
+      notify.error('Failed to update profile', {
+        description: error.message || 'Please try again.',
+      })
     },
   })
 

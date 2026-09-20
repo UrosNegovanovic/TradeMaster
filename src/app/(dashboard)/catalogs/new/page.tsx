@@ -6,7 +6,7 @@ import { CatalogForm } from '@/components/catalogs/CatalogForm'
 import { Product } from '@/types/product'
 import { CatalogFormData } from '@/lib/validations'
 import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -50,7 +50,7 @@ export default function NewCatalogPage() {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
       
       // Professional success toast
-      toast.success('Catalog generated!', {
+      notify.success('Catalog generated', {
         description: `Your professional PDF catalog "${data.title || 'Untitled'}" is ready.`,
         duration: 5000,
       })
@@ -58,7 +58,7 @@ export default function NewCatalogPage() {
       router.push('/catalogs')
     },
     onError: (error: Error) => {
-      toast.error('Failed to create catalog', {
+      notify.error('Failed to create catalog', {
         description: error.message || 'An unexpected error occurred',
         duration: 5000,
       })

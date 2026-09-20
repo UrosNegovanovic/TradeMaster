@@ -7,7 +7,7 @@ import { Plus, FileText, Trash2, Download, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { Invoice, InvoiceStatus } from '@/types/invoice'
 import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 async function fetchInvoices() {
   const response = await fetch('/api/invoices')
@@ -68,13 +68,13 @@ export default function InvoicesPage() {
     mutationFn: deleteInvoice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      toast.success('Invoice deleted successfully!', {
+      notify.success('Invoice deleted', {
         description: 'The invoice has been removed from your records.',
         duration: 5000,
       })
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete invoice', {
+      notify.error('Failed to delete invoice', {
         description: error.message || 'An unexpected error occurred',
         duration: 5000,
       })

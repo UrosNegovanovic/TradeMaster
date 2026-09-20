@@ -23,6 +23,7 @@ import { ProductActionToast } from './ProductActionToast'
 import { CategorySelect } from './CategorySelect'
 import { fetchProductMetadata, isValidBarcode } from '@/lib/openfoodfacts'
 import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 interface ProductFormProps {
   open: boolean
@@ -97,7 +98,7 @@ export function ProductForm({
   const handleScanSuccess = async (barcode: string) => {
     // Validate barcode format
     if (!isValidBarcode(barcode)) {
-      toast.error('Invalid barcode', {
+      notify.error('Invalid barcode', {
         description: 'The scanned barcode is too short or invalid. Please try again.',
       })
       return
@@ -129,10 +130,10 @@ export function ProductForm({
         />
       ), {
         duration: 2000,
+        unstyled: true,
       })
       
-      // Show additional success message
-      toast.success(`Quantity updated to ${newQuantity}`, {
+      notify.success(`Quantity updated to ${newQuantity}`, {
         description: `Scanned ${barcode} again`,
         duration: 2000,
       })
@@ -186,6 +187,7 @@ export function ProductForm({
             />
           ), {
             duration: 3000,
+            unstyled: true,
           })
           
           setIsFetchingMetadata(false)
@@ -232,9 +234,9 @@ export function ProductForm({
           />
         ), {
           duration: 4000,
+          unstyled: true,
         })
       } else {
-        // Show rich toast for scanned product (not found in database)
         toast.custom((id) => (
           <ProductActionToast
             variant="scan"
@@ -246,9 +248,10 @@ export function ProductForm({
           />
         ), {
           duration: 4000,
+          unstyled: true,
         })
         
-        toast.info('Product not found', {
+        notify.info('Product not found', {
           description: 'Searched 4 databases (food, beauty, household, global). SKU saved - enter details manually.',
           duration: 5000,
         })
@@ -268,9 +271,10 @@ export function ProductForm({
         />
       ), {
         duration: 3000,
+        unstyled: true,
       })
       
-      toast.error('Failed to fetch product info', {
+      notify.error('Failed to fetch product info', {
         description: 'Please enter product details manually.',
       })
     } finally {

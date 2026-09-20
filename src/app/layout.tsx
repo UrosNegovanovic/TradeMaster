@@ -153,11 +153,16 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <Providers>{children}</Providers>
-          <Toaster 
-            position="top-center"
-            richColors
+          <Toaster
+            position="top-right"
+            offset={16}
+            gap={12}
+            visibleToasts={4}
             expand={false}
-            closeButton
+            toastOptions={{
+              unstyled: true,
+              className: 'w-auto bg-transparent p-0 shadow-none border-0',
+            }}
           />
         </body>
       </html>

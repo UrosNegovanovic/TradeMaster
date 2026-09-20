@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Edit, Download, ArrowLeft, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Edit, Download, ArrowLeft, Eye, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { BlobProvider } from '@react-pdf/renderer'
@@ -46,6 +47,16 @@ export default function CatalogDetailsPage() {
       style: 'currency',
       currency: 'RSD',
     }).format(numPrice)
+  }
+
+  const isValidImageUrl = (url: string | null | undefined): boolean => {
+    if (!url || url.trim() === '') return false
+    try {
+      const parsed = new URL(url)
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    } catch {
+      return false
+    }
   }
 
   const formatDiscount = (discount: number | string | { toString(): string }) => {
@@ -305,9 +316,26 @@ export default function CatalogDetailsPage() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex-1">
+                    {isValidImageUrl(product.imageUrl) ? (
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border">
+                        <Image
+                          src={product.imageUrl!}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border bg-muted">
+                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-lg mb-1">
                         {product.name}
                       </h3>

@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Plus, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 interface CategorySelectProps {
   value: string | null
@@ -75,12 +75,12 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
       setIsDialogOpen(false)
       setNewCategoryName('')
       setNewCategoryDescription('')
-      toast.success('Category created successfully!', {
+      notify.success('Category created', {
         description: `"${newCategory.name}" has been added.`,
       })
     },
     onError: (error: Error) => {
-      toast.error('Failed to create category', {
+      notify.error('Failed to create category', {
         description: error.message,
       })
     },
@@ -88,7 +88,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
 
   const handleCreateCategory = () => {
     if (!newCategoryName.trim()) {
-      toast.error('Category name is required')
+      notify.error('Category name is required')
       return
     }
 

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase-client'
+import { notify } from '@/lib/notify'
 import Image from 'next/image'
 
 interface ImageUploadProps {
@@ -42,13 +43,17 @@ export function ImageUpload({
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      notify.error('Invalid file', {
+        description: 'Please select an image file.',
+      })
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB')
+      notify.error('File too large', {
+        description: 'Image size must be less than 5MB.',
+      })
       return
     }
 
@@ -97,7 +102,9 @@ export function ImageUpload({
       }
     } catch (error) {
       console.error('Error uploading file:', error)
-      alert(error instanceof Error ? error.message : 'Failed to upload image')
+      notify.error('Upload failed', {
+        description: error instanceof Error ? error.message : 'Failed to upload image.',
+      })
       setPreview(null)
     } finally {
       setUploading(false)

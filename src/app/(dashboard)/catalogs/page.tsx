@@ -7,6 +7,7 @@ import { Plus, FileText, Trash2, Eye, Edit, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Catalog } from '@/types/catalog'
+import { notify } from '@/lib/notify'
 
 async function fetchCatalogs() {
   const response = await fetch('/api/catalogs')
@@ -44,10 +45,14 @@ export default function CatalogsPage() {
     mutationFn: deleteCatalog,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
-      alert('Catalog deleted successfully!')
+      notify.success('Catalog deleted', {
+        description: 'The catalog has been removed from your records.',
+      })
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to delete catalog')
+      notify.error('Failed to delete catalog', {
+        description: error.message || 'Please try again.',
+      })
     },
   })
 

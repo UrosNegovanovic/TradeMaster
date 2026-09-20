@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { X, Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 // EAN-13 Checksum Validation (Luhn Algorithm) - PRESERVED
 function validateEAN13Checksum(barcode: string): boolean {
@@ -176,7 +176,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       }
     } catch (err) {
       console.error('Failed to toggle torch:', err)
-      toast.error('Could not toggle flashlight')
+      notify.error('Could not toggle flashlight')
     }
   }
 
@@ -560,7 +560,9 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               playBeep().catch(err => {
                 console.warn('Beep playback failed:', err)
               })
-              toast.success(`Barcode confirmed: ${decodedText}`)
+              notify.success('Barcode confirmed', {
+                description: decodedText,
+              })
               
               // Reset confirmation
               confirmationRef.current = null
@@ -576,7 +578,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               confirmationRef.current = { barcode: decodedText, timestamp: now }
               // ✅ Visual feedback: Detecting (yellow)
               setScanStatus('detecting')
-              toast.info('Hold steady... confirming scan')
+              notify.info('Hold steady', {
+                description: 'Confirming scan...',
+                duration: 1800,
+              })
             }
           } else {
             // First scan or timeout - save and wait for confirmation
@@ -584,7 +589,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
             confirmationRef.current = { barcode: decodedText, timestamp: now }
             // ✅ Visual feedback: Detecting (yellow)
             setScanStatus('detecting')
-            toast.info('Hold steady... confirming scan')
+            notify.info('Hold steady', {
+              description: 'Confirming scan...',
+              duration: 1800,
+            })
           }
         },
         (errorMessage) => {

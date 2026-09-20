@@ -8,6 +8,7 @@ import { Product } from '@/types/product'
 import { CatalogWithItems } from '@/types/catalog'
 import { CatalogFormData } from '@/lib/validations'
 import { Loader2 } from 'lucide-react'
+import { notify } from '@/lib/notify'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -65,10 +66,14 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
       queryClient.invalidateQueries({ queryKey: ['catalog', params.id] })
       router.push('/catalogs')
-      alert('Catalog updated successfully!')
+      notify.success('Catalog updated', {
+        description: 'Your catalog changes have been saved.',
+      })
     },
     onError: (error: Error) => {
-      alert(error.message || 'Failed to update catalog')
+      notify.error('Failed to update catalog', {
+        description: error.message || 'Please try again.',
+      })
     },
   })
 

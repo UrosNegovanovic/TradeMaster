@@ -81,7 +81,7 @@ export default function NewInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">New Invoice</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">New Invoice</h1>
           <p className="text-muted-foreground mt-2">
             Create a new invoice
           </p>
@@ -101,7 +101,7 @@ export default function NewInvoicePage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">New Invoice</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">New Invoice</h1>
         <p className="text-muted-foreground mt-2">
           Create a new invoice with selected products
         </p>

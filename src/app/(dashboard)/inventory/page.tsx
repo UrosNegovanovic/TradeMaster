@@ -11,6 +11,7 @@ import { ProductActionToast } from '@/components/inventory/ProductActionToast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
@@ -22,6 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+
+const PRODUCT_LIST_PAGE_SIZE = 10
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -90,6 +93,7 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [scannedData, setScannedData] = useState<Partial<ProductFormData> | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PRODUCT_LIST_PAGE_SIZE)
   const selectedDate = useMemo(
     () => parseLocalYmd(searchParams.get('date')),
     [searchParams]
@@ -169,6 +173,17 @@ export default function InventoryPage() {
 
     return filtered
   }, [products, searchQuery, selectedCategory, selectedDate])
+
+  useEffect(() => {
+    setVisibleCount(PRODUCT_LIST_PAGE_SIZE)
+  }, [searchQuery, selectedCategory, selectedDate])
+
+  const visibleProducts = useMemo(
+    () => filteredProducts.slice(0, visibleCount),
+    [filteredProducts, visibleCount]
+  )
+  const remainingCount = Math.max(0, filteredProducts.length - visibleProducts.length)
+  const nextBatchSize = Math.min(PRODUCT_LIST_PAGE_SIZE, remainingCount)
 
   // Create product mutation (with inventory upsert support)
   const createMutation = useMutation({
@@ -311,30 +326,27 @@ export default function InventoryPage() {
   const isEmptyFilterResults = !isEmptyAssortment && filteredProducts.length === 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Asortiman</h1>
-          <p className="text-muted-foreground mt-2">
-            Svi proizvodi, sa opcionim filterom po datumu
-          </p>
-        </div>
-        <Button onClick={() => setIsFormOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Dodaj proizvod
-        </Button>
-      </div>
+    <div className="space-y-4 lg:space-y-6">
+      <PageHeader
+        title="Asortiman"
+        description="Svi proizvodi, sa opcionim filterom po datumu"
+        action={
+          <Button className="w-full sm:w-auto" onClick={() => setIsFormOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Dodaj proizvod
+          </Button>
+        }
+      />
 
       {/* Search and Filters */}
-      <div className="space-y-4">
-        {/* Search Bar */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="space-y-3">
+        <div className="relative w-full lg:max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search products by name or SKU..."
+            placeholder="Pretraga po nazivu ili SKU..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="h-11 pl-10"
           />
         </div>
 
@@ -378,11 +390,31 @@ export default function InventoryPage() {
         </div>
       ) : (
         <ProductList
-          products={filteredProducts}
+          products={visibleProducts}
           onEdit={handleEdit}
           onDelete={handleDelete}
           isDeleting={deleteMutation.isPending ? deleteConfirm : null}
         />
+      )}
+
+      {!isEmptyAssortment && !isEmptyFilterResults && filteredProducts.length > PRODUCT_LIST_PAGE_SIZE && (
+        <div className="flex flex-col items-center gap-3 pt-2">
+          <p className="text-sm text-muted-foreground">
+            Prikazano {visibleProducts.length} od {filteredProducts.length}
+          </p>
+          {remainingCount > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() =>
+                setVisibleCount((current) => current + PRODUCT_LIST_PAGE_SIZE)
+              }
+            >
+              Prikaži još {nextBatchSize}
+            </Button>
+          )}
+        </div>
       )}
 
       <ProductForm

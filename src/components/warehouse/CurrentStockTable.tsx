@@ -15,10 +15,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { Search, Package, XCircle, AlertTriangle, Image as ImageIcon, ChevronDown, ChevronUp, CalendarIcon, X } from 'lucide-react'
+import { Search, Package, XCircle, AlertTriangle, ChevronDown, ChevronUp, CalendarIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import Image from 'next/image'
+import { ProductImage } from '@/components/shared/ProductImage'
 
 interface CurrentStockTableProps {
   products: Product[]
@@ -37,17 +37,6 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
       style: 'currency',
       currency: 'RSD',
     }).format(numPrice)
-  }
-
-  // Check if image URL is valid
-  const isValidImageUrl = (url: string | null | undefined): boolean => {
-    if (!url || url.trim() === '') return false
-    try {
-      const parsed = new URL(url)
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    } catch {
-      return false
-    }
   }
 
   // Render stock status badge based on quantity
@@ -256,46 +245,57 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
           )}
         </div>
       ) : (
-        <div className="rounded-md border overflow-hidden">
+        <>
+        <ul className="space-y-2 lg:hidden">
+          {displayedProducts.map((product) => (
+            <li
+              key={product.id}
+              className="flex gap-3 rounded-xl border bg-card p-3"
+            >
+              <ProductImage src={product.imageUrl} alt={product.name} size={56} />
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 font-medium leading-tight">{product.name}</p>
+                <code className="mt-1 inline-block rounded bg-muted px-1.5 py-0.5 text-[11px]">
+                  {product.sku}
+                </code>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {renderStockBadge(product.totalQuantity)}
+                  <span className="text-sm text-muted-foreground">
+                    {formatPrice(Number(product.price))}
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0 text-right text-sm font-semibold">
+                {formatPrice(Number(product.price) * product.totalQuantity)}
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden overflow-hidden rounded-md border lg:block">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px]">Image</TableHead>
-                  <TableHead className="min-w-[200px]">Product</TableHead>
-                  <TableHead className="min-w-[120px]">Category</TableHead>
-                  <TableHead className="min-w-[140px]">Stock Status</TableHead>
-                  <TableHead className="text-right min-w-[100px]">Unit Price</TableHead>
-                  <TableHead className="text-right min-w-[120px]">Total Value</TableHead>
+                  <TableHead className="w-[80px]">Slika</TableHead>
+                  <TableHead className="min-w-[200px]">Proizvod</TableHead>
+                  <TableHead className="min-w-[120px]">Kategorija</TableHead>
+                  <TableHead className="min-w-[140px]">Stanje</TableHead>
+                  <TableHead className="min-w-[100px] text-right">Cena</TableHead>
+                  <TableHead className="min-w-[120px] text-right">Vrednost</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayedProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      {isValidImageUrl(product.imageUrl) ? (
-                        <div className="relative h-12 w-12 rounded-md overflow-hidden border">
-                          <Image
-                            src={product.imageUrl!}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-12 w-12 rounded-md border flex items-center justify-center bg-muted">
-                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
+                      <ProductImage src={product.imageUrl} alt={product.name} size={48} />
                     </TableCell>
                     <TableCell>
                       <div>
                         <p className="font-medium">{product.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                             {product.sku}
                           </code>
                         </p>
@@ -321,6 +321,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
             </Table>
           </div>
         </div>
+        </>
       )}
 
       {/* ✅ SMART TOGGLE BUTTON - Only show if there are more than 3 products and no filters active */}

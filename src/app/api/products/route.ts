@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
 
 // GET: Fetch all products for the current user
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
         quantity: number
         price?: number
         categoryId?: string | null
+        imageUrl?: string | null
         updatedAt: Date
       } = {
         quantity: newQuantity,
@@ -137,6 +139,12 @@ export async function POST(request: NextRequest) {
         updateData.categoryId = validatedData.categoryId
       }
 
+      const incomingImage =
+        validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
+      if (!existingProductToday.imageUrl && incomingImage) {
+        updateData.imageUrl = incomingImage
+      }
+
       // Update today's batch entry
       const updatedProduct = await prisma.product.update({
         where: { id: existingProductToday.id },
@@ -151,6 +159,15 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      scheduleProductImagePersist(
+        (storedUrl) =>
+          prisma.product.update({
+            where: { id: existingProductToday.id },
+            data: { imageUrl: storedUrl },
+          }),
+        updateData.imageUrl ?? existingProductToday.imageUrl
+      )
+
       return NextResponse.json(
         {
           ...updatedProduct,
@@ -164,6 +181,8 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ NEW DAILY BATCH: Create new product entry for today
+    const imageUrl =
+      validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
     const product = await prisma.product.create({
       data: {
         name: validatedData.name,
@@ -171,7 +190,7 @@ export async function POST(request: NextRequest) {
         price: validatedData.price,
         quantity: validatedData.quantity ?? 1,
         description: validatedData.description === '' ? null : validatedData.description ?? null,
-        imageUrl: validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null,
+        imageUrl,
         categoryId: validatedData.categoryId ?? null,
         profileId: profile.id,
       },
@@ -184,6 +203,15 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    scheduleProductImagePersist(
+      (storedUrl) =>
+        prisma.product.update({
+          where: { id: product.id },
+          data: { imageUrl: storedUrl },
+        }),
+      imageUrl
+    )
 
     return NextResponse.json(
       {

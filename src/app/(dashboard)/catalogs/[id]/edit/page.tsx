@@ -133,7 +133,7 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Edit Catalog</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Edit Catalog</h1>
         <p className="text-muted-foreground mt-2">
           Update catalog information and products
         </p>

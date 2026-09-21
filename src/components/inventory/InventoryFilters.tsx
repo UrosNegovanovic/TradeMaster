@@ -73,6 +73,7 @@ export function InventoryFilters({
         <Button
           type="button"
           variant={isTodaySelected ? 'default' : 'outline'}
+          className="min-h-11"
           aria-pressed={isTodaySelected}
           onClick={() => onDateChange(isTodaySelected ? null : today)}
         >
@@ -84,7 +85,7 @@ export function InventoryFilters({
             <Button
               variant="outline"
               className={cn(
-                'w-full sm:w-[240px] justify-start text-left font-normal',
+                'w-full min-h-11 sm:w-[240px] justify-start text-left font-normal',
                 !selectedDate && 'text-muted-foreground'
               )}
             >

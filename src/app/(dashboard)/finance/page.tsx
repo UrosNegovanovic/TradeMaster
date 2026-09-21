@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ArrowRight, FileText, Wallet } from 'lucide-react'
 import { buildFinanceSnapshot, formatRsd, type FinanceInvoiceInput } from '@/lib/invoice-finance'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default async function FinancePage() {
   const { userId } = await auth()
@@ -54,14 +55,11 @@ export default async function FinancePage() {
   const hasAnyInvoices = invoices.length > 0
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Finansije</h1>
-        <p className="text-muted-foreground mt-2">
-          Potraživanja su otvorene fakture. Prihod se knjiži na dan kada fakturu obeležite kao
-          plaćenu.
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <PageHeader
+        title="Finansije"
+        description="Potraživanja su otvorene fakture. Prihod se knjiži na dan kada fakturu obeležite kao plaćenu."
+      />
 
       {!hasAnyInvoices ? (
         <Card>

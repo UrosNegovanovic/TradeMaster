@@ -102,7 +102,7 @@ export default function EditInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Edit Invoice</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">Edit Invoice</h1>
           <p className="text-muted-foreground mt-2">
             Update invoice details
           </p>
@@ -123,7 +123,7 @@ export default function EditInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Invoice Not Found</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">Invoice Not Found</h1>
           <p className="text-muted-foreground mt-2">
             The invoice you&apos;re looking for doesn&apos;t exist.
           </p>
@@ -142,7 +142,7 @@ export default function EditInvoicePage() {
           <Button variant="outline" size="sm" asChild>
             <Link href={invoicesListHref(invoice.status)}>Nazad na plaćene</Link>
           </Button>
-          <h1 className="text-3xl font-bold mt-4">Faktura je zaključana</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl mt-4">Faktura je zaključana</h1>
           <p className="text-muted-foreground mt-2">
             Plaćena faktura #{invoice.invoiceNumber} ne može da se menja.
           </p>
@@ -168,7 +168,7 @@ export default function EditInvoicePage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Edit Invoice</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">Edit Invoice</h1>
         <p className="text-muted-foreground mt-2">
           Update invoice #{invoice.invoiceNumber}
         </p>

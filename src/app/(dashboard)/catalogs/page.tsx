@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Catalog } from '@/types/catalog'
 import { notify } from '@/lib/notify'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 async function fetchCatalogs() {
   const response = await fetch('/api/catalogs')
@@ -80,21 +81,20 @@ export default function CatalogsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Catalogs</h1>
-          <p className="text-muted-foreground mt-2">
-            Create and manage product catalogs for your clients
-          </p>
-        </div>
-        <Link href="/catalogs/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Catalog
+    <div className="mx-auto max-w-7xl">
+      <PageHeader
+        className="mb-6"
+        title="Katalozi"
+        description="Katalog za klijenta, sa proizvodima i popustom"
+        action={
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/catalogs/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Novi katalog
+            </Link>
           </Button>
-        </Link>
-      </div>
+        }
+      />
 
       {!catalogs || catalogs.length === 0 ? (
         <Card>
@@ -140,21 +140,22 @@ export default function CatalogsPage() {
                     )}
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Link href={`/catalogs/${catalog.id}`}>
-                      <Button variant="outline" size="sm" className="flex-1">
+                    <Button variant="outline" size="sm" className="min-h-11 flex-1" asChild>
+                      <Link href={`/catalogs/${catalog.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </Button>
-                    </Link>
-                    <Link href={`/catalogs/${catalog.id}/edit`}>
-                      <Button variant="outline" size="sm" className="flex-1">
+                        Pregled
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" className="min-h-11 flex-1" asChild>
+                      <Link href={`/catalogs/${catalog.id}/edit`}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Button>
-                    </Link>
+                        Izmeni
+                      </Link>
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      className="min-h-11"
                       onClick={() => handleDelete(catalog.id)}
                       disabled={deleteMutation.isPending}
                     >

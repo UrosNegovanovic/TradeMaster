@@ -26,7 +26,8 @@ import { StockOutForm } from '@/components/warehouse/StockOutForm'
 import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
 import { MovementType } from '@prisma/client'
 import { notify } from '@/lib/notify'
-import Image from 'next/image'
+import { ProductImage } from '@/components/shared/ProductImage'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 // Fetch products for the user
 async function fetchProducts(): Promise<Product[]> {
@@ -142,12 +143,10 @@ export default function WarehousePage() {
   if (products.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Magacin (Warehouse)</h1>
-          <p className="text-muted-foreground mt-2">
-            Track stock movements and manage inventory levels
-          </p>
-        </div>
+        <PageHeader
+          title="Magacin"
+          description="Pratite stanje i kretanje robe"
+        />
         <Card>
           <CardHeader>
             <CardTitle>Još nema proizvoda</CardTitle>
@@ -166,14 +165,21 @@ export default function WarehousePage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Magacin (Warehouse)</h1>
-        <p className="text-muted-foreground mt-2">
-          Track stock movements and manage inventory levels
-        </p>
-      </div>
+    <div className="space-y-4 lg:space-y-6">
+      <PageHeader
+        title="Magacin"
+        description="Pratite stanje i kretanje robe"
+        action={
+          <Button
+            onClick={() => setStockOutOpen(true)}
+            variant="destructive"
+            className="w-full sm:w-auto"
+          >
+            <Minus className="mr-2 h-4 w-4" />
+            Izlaz / korekcija
+          </Button>
+        }
+      />
 
       {/* Low Stock Alerts - Collapsible */}
       {!isLoadingLowStock && lowStockProducts.length > 0 && (
@@ -201,20 +207,12 @@ export default function WarehousePage() {
                       key={product.id}
                       className="flex items-center gap-3 p-2 bg-background rounded-md"
                     >
-                      {product.imageUrl ? (
-                        <div className="relative h-10 w-10 rounded-md overflow-hidden border flex-shrink-0">
-                          <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-10 w-10 rounded-md border flex items-center justify-center bg-muted flex-shrink-0">
-                          <Package className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
+                      <ProductImage
+                        src={product.imageUrl}
+                        alt={product.name}
+                        size={40}
+                        className="flex-shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">{product.name}</p>
                         <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
@@ -236,31 +234,19 @@ export default function WarehousePage() {
         </Collapsible>
       )}
 
-      {/* Action Button - Stock OUT Only (IN is handled by Inventory Scanner) */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          onClick={() => setStockOutOpen(true)}
-          variant="destructive"
-          size="lg"
-          className="flex-1 sm:flex-none"
-        >
-          <Minus className="mr-2 h-5 w-5" />
-          Register Stock Out / Movement
-        </Button>
-        <p className="text-sm text-muted-foreground self-center">
-          💡 <strong>Note:</strong> To increase stock, use the <strong>Inventory Scanner</strong>
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Ulaz u lager ide skeniranjem. Ovde evidencirate izlaz.
+      </p>
 
       {/* Current Inventory Status */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Package className="h-5 w-5" />
-            Trenutno Stanje (Current Inventory Status)
+            Trenutno stanje
           </CardTitle>
           <CardDescription>
-            Real-time overview of all products and their stock levels
+            Pregled proizvoda i količina
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -271,9 +257,9 @@ export default function WarehousePage() {
       {/* Stock Movement History */}
       <Card>
         <CardHeader>
-          <CardTitle>Stock Movement History</CardTitle>
+          <CardTitle>Istorija kretanja</CardTitle>
           <CardDescription>
-            Latest 50 stock movements (purchases, sales, adjustments)
+            Poslednjih 50 ulaza i izlaza
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -287,15 +273,53 @@ export default function WarehousePage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
+              <ul className="space-y-2 lg:hidden">
+                {stockMovements.map((movement) => (
+                  <li
+                    key={movement.id}
+                    className="flex items-start gap-3 rounded-xl border p-3"
+                  >
+                    {movement.type === MovementType.IN ? (
+                      <Badge variant="default" className="mt-0.5 bg-green-600">
+                        <ArrowUp className="mr-1 h-3 w-3" />
+                        UL
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="mt-0.5">
+                        <ArrowDown className="mr-1 h-3 w-3" />
+                        IZ
+                      </Badge>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 font-medium leading-tight">
+                        {movement.product.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {movement.product.sku} · {formatDate(movement.createdAt)}
+                      </p>
+                      {movement.reason ? (
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                          {movement.reason}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="shrink-0 font-semibold">
+                      {movement.type === MovementType.IN ? '+' : '-'}
+                      {movement.quantity}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead>Reason</TableHead>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Proizvod</TableHead>
+                    <TableHead>Tip</TableHead>
+                    <TableHead className="text-right">Količina</TableHead>
+                    <TableHead>Razlog</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -336,6 +360,7 @@ export default function WarehousePage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>

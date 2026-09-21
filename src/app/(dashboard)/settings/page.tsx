@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react'
 import React from 'react'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { notify } from '@/lib/notify'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -109,13 +110,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your company profile and contact information
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        className="mb-6"
+        title="Podešavanja"
+        description="Podaci o firmi i kontakt"
+      />
 
       <Card>
         <CardHeader>
@@ -215,16 +215,17 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-4">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => reset()}
                 disabled={mutation.isPending}
               >
                 Reset
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending}>
                 {mutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}

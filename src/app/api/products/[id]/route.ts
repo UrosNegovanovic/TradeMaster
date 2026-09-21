@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { persistProductImage, scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
 
 // PUT: Update a product
@@ -81,6 +82,10 @@ export async function PUT(
       }
     }
 
+    const imageUrl = await persistProductImage(
+      validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
+    )
+
     // Update product
     const product = await prisma.product.update({
       where: { id: params.id },
@@ -90,7 +95,7 @@ export async function PUT(
         price: validatedData.price,
         quantity: validatedData.quantity ?? 1,
         description: validatedData.description === '' ? null : validatedData.description ?? null,
-        imageUrl: validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null,
+        imageUrl,
         categoryId: validatedData.categoryId ?? null,
       },
       include: {
@@ -102,6 +107,15 @@ export async function PUT(
         },
       },
     })
+
+    scheduleProductImagePersist(
+      (storedUrl) =>
+        prisma.product.update({
+          where: { id: params.id },
+          data: { imageUrl: storedUrl },
+        }),
+      imageUrl
+    )
 
     return NextResponse.json(product)
   } catch (error) {

@@ -284,7 +284,7 @@ export function ProductForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100%-1rem)] flex-col p-0 sm:max-w-[600px]">
         <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           <DialogDescription>

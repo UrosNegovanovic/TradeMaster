@@ -3,19 +3,20 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { CompanyBrand } from './CompanyBrand'
 import { navigation } from './navigation'
 
 export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-r bg-card">
+    <div className="hidden lg:flex h-full w-64 shrink-0 flex-col border-r bg-card">
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
           TradeMaster
         </Link>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
           const Icon = item.icon
@@ -37,6 +38,7 @@ export function Sidebar() {
           )
         })}
       </nav>
+      <CompanyBrand compact className="mx-3 mb-3 mt-auto border-t pt-3" />
     </div>
   )
 }

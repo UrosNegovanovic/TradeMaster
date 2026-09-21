@@ -81,7 +81,7 @@ export default function NewCatalogPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">New Catalog</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">New Catalog</h1>
           <p className="text-muted-foreground mt-2">
             Create a new product catalog
           </p>
@@ -101,7 +101,7 @@ export default function NewCatalogPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">New Catalog</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">New Catalog</h1>
         <p className="text-muted-foreground mt-2">
           Create a new product catalog with selected products and discounts
         </p>

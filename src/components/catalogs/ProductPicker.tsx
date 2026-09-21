@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Image as ImageIcon, Search } from 'lucide-react'
-import Image from 'next/image'
+import { Search } from 'lucide-react'
+import { ProductImage } from '@/components/shared/ProductImage'
 import { InventoryFilters } from '@/components/inventory/InventoryFilters'
 
 interface ProductPickerProps {
@@ -24,16 +24,6 @@ export function ProductPicker({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-
-  const isValidImageUrl = (url: string | null | undefined): boolean => {
-    if (!url || url.trim() === '') return false
-    try {
-      const parsed = new URL(url)
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    } catch {
-      return false
-    }
-  }
 
   const filteredProducts = useMemo(() => {
     let filtered = products
@@ -160,23 +150,12 @@ export function ProductPicker({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2 mb-2">
-                        {isValidImageUrl(product.imageUrl) ? (
-                          <div className="relative h-16 w-16 rounded-md overflow-hidden border flex-shrink-0">
-                            <Image
-                              src={product.imageUrl!}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-16 w-16 rounded-md border flex items-center justify-center bg-muted flex-shrink-0">
-                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
+                        <ProductImage
+                          src={product.imageUrl}
+                          alt={product.name}
+                          size={64}
+                          className="flex-shrink-0"
+                        />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-sm truncate">{product.name}</h4>
                           <p className="text-xs text-muted-foreground mt-1">

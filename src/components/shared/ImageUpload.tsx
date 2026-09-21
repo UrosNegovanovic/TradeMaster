@@ -49,6 +49,13 @@ export function ImageUpload({
       return
     }
 
+    if (file.type === 'image/heic' || file.type === 'image/heif') {
+      notify.error('Unsupported format', {
+        description: 'HEIC is not supported. Use JPG, PNG, WEBP or GIF.',
+      })
+      return
+    }
+
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       notify.error('File too large', {
@@ -81,7 +88,8 @@ export function ImageUpload({
       const { error: uploadError, data } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, {
-          cacheControl: '3600',
+          cacheControl: '31536000',
+          contentType: file.type || 'image/jpeg',
           upsert: false,
         })
 
@@ -179,7 +187,7 @@ export function ImageUpload({
           <Input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,.jpg,.jpeg,.png,.webp,.gif,.avif,.bmp"
             onChange={handleFileSelect}
             className="hidden"
             disabled={uploading}

@@ -9,7 +9,7 @@ import { Plus, FileText, Trash2, Download, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { Invoice, InvoiceStatus } from '@/types/invoice'
 import { Badge } from '@/components/ui/badge'
-import { notify } from '@/lib/notify'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { cn } from '@/lib/utils'
 import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
@@ -148,21 +148,20 @@ export default function InvoicesPage() {
   const isEmptyView = visibleInvoices.length === 0
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Fakture</h1>
-          <p className="text-muted-foreground mt-2">
-            Otvorene fakture čekaju uplatu. Plaćene idu u arhivu.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova faktura
-          </Link>
-        </Button>
-      </div>
+    <div className="mx-auto max-w-7xl">
+      <PageHeader
+        className="mb-6"
+        title="Fakture"
+        description="Otvorene fakture čekaju uplatu. Plaćene idu u arhivu."
+        action={
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/invoices/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova faktura
+            </Link>
+          </Button>
+        }
+      />
 
       {hasAnyInvoices ? (
         <div className="mb-6 space-y-4">
@@ -170,6 +169,7 @@ export default function InvoicesPage() {
             <Button
               type="button"
               variant={view === 'open' ? 'default' : 'outline'}
+              className="min-h-11 flex-1 sm:flex-none"
               aria-pressed={view === 'open'}
               onClick={() => setView('open')}
             >
@@ -178,6 +178,7 @@ export default function InvoicesPage() {
             <Button
               type="button"
               variant={view === 'paid' ? 'default' : 'outline'}
+              className="min-h-11 flex-1 sm:flex-none"
               aria-pressed={view === 'paid'}
               onClick={() => setView('paid')}
             >
@@ -287,15 +288,15 @@ export default function InvoicesPage() {
                     status={invoice.status}
                     className="w-full"
                   />
-                  <div className="flex gap-2 pt-2 border-t">
-                    <Button variant="outline" size="sm" className="flex-1" asChild>
+                  <div className="flex flex-wrap gap-2 border-t pt-2">
+                    <Button variant="outline" size="sm" className="min-h-11 flex-1" asChild>
                       <Link href={`/invoices/${invoice.id}`}>
                         <Download className="mr-2 h-4 w-4" />
                         PDF
                       </Link>
                     </Button>
                     {!isPaidInvoiceStatus(invoice.status) && (
-                      <Button variant="outline" size="sm" asChild>
+                      <Button variant="outline" size="sm" className="min-h-11" asChild>
                         <Link href={`/invoices/${invoice.id}/edit`}>
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Izmeni</span>
@@ -305,6 +306,7 @@ export default function InvoicesPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="min-h-11"
                       onClick={() => handleDelete(invoice.id)}
                       disabled={deleteMutation.isPending}
                     >

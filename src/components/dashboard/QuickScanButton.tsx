@@ -22,7 +22,7 @@ interface ProductMetadata {
 }
 
 interface QuickScanButtonProps {
-  presentation?: 'default' | 'fab'
+  presentation?: 'default' | 'fab' | 'hero'
 }
 
 export function QuickScanButton({ presentation = 'default' }: QuickScanButtonProps) {
@@ -392,17 +392,28 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
         <Button
           type="button"
           size="icon"
-          className="h-14 w-14 min-h-11 min-w-11 rounded-full shadow-lg"
+          className="h-14 w-14 min-h-11 min-w-11 rounded-full shadow-lg ring-4 ring-background"
           aria-label="Skeniraj proizvod"
           onClick={() => setScannerOpen(true)}
           disabled={isProcessing}
         >
           <ScanBarcode className="h-6 w-6" />
         </Button>
+      ) : presentation === 'hero' ? (
+        <Button
+          type="button"
+          size="lg"
+          className="h-12 w-full min-h-12 text-base"
+          onClick={() => setScannerOpen(true)}
+          disabled={isProcessing}
+        >
+          <ScanBarcode className="mr-2 h-5 w-5" />
+          {isProcessing ? 'Obrada...' : 'Skeniraj proizvod'}
+        </Button>
       ) : (
         <Button
           variant="outline"
-          className="w-full justify-start text-sm"
+          className="h-11 w-full justify-start text-sm"
           onClick={() => setScannerOpen(true)}
           disabled={isProcessing}
         >

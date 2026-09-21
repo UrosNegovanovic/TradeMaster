@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Edit, Download, ArrowLeft, Eye, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react'
-import Image from 'next/image'
+import { Loader2, Edit, Download, ArrowLeft, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ProductImage } from '@/components/shared/ProductImage'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { BlobProvider } from '@react-pdf/renderer'
@@ -47,16 +47,6 @@ export default function CatalogDetailsPage() {
       style: 'currency',
       currency: 'RSD',
     }).format(numPrice)
-  }
-
-  const isValidImageUrl = (url: string | null | undefined): boolean => {
-    if (!url || url.trim() === '') return false
-    try {
-      const parsed = new URL(url)
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    } catch {
-      return false
-    }
   }
 
   const formatDiscount = (discount: number | string | { toString(): string }) => {
@@ -142,41 +132,41 @@ export default function CatalogDetailsPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href="/catalogs">
-            <Button variant="ghost" size="sm" className="mb-2">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <Button variant="ghost" size="sm" className="mb-2 -ml-2 min-h-11" asChild>
+            <Link href="/catalogs">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Catalogs
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">{catalog.name}</h1>
+              Nazad na kataloge
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold lg:text-3xl">{catalog.name}</h1>
           {catalog.clientName && (
-            <p className="text-muted-foreground mt-1">
-              Client: {catalog.clientName}
+            <p className="mt-1 text-muted-foreground">
+              Klijent: {catalog.clientName}
             </p>
           )}
         </div>
-        <div className="flex gap-2 items-center">
-          <Link href={`/shared/catalog/${catalog.id}`} target="_blank">
-            <Button variant="outline">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+            <Link href={`/shared/catalog/${catalog.id}`} target="_blank">
               <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </Button>
-          </Link>
-          <Link href={`/catalogs/${catalog.id}/edit`}>
-            <Button variant="outline">
+              Pregled
+            </Link>
+          </Button>
+          <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+            <Link href={`/catalogs/${catalog.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">PDF format:</span>
+              Izmeni
+            </Link>
+          </Button>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <span className="text-sm text-muted-foreground">PDF:</span>
             <Select
               value={pdfItemsPerPage.toString()}
               onValueChange={(value) => setPdfItemsPerPage(value === '4' ? 4 : 12)}
             >
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="h-11 w-full sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -318,23 +308,12 @@ export default function CatalogDetailsPage() {
                     key={item.id}
                     className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    {isValidImageUrl(product.imageUrl) ? (
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border">
-                        <Image
-                          src={product.imageUrl!}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border bg-muted">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
+                    <ProductImage
+                      src={product.imageUrl}
+                      alt={product.name}
+                      size={64}
+                      className="shrink-0"
+                    />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-lg mb-1">
                         {product.name}

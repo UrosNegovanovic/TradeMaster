@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Loader2, Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
+import { ProductImage } from '@/components/shared/ProductImage'
 
 async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: any }> {
   const response = await fetch(`/api/catalogs/${id}`)
@@ -213,23 +214,12 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {/* Product Image */}
-                      {isValidImageUrl(product.imageUrl) ? (
-                        <div className="relative h-48 w-full rounded-md overflow-hidden border">
-                          <Image
-                            src={product.imageUrl!}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-48 w-full rounded-md border flex items-center justify-center bg-muted">
-                          <ImageIcon className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
+                      <ProductImage
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="h-48 w-full"
+                        imageClassName="object-contain"
+                      />
 
                       {/* Product Info */}
                       <div>

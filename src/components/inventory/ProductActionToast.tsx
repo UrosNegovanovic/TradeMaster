@@ -1,9 +1,8 @@
 'use client'
 
-import { Package, CheckCircle2, Trash2, ScanBarcode, X } from 'lucide-react'
-import Image from 'next/image'
-import { useState } from 'react'
+import { CheckCircle2, ScanBarcode, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ProductImage } from '@/components/shared/ProductImage'
 
 interface ProductActionToastProps {
   variant: 'scan' | 'create' | 'delete'
@@ -45,7 +44,6 @@ export function ProductActionToast({
   customBadge,
   customSubBadge,
 }: ProductActionToastProps) {
-  const [imageError, setImageError] = useState(false)
   const config = variants[variant]
   const Icon = config.icon
 
@@ -54,22 +52,12 @@ export function ProductActionToast({
       <div className="flex">
         <div className={cn('w-1 shrink-0', config.accent)} />
         <div className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary">
-            {product.imageUrl && !imageError ? (
-              <Image
-                src={product.imageUrl}
-                alt={product.name}
-                width={48}
-                height={48}
-                className="h-full w-full object-cover"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Package className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-              </div>
-            )}
-          </div>
+          <ProductImage
+            src={product.imageUrl}
+            alt={product.name}
+            size={48}
+            className="rounded-lg"
+          />
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">

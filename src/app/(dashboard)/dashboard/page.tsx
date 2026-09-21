@@ -9,7 +9,6 @@ import {
   FileText,
   Package,
   Plus,
-  ScanBarcode,
   Warehouse,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -138,8 +137,8 @@ export default async function DashboardPage() {
             Lager, današnji unosi i otvorene fakture
           </p>
         </div>
-        <div className="hidden md:block w-full max-w-xs">
-          <QuickScanButton />
+        <div className="w-full sm:max-w-sm">
+          <QuickScanButton presentation="hero" />
         </div>
       </div>
 
@@ -152,16 +151,15 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2 sm:flex-row">
-            <Button asChild className="w-full sm:w-auto">
+            <div className="w-full sm:max-w-sm">
+              <QuickScanButton presentation="hero" />
+            </div>
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href="/inventory">
                 <Plus className="mr-2 h-4 w-4" />
-                Dodaj proizvod
+                Dodaj ručno
               </Link>
             </Button>
-            <p className="text-sm text-muted-foreground self-center md:hidden">
-              <ScanBarcode className="mr-1 inline h-4 w-4" />
-              Koristite dugme Skeniraj proizvod
-            </p>
           </CardContent>
         </Card>
       ) : null}

@@ -77,25 +77,28 @@ export default function InvoiceDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
+    <div className="mx-auto max-w-7xl">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <Button variant="outline" size="sm" className="min-h-11 shrink-0" asChild>
             <Link href={invoicesListHref(invoice.status)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Nazad
             </Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{invoice.invoiceNumber}</h1>
-            <p className="text-muted-foreground mt-1">
-              Detalji fakture
-            </p>
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-bold lg:text-3xl">{invoice.invoiceNumber}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Detalji fakture</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           {isPaidInvoiceStatus(invoice.status) ? null : (
-            <InvoiceStatusActions invoiceId={invoice.id} status={invoice.status} size="default" />
+            <InvoiceStatusActions
+              invoiceId={invoice.id}
+              status={invoice.status}
+              size="default"
+              className="min-h-11 w-full sm:w-auto"
+            />
           )}
           {pdfDocument && (
           <BlobProvider document={pdfDocument}>
@@ -112,6 +115,7 @@ export default function InvoiceDetailPage() {
                   }
                 }}
                 disabled={loading}
+                className="min-h-11 w-full sm:w-auto"
               >
                 {loading ? (
                   <>

@@ -13,9 +13,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#0F766E' },
+    { media: '(prefers-color-scheme: dark)', color: '#0B3D3A' },
   ],
 }
 
@@ -55,8 +56,13 @@ export const metadata: Metadata = {
   creator: 'TradeMaster',
   publisher: 'TradeMaster',
   
-  // Application name for PWA
+  // Application name for PWA / later store wrapper
   applicationName: 'TradeMaster',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TradeMaster',
+  },
   
   // Referrer policy for security
   referrer: 'origin-when-cross-origin',

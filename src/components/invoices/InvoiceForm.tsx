@@ -364,8 +364,8 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       )}
 
       {/* Submit Button */}
-      <div className="flex justify-end gap-4">
-        <Button type="submit" disabled={isLoading}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

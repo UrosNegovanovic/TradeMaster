@@ -14,6 +14,7 @@ import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions
 import { cn } from '@/lib/utils'
 import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
+import { notify } from '@/lib/notify'
 
 async function fetchInvoices() {
   const response = await fetch('/api/invoices')

@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/types/profile'
 
-function isValidImageUrl(url: string | null | undefined): boolean {
+function isValidImageUrl(url: string | null | undefined): url is string {
   if (!url || url.trim() === '') return false
   try {
     const parsed = new URL(url)
@@ -43,7 +43,8 @@ export function CompanyBrand({ className, compact = false, onNavigate }: Company
   })
 
   const companyName = profile?.companyName?.trim() || null
-  const logoUrl = isValidImageUrl(profile?.logoUrl) ? profile.logoUrl : null
+  const rawLogoUrl = profile?.logoUrl
+  const logoUrl = isValidImageUrl(rawLogoUrl) ? rawLogoUrl : null
 
   if (!companyName && !logoUrl) {
     return null

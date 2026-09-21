@@ -82,15 +82,17 @@ export function ProductImage({
           onError={() => setFailed(true)}
         />
       ) : (
-        // External CDNs (Open Food Facts, etc.) time out in the Next optimizer.
-        // Native img with no-referrer loads them directly in the browser.
-        <img
-          src={src!}
-          alt={alt}
-          referrerPolicy="no-referrer"
-          className={cn('absolute inset-0 h-full w-full object-contain', imageClassName)}
-          onError={() => setFailed(true)}
-        />
+        <>
+          {/* External CDNs time out in the Next optimizer; load them in the browser. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src!}
+            alt={alt}
+            referrerPolicy="no-referrer"
+            className={cn('absolute inset-0 h-full w-full object-contain', imageClassName)}
+            onError={() => setFailed(true)}
+          />
+        </>
       )}
     </div>
   )

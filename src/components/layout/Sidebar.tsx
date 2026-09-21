@@ -9,7 +9,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
+    <div className="hidden md:flex h-full w-64 flex-col border-r bg-card">
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
           TradeMaster

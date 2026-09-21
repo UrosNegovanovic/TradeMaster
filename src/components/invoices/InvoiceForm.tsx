@@ -3,9 +3,10 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DraftNumberInput } from '@/components/ui/draft-number-input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertTriangle, ChevronDown } from 'lucide-react'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceWriteSchema } from '@/lib/validations'
@@ -33,6 +34,13 @@ interface InvoiceItemRow {
   unitPrice: number
   discount: number
   total: number
+}
+
+const INVOICE_ITEM_TRACKS =
+  'md:grid-cols-[minmax(0,2.8fr)_minmax(5.25rem,0.55fr)_minmax(5.75rem,0.6fr)_minmax(5.75rem,0.6fr)_minmax(6.5rem,0.65fr)_auto]'
+
+function productSelectLabel(product: Pick<Product, 'name' | 'sku' | 'quantity'>) {
+  return `${product.name} (SKU: ${product.sku}) — ${product.quantity} kom`
 }
 
 export function InvoiceForm({ products, onSubmit, isLoading = false, initialData }: InvoiceFormProps) {
@@ -138,34 +146,30 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
     }
   }
 
-  // Update item
-  const updateItem = (id: string, field: keyof InvoiceItemRow, value: any) => {
-    setItems(
-      items.map((item) => {
-        if (item.id === id) {
-          const updated = { ...item, [field]: value }
+  const updateItem = (id: string, field: keyof InvoiceItemRow, value: InvoiceItemRow[typeof field]) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item
+        const updated = { ...item, [field]: value }
 
-          // If product selected, auto-fill name and price
-          if (field === 'productId') {
-            const selectedProduct = products.find((p) => p.id === value)
-            if (selectedProduct) {
-              updated.productName = selectedProduct.name
-              updated.unitPrice = Number(selectedProduct.price)
-            } else {
-              updated.productName = ''
-              updated.unitPrice = 0
-            }
+        if (field === 'productId') {
+          const selectedProduct = products.find((p) => p.id === value)
+          if (selectedProduct) {
+            updated.productName = selectedProduct.name
+            updated.unitPrice = Number(selectedProduct.price)
+          } else {
+            updated.productName = ''
+            updated.unitPrice = 0
           }
-
-          // Recalculate total as a percent of quantity × unit price
-          updated.discount = clampDiscountPercent(Number(updated.discount) || 0)
-          updated.quantity = Math.max(1, Math.trunc(Number(updated.quantity) || 1))
-          updated.unitPrice = Number(updated.unitPrice) || 0
-          updated.total = lineTotal(updated.quantity, updated.unitPrice, updated.discount)
-
-          return updated
         }
-        return item
+
+        updated.total = lineTotal(
+          Number(updated.quantity) || 0,
+          Number(updated.unitPrice) || 0,
+          clampDiscountPercent(Number(updated.discount) || 0)
+        )
+
+        return updated
       })
     )
   }
@@ -291,53 +295,70 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
         <CardContent>
           <div className="space-y-4">
             {/* Desktop Table Header */}
-            <div className="hidden md:grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground pb-2 border-b">
-              <div className="col-span-3">Product</div>
-              <div className="col-span-2">Quantity</div>
-              <div className="col-span-2">Unit Price</div>
-              <div className="col-span-2">Discount (%)</div>
-              <div className="col-span-2">Total</div>
-              <div className="col-span-1"></div>
+            <div
+              className={`hidden gap-3 border-b pb-2 text-sm font-medium text-muted-foreground md:grid ${INVOICE_ITEM_TRACKS}`}
+            >
+              <div>Product</div>
+              <div>Quantity</div>
+              <div>Unit Price</div>
+              <div>Discount (%)</div>
+              <div>Total</div>
+              <div></div>
             </div>
 
             {items.map((item) => {
               const stock = lineStock.get(item.id)
               const subtotal = lineSubtotal(item.quantity, item.unitPrice)
               const saved = lineDiscountAmount(item.quantity, item.unitPrice, item.discount)
+              const selectedProduct = item.productId
+                ? productsById.get(item.productId)
+                : undefined
+              const selectedTitle = selectedProduct
+                ? productSelectLabel(selectedProduct)
+                : 'Select Product'
 
               return (
-              <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-start border-b pb-4 md:border-0 md:pb-0">
-                {/* Product Select - Full width on mobile */}
-                <div className="md:col-span-3">
+              <div
+                key={item.id}
+                className={`grid grid-cols-1 gap-3 border-b pb-4 md:items-start md:border-0 md:pb-0 ${INVOICE_ITEM_TRACKS}`}
+              >
+                {/* Product Select - Full width on mobile, widest track on desktop */}
+                <div className="min-w-0">
                   <Label className="md:hidden text-sm mb-1.5 block">Product</Label>
-                  <select
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={item.productId || ''}
-                    onChange={(e) => updateItem(item.id, 'productId', e.target.value || null)}
-                  >
-                    <option value="">Select Product</option>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name} (SKU: {product.sku}) — {product.quantity} kom
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative min-w-0">
+                    <select
+                      className="h-11 w-full min-w-0 max-w-full appearance-none truncate rounded-md border border-input bg-background py-2 pl-3 pr-9 text-xs leading-tight md:h-10 md:text-sm"
+                      value={item.productId || ''}
+                      title={selectedTitle}
+                      aria-label={selectedTitle}
+                      onChange={(e) => updateItem(item.id, 'productId', e.target.value || null)}
+                    >
+                      <option value="">Select Product</option>
+                      {products.map((product) => {
+                        const label = productSelectLabel(product)
+                        return (
+                          <option key={product.id} value={product.id} title={label}>
+                            {label}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  </div>
                 </div>
 
                 {/* Quantity and Unit Price - Row on mobile */}
                 <div className="grid grid-cols-2 gap-3 md:contents">
-                  <div className="md:col-span-2">
+                  <div className="min-w-0">
                     <Label className="md:hidden text-sm mb-1.5 block">Quantity</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      inputMode="numeric"
-                      value={item.quantity || ''}
-                      onChange={(e) =>
-                        updateItem(item.id, 'quantity', parseInt(e.target.value, 10) || 1)
-                      }
+                    <DraftNumberInput
+                      kind="integer"
+                      min={1}
+                      emptyAs={1}
+                      value={item.quantity}
+                      onValueChange={(quantity) => updateItem(item.id, 'quantity', quantity)}
                       aria-invalid={Boolean(stock?.shortage)}
-                      required
+                      aria-label="Količina"
                     />
                     {stock?.available !== null && stock?.available !== undefined ? (
                       <p
@@ -357,39 +378,31 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                       </p>
                     ) : null}
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="min-w-0">
                     <Label className="md:hidden text-sm mb-1.5 block">Unit Price</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={item.unitPrice || ''}
-                      onChange={(e) =>
-                        updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
-                      }
-                      required
+                    <DraftNumberInput
+                      kind="decimal"
+                      min={0}
+                      emptyAs={0}
+                      value={item.unitPrice}
+                      onValueChange={(unitPrice) => updateItem(item.id, 'unitPrice', unitPrice)}
+                      aria-label="Jedinična cena"
                     />
                   </div>
                 </div>
 
                 {/* Discount and Total - Row on mobile */}
                 <div className="grid grid-cols-2 gap-3 md:contents">
-                  <div className="md:col-span-2">
+                  <div className="min-w-0">
                     <Label className="md:hidden text-sm mb-1.5 block">Popust (%)</Label>
                     <div className="relative">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
+                      <DraftNumberInput
+                        kind="decimal"
+                        min={0}
+                        max={100}
+                        emptyAs={0}
                         value={item.discount}
-                        onChange={(e) =>
-                          updateItem(
-                            item.id,
-                            'discount',
-                            clampDiscountPercent(parseFloat(e.target.value) || 0)
-                          )
-                        }
+                        onValueChange={(discount) => updateItem(item.id, 'discount', discount)}
                         placeholder="0"
                         className="pr-8"
                         aria-label="Popust u procentima"
@@ -404,7 +417,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                       </p>
                     ) : null}
                   </div>
-                  <div className="md:col-span-2 flex flex-col justify-center">
+                  <div className="flex min-w-0 flex-col justify-center">
                     <Label className="md:hidden text-sm mb-1.5 block">Total</Label>
                     {item.discount > 0 ? (
                       <span className="text-xs text-muted-foreground line-through">
@@ -418,7 +431,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                 </div>
 
                 {/* Delete Button */}
-                <div className="md:col-span-1 flex justify-end md:justify-start">
+                <div className="flex justify-end md:justify-start">
                   {items.length > 1 && (
                     <Button
                       type="button"

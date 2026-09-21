@@ -12,6 +12,7 @@ export default defineConfig({
       'src/lib/invoice-status.test.ts',
       'src/lib/invoice-finance.test.ts',
       'src/lib/invoice-line.test.ts',
+      'src/lib/draft-number.test.ts',
       'src/lib/persist-product-image.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',

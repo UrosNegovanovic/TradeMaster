@@ -150,14 +150,14 @@ export default function WarehousePage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>No Products Yet</CardTitle>
+            <CardTitle>Još nema proizvoda</CardTitle>
             <CardDescription>
-              Add products to your inventory first to start tracking stock movements.
+              Prvo dodajte asortiman da biste pratili promet u magacinu.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <a href="/inventory">Go to Inventory</a>
+              <a href="/inventory">Idi na asortiman</a>
             </Button>
           </CardContent>
         </Card>

@@ -3,7 +3,12 @@ import { ZodError } from 'zod'
 import { Decimal } from '@prisma/client/runtime/library'
 import { prisma } from '@/lib/prisma'
 import {
+  DISCOUNT_MAX,
+  DISCOUNT_MIN,
+  MONEY_MAX,
+  UNIT_PRICE_MIN,
   calculateItemTotal,
+  hasAllowedMoneyScale,
   isWithinMoneyRange,
   sumRoundedItemTotals,
   uniqueProductIds,
@@ -30,6 +35,18 @@ export class InvoiceClientError extends Error {
   }
 }
 
+function isZodError(error: unknown): error is ZodError {
+  return (
+    error instanceof ZodError ||
+    (error !== null &&
+      typeof error === 'object' &&
+      'name' in error &&
+      error.name === 'ZodError' &&
+      'errors' in error &&
+      Array.isArray((error as { errors: unknown }).errors))
+  )
+}
+
 export function invoiceErrorResponse(error: unknown) {
   if (error instanceof InvoiceClientError) {
     return NextResponse.json(
@@ -38,13 +55,13 @@ export function invoiceErrorResponse(error: unknown) {
     )
   }
 
-  if (error instanceof ZodError) {
+  if (isZodError(error)) {
     return NextResponse.json(
       {
         error: 'Validation error',
         details: error.errors.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
+          path: Array.isArray(issue.path) ? issue.path.join('.') : '',
+          message: String(issue.message),
         })),
       },
       { status: 400 }
@@ -70,6 +87,15 @@ export function parseInvoicePatchBody(body: unknown) {
   return invoicePatchSchema.parse(body)
 }
 
+export const PAID_INVOICE_LOCKED_MESSAGE =
+  'Plaćena faktura se ne može menjati. Prvo je vratite među otvorene.'
+
+export function assertInvoiceContentEditable(status: string) {
+  if (status === 'PAID') {
+    throw new InvoiceClientError(PAID_INVOICE_LOCKED_MESSAGE, 409)
+  }
+}
+
 export type ComputedInvoiceItem = {
   productId: string | null
   productName: string
@@ -84,11 +110,28 @@ export function computeInvoiceAmounts(items: InvoiceWriteInput['items']): {
   totalAmount: Decimal
 } {
   const computedItems = items.map((item, index) => {
-    const total = calculateItemTotal(
-      item.quantity,
-      new Decimal(item.unitPrice),
-      new Decimal(item.discount)
-    )
+    const unitPrice = new Decimal(item.unitPrice)
+    const discount = new Decimal(item.discount)
+
+    if (!hasAllowedMoneyScale(unitPrice) || unitPrice.lte(0) || unitPrice.lt(UNIT_PRICE_MIN) || unitPrice.gt(MONEY_MAX)) {
+      throw new InvoiceClientError('Validation error', 400, [
+        {
+          path: `items.${index}.unitPrice`,
+          message: 'unitPrice is outside the supported range or precision',
+        },
+      ])
+    }
+
+    if (!hasAllowedMoneyScale(discount) || discount.lt(DISCOUNT_MIN) || discount.gt(DISCOUNT_MAX)) {
+      throw new InvoiceClientError('Validation error', 400, [
+        {
+          path: `items.${index}.discount`,
+          message: 'discount is outside the supported range or precision',
+        },
+      ])
+    }
+
+    const total = calculateItemTotal(item.quantity, unitPrice, discount)
 
     if (!isWithinMoneyRange(total)) {
       throw new InvoiceClientError('Validation error', 400, [
@@ -103,8 +146,8 @@ export function computeInvoiceAmounts(items: InvoiceWriteInput['items']): {
       productId: item.productId ?? null,
       productName: item.productName,
       quantity: item.quantity,
-      unitPrice: new Decimal(item.unitPrice),
-      discount: new Decimal(item.discount),
+      unitPrice,
+      discount,
       total,
     }
   })

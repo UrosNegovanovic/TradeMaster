@@ -13,46 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { 
-  Home,
-  Package, 
-  FileText, 
-  Settings,
-  Warehouse
-} from 'lucide-react'
-
-const navigation = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: Home,
-  },
-  {
-    name: 'Inventory',
-    href: '/inventory',
-    icon: Package,
-  },
-  {
-    name: 'Catalogs',
-    href: '/catalogs',
-    icon: FileText,
-  },
-  {
-    name: 'Invoices',
-    href: '/invoices',
-    icon: FileText,
-  },
-  {
-    name: 'Magacin',
-    href: '/warehouse',
-    icon: Warehouse,
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
-]
+import { navigation } from './navigation'
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -66,14 +27,14 @@ export function MobileNav() {
           className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
         >
           <Menu className="h-6 w-6" />
-          <span className="sr-only">Toggle Menu</span>
+          <span className="sr-only">Meni</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="pr-0">
         <SheetHeader>
           <SheetTitle className="text-left">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="text-xl font-bold text-primary"
               onClick={() => setOpen(false)}
             >
@@ -85,10 +46,10 @@ export function MobileNav() {
           {navigation.map((item) => {
             const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
             const Icon = item.icon
-            
+
             return (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={cn(

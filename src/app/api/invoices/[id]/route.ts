@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import {
   InvoiceClientError,
+  assertInvoiceContentEditable,
   assertOwnedProducts,
   computeInvoiceAmounts,
   invoiceErrorResponse,
@@ -10,6 +11,7 @@ import {
   parseInvoiceWriteBody,
   parseJsonBody,
 } from '@/lib/invoice-service'
+import { nextPaidAt } from '@/lib/invoice-finance'
 
 const invoiceInclude = {
   items: {
@@ -112,21 +114,20 @@ export async function PUT(
     const parsed = parseInvoiceWriteBody(body)
     const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
 
-    const existingInvoice = await prisma.invoice.findFirst({
-      where: {
-        id,
-        profileId: profile.id,
-      },
-    })
-
-    if (!existingInvoice) {
-      return NextResponse.json(
-        { error: 'Invoice not found or you do not have permission to edit it' },
-        { status: 404 }
-      )
-    }
-
     const updatedInvoice = await prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status FROM invoices WHERE id = ${id} AND "profileId" = ${profile.id} FOR UPDATE
+      `
+
+      if (locked.length === 0) {
+        throw new InvoiceClientError(
+          'Invoice not found or you do not have permission to edit it',
+          404
+        )
+      }
+
+      assertInvoiceContentEditable(locked[0].status)
+
       await assertOwnedProducts(profile.id, items, tx)
 
       await tx.invoiceItem.deleteMany({
@@ -210,10 +211,26 @@ export async function PATCH(
       )
     }
 
+    const hasContentChange =
+      parsed.invoiceNumber !== undefined ||
+      parsed.dueDate !== undefined ||
+      parsed.clientName !== undefined ||
+      parsed.clientAddress !== undefined
+
+    if (hasContentChange) {
+      assertInvoiceContentEditable(existingInvoice.status)
+    }
+
+    const paidAt =
+      parsed.status !== undefined
+        ? nextPaidAt(existingInvoice.status, existingInvoice.paidAt, parsed.status)
+        : undefined
+
     const updatedInvoice = await prisma.invoice.update({
       where: { id },
       data: {
         ...(parsed.status && { status: parsed.status }),
+        ...(paidAt !== undefined ? { paidAt } : {}),
         ...(parsed.invoiceNumber && { invoiceNumber: parsed.invoiceNumber }),
         ...(parsed.dueDate && { dueDate: new Date(parsed.dueDate) }),
         ...(parsed.clientName && { clientName: parsed.clientName }),

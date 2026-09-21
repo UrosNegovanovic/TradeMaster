@@ -11,6 +11,8 @@ import Link from 'next/link'
 import { InvoicePDF } from '@/components/invoices/InvoicePDF'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
+import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
+import { invoiceStatusLabel, invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 
 async function fetchInvoice(id: string): Promise<InvoiceWithItems & { profile: Profile }> {
   const response = await fetch(`/api/invoices/${id}`)
@@ -78,20 +80,24 @@ export default function InvoiceDetailPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/invoices">
-            <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={invoicesListHref(invoice.status)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </Link>
+              Nazad
+            </Link>
+          </Button>
           <div>
             <h1 className="text-3xl font-bold">{invoice.invoiceNumber}</h1>
             <p className="text-muted-foreground mt-1">
-              Invoice Details
+              Detalji fakture
             </p>
           </div>
         </div>
-        {pdfDocument && (
+        <div className="flex flex-wrap gap-2">
+          {isPaidInvoiceStatus(invoice.status) ? null : (
+            <InvoiceStatusActions invoiceId={invoice.id} status={invoice.status} size="default" />
+          )}
+          {pdfDocument && (
           <BlobProvider document={pdfDocument}>
             {({ blob, url, loading }) => (
               <Button
@@ -121,7 +127,8 @@ export default function InvoiceDetailPage() {
               </Button>
             )}
           </BlobProvider>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -138,7 +145,12 @@ export default function InvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
-                <p className="text-base font-semibold">{invoice.status}</p>
+                <p className="text-base font-semibold">{invoiceStatusLabel(invoice.status)}</p>
+                {isPaidInvoiceStatus(invoice.status) ? (
+                  <div className="mt-3">
+                    <InvoiceStatusActions invoiceId={invoice.id} status={invoice.status} />
+                  </div>
+                ) : null}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Created Date</p>

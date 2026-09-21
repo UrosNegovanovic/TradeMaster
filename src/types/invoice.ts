@@ -32,6 +32,7 @@ export type Invoice = {
   clientAddress: string | null
   status: InvoiceStatus
   totalAmount: Decimal
+  paidAt: Date | null
   profileId: string
   items?: InvoiceItem[]
   profile?: {

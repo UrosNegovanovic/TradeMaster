@@ -100,14 +100,14 @@ export default function CatalogsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No catalogs yet</h3>
+            <h3 className="text-lg font-semibold mb-2">Još nema kataloga</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Create your first catalog to get started
+              Napravite prvi katalog za klijenta.
             </p>
             <Link href="/catalogs/new">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Catalog
+                Novi katalog
               </Button>
             </Link>
           </CardContent>

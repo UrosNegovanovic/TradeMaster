@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => {
     product: { findMany: vi.fn() },
     invoice: { findFirst: vi.fn(), update: vi.fn() },
     invoiceItem: { deleteMany: vi.fn(), create: vi.fn() },
+    $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   }
   prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma))
@@ -25,6 +26,12 @@ import { auth } from '@clerk/nextjs/server'
 import { PATCH, PUT } from './route'
 
 const profile = { id: 'profile-a', clerkUserId: 'user-a' }
+const unpaidInvoice = {
+  id: 'inv-open',
+  profileId: profile.id,
+  status: 'UNPAID',
+  invoiceNumber: '2026-010',
+}
 const paidInvoice = {
   id: 'inv-paid',
   profileId: profile.id,
@@ -64,9 +71,10 @@ describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
     mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
     vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
     mocks.profile.findUnique.mockResolvedValue(profile)
-    mocks.invoice.findFirst.mockResolvedValue(paidInvoice)
+    mocks.invoice.findFirst.mockResolvedValue(unpaidInvoice)
+    mocks.$queryRaw.mockResolvedValue([{ id: unpaidInvoice.id, status: 'UNPAID' }])
     mocks.product.findMany.mockResolvedValue([{ id: 'product-a' }])
-    mocks.invoice.update.mockResolvedValue({ ...paidInvoice, items: [] })
+    mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, items: [] })
   })
 
   it('does not write status even when a valid UI DRAFT payload is sent', async () => {
@@ -91,10 +99,18 @@ describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
   })
 
   it('returns 404 for another owner invoice', async () => {
-    mocks.invoice.findFirst.mockResolvedValue(null)
+    mocks.$queryRaw.mockResolvedValue([])
     const response = await PUT(request('PUT', validPutBody), context)
     expect(response.status).toBe(404)
-    expect(mocks.$transaction).not.toHaveBeenCalled()
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects PUT on a paid invoice without changing items or totals', async () => {
+    mocks.$queryRaw.mockResolvedValue([{ id: paidInvoice.id, status: 'PAID' }])
+    const response = await PUT(request('PUT', validPutBody), context)
+    expect(response.status).toBe(409)
+    expect(mocks.invoiceItem.deleteMany).not.toHaveBeenCalled()
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
   })
 })
 
@@ -111,6 +127,34 @@ describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
     const response = await PATCH(request('PATCH', { status: 'UNPAID' }), context)
     expect(response.status).toBe(200)
     expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('UNPAID')
+    expect(mocks.invoice.update.mock.calls[0][0].data.paidAt).toBeNull()
+  })
+
+  it('stamps paidAt when an open invoice is marked paid', async () => {
+    mocks.invoice.findFirst.mockResolvedValue({ ...unpaidInvoice, paidAt: null })
+    mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, status: 'PAID' })
+    const response = await PATCH(request('PATCH', { status: 'PAID' }), {
+      params: Promise.resolve({ id: unpaidInvoice.id }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('PAID')
+    expect(mocks.invoice.update.mock.calls[0][0].data.paidAt).toBeInstanceOf(Date)
+  })
+
+  it('keeps the original paidAt if the invoice is already paid', async () => {
+    const paidAt = new Date('2026-01-15T10:00:00.000Z')
+    mocks.invoice.findFirst.mockResolvedValue({ ...paidInvoice, paidAt })
+    mocks.invoice.update.mockResolvedValue({ ...paidInvoice, paidAt })
+    const response = await PATCH(request('PATCH', { status: 'PAID' }), context)
+    expect(response.status).toBe(200)
+    expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('PAID')
+    expect(mocks.invoice.update.mock.calls[0][0].data.paidAt).toBeUndefined()
+  })
+
+  it('rejects content changes on a paid invoice', async () => {
+    const response = await PATCH(request('PATCH', { clientName: 'Changed' }), context)
+    expect(response.status).toBe(409)
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
   })
 
   it('rejects an unsupported PATCH body', async () => {

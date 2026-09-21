@@ -3,10 +3,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter, useParams } from 'next/navigation'
 import { InvoiceForm } from '@/components/invoices/InvoiceForm'
+import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
+import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -126,6 +131,36 @@ export default function EditInvoicePage() {
         <a href="/invoices" className="text-primary hover:underline">
           Back to Invoices
         </a>
+      </div>
+    )
+  }
+
+  if (isPaidInvoiceStatus(invoice.status)) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={invoicesListHref(invoice.status)}>Nazad na plaćene</Link>
+          </Button>
+          <h1 className="text-3xl font-bold mt-4">Faktura je zaključana</h1>
+          <p className="text-muted-foreground mt-2">
+            Plaćena faktura #{invoice.invoiceNumber} ne može da se menja.
+          </p>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Proizvodi i cene su zaključani</CardTitle>
+            <CardDescription>
+              Da biste menjali stavke, prvo vratite fakturu među otvorene.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <InvoiceStatusActions invoiceId={invoice.id} status={invoice.status} size="default" />
+            <Button variant="outline" asChild>
+              <Link href={`/invoices/${invoice.id}`}>Otvori fakturu</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

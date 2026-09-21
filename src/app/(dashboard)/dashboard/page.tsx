@@ -1,134 +1,102 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { InvoiceStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { 
-  Package, 
-  FileText, 
-  DollarSign, 
-  TrendingUp,
+import {
+  ArrowRight,
+  FileText,
+  Package,
   Plus,
-  Settings,
-  ArrowRight
+  ScanBarcode,
+  Warehouse,
 } from 'lucide-react'
 import Link from 'next/link'
 import { Decimal } from '@prisma/client/runtime/library'
-import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
+import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/local-date'
+import { formatRsd } from '@/lib/invoice-finance'
 
-// Format currency
-function formatCurrency(value: number | Decimal): string {
-  const numValue = typeof value === 'object' ? Number(value) : value
-  return new Intl.NumberFormat('sr-RS', {
-    style: 'currency',
-    currency: 'RSD',
-    minimumFractionDigits: 2,
-  }).format(numValue)
+function formatPieces(value: number): string {
+  return `${new Intl.NumberFormat('sr-RS').format(value)} komada`
 }
 
-// Format date for chart
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-  }).format(date)
-}
-
-interface ChartDataPoint {
-  date: string
-  count: number
-}
-
+/**
+ * Dashboard metrics assumptions:
+ * - Product.price is the catalog/invoice unit price (sale/base), not a dedicated purchase cost.
+ *   Stock value label is therefore "Prodajna vrednost lagera".
+ * - Daily batching allows multiple Product rows per SKU. Totals sum row quantity and
+ *   row quantity × price; they are not unique-SKU counts.
+ * - "Dodato danas" uses Product.createdAt in the server-local calendar day
+ *   [startOfToday, startOfTomorrow). It is not complete stock-receipt history.
+ * - Europe/Belgrade timezone policy is deferred.
+ * - "Otvorene fakture" are DRAFT + UNPAID. The headline is receivables
+ *   (sum of open totals). PAID invoices are booked as cash-basis revenue.
+ */
 async function getDashboardData(profileId: string) {
-  // Parallel data fetching for maximum performance
-  const [
-    productCount,
-    catalogCount,
-    recentProducts,
-    allProducts,
-  ] = await Promise.all([
-    // Total products count
-    prisma.product.count({
-      where: { profileId },
-    }),
-    
-    // Total catalogs count
-    prisma.catalog.count({
-      where: { profileId },
-    }),
-    
-    // Recent products (top 5)
-    prisma.product.findMany({
-      where: { profileId },
-      select: {
-        id: true,
-        name: true,
-        sku: true,
-        price: true,
-        createdAt: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 5,
-    }),
-    
-    // All products for analytics and inventory calculation
-    prisma.product.findMany({
-      where: { profileId },
-      select: {
-        id: true,
-        price: true,
-        createdAt: true,
-      },
-    }),
-  ])
+  const startOfToday = startOfLocalDay()
+  const startOfTomorrow = startOfLocalTomorrow()
+  const todayParam = formatLocalYmd(startOfToday)
 
-  // Calculate inventory value (sum of all product prices)
-  const inventoryValue = allProducts.reduce((sum: number, product: { price: Decimal }) => {
-    return sum + Number(product.price)
-  }, 0)
+  const [stockRows, addedToday, openAgg, openInvoices, productCount] =
+    await Promise.all([
+      prisma.$queryRaw<Array<{ totalQuantity: bigint | number | null; stockValue: Decimal | number | null }>>(
+        Prisma.sql`
+          SELECT
+            COALESCE(SUM(quantity), 0) AS "totalQuantity",
+            COALESCE(SUM(quantity * price), 0) AS "stockValue"
+          FROM products
+          WHERE "profileId" = ${profileId}
+        `
+      ),
+      prisma.product.aggregate({
+        where: {
+          profileId,
+          createdAt: {
+            gte: startOfToday,
+            lt: startOfTomorrow,
+          },
+        },
+        _count: true,
+        _sum: { quantity: true },
+      }),
+      prisma.invoice.aggregate({
+        where: { profileId, status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] } },
+        _count: true,
+        _sum: { totalAmount: true },
+      }),
+      prisma.invoice.findMany({
+        where: { profileId, status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] } },
+        select: {
+          id: true,
+          invoiceNumber: true,
+          clientName: true,
+          totalAmount: true,
+          status: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+      }),
+      prisma.product.count({
+        where: { profileId },
+      }),
+    ])
 
-  // Calculate products created per day (last 7 days)
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-  
-  // Group products by creation date
-  const productsByDate = new Map<string, number>()
-  
-  // Initialize all 7 days with 0
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    date.setHours(0, 0, 0, 0)
-    productsByDate.set(date.toISOString().split('T')[0], 0)
-  }
-  
-  // Count products per day
-  allProducts.forEach((product: { createdAt: Date }) => {
-    if (product.createdAt >= sevenDaysAgo) {
-      const date = new Date(product.createdAt)
-      date.setHours(0, 0, 0, 0)
-      const dateKey = date.toISOString().split('T')[0]
-      productsByDate.set(dateKey, (productsByDate.get(dateKey) || 0) + 1)
-    }
-  })
-  
-  // Convert to chart data format (sorted by dateKey which is already in chronological order)
-  const chartData: ChartDataPoint[] = Array.from(productsByDate.entries())
-    .sort(([dateKeyA], [dateKeyB]) => dateKeyA.localeCompare(dateKeyB))
-    .map(([dateKey, count]) => ({
-      date: formatDate(new Date(dateKey)),
-      count,
-    }))
+  const stock = stockRows[0]
+  const totalQuantity = Number(stock?.totalQuantity ?? 0)
+  const stockValue = Number(stock?.stockValue ?? 0)
 
   return {
+    todayParam,
+    totalQuantity,
+    stockValue,
+    addedTodayRows: addedToday._count,
+    addedTodayQuantity: addedToday._sum.quantity ?? 0,
+    openCount: openAgg._count,
+    openReceivables: Number(openAgg._sum.totalAmount ?? 0),
+    openInvoices,
     productCount,
-    catalogCount,
-    recentProducts,
-    inventoryValue,
-    chartData,
   }
 }
 
@@ -139,7 +107,6 @@ export default async function DashboardPage() {
     redirect('/sign-in')
   }
 
-  // Get user's profile
   const profile = await prisma.profile.findUnique({
     where: { clerkUserId: userId },
   })
@@ -148,207 +115,162 @@ export default async function DashboardPage() {
     redirect('/settings')
   }
 
-  // Fetch all dashboard data in parallel
-  const { productCount, catalogCount, recentProducts, inventoryValue, chartData } =
-    await getDashboardData(profile.id)
+  const {
+    todayParam,
+    totalQuantity,
+    stockValue,
+    addedTodayRows,
+    addedTodayQuantity,
+    openCount,
+    openReceivables,
+    openInvoices,
+    productCount,
+  } = await getDashboardData(profile.id)
 
-  // Check if there's any data
-  const hasData = productCount > 0 || catalogCount > 0
-
-  // Empty state
-  if (!hasData) {
-    return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <TrendingUp className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Welcome to TradeMaster</CardTitle>
-            <CardDescription className="text-base">
-              Get started by adding your first product or creating a catalog
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <Link href="/inventory">
-              <Button className="w-full" size="lg">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Your First Product
-              </Button>
-            </Link>
-            <Link href="/catalogs/new">
-              <Button variant="outline" className="w-full" size="lg">
-                <FileText className="mr-2 h-4 w-4" />
-                Create Your First Catalog
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const showEmptyCta = productCount === 0 && openCount === 0
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Overview of your inventory and catalogs
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold sm:text-3xl">Početna</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Lager, današnji unosi i otvorene fakture
+          </p>
+        </div>
+        <div className="hidden md:block w-full max-w-xs">
+          <QuickScanButton />
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {showEmptyCta ? (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{productCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Products in inventory
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Catalogs</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{catalogCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Catalogs created
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(inventoryValue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total value of all products
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Middle Section: Chart and Quick Actions */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        {/* Analytics Chart - 2/3 width */}
-        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Products Created (Last 7 Days)</CardTitle>
-            <CardDescription className="text-sm">
-              Track your product additions over the past week
+            <CardTitle>Još nema asortimana</CardTitle>
+            <CardDescription>
+              Skenirajte prvi proizvod ili ga dodajte ručno da biste videli lager.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pl-2">
-            <AnalyticsChart data={chartData} />
+          <CardContent className="flex flex-col gap-2 sm:flex-row">
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/inventory">
+                <Plus className="mr-2 h-4 w-4" />
+                Dodaj proizvod
+              </Link>
+            </Button>
+            <p className="text-sm text-muted-foreground self-center md:hidden">
+              <ScanBarcode className="mr-1 inline h-4 w-4" />
+              Koristite dugme Skeniraj proizvod
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Lager</CardTitle>
+            <CardDescription>Zbir količina po redovima proizvoda</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Ukupna količina</p>
+              <p className="text-2xl font-bold">{formatPieces(totalQuantity)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Prodajna vrednost lagera</p>
+              <p className="text-2xl font-bold">{formatRsd(stockValue)}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/inventory">
+                  Asortiman
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/warehouse">
+                  <Warehouse className="mr-2 h-4 w-4" />
+                  Magacin
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Quick Actions - 1/3 width */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Quick Actions</CardTitle>
-            <CardDescription className="text-sm">Common tasks</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Dodato danas</CardTitle>
+            <CardDescription>Novi redovi proizvoda, ne kompletni prijem</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <QuickScanButton />
-            <Link href="/inventory">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
+          <CardContent className="space-y-3">
+            {addedTodayRows === 0 ? (
+              <p className="text-sm text-muted-foreground">Danas još nije dodat nijedan proizvod.</p>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{addedTodayRows} unosa</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatPieces(addedTodayQuantity)}
+                </p>
+              </div>
+            )}
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/inventory?date=${todayParam}`}>
+                <Package className="mr-2 h-4 w-4" />
+                Otvori današnji asortiman
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Otvorene fakture</CardTitle>
+            <CardDescription>Potraživanja. Plaćene idu u prihod.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {openCount === 0 ? (
+              <p className="text-sm text-muted-foreground">Nema otvorenih faktura.</p>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-2xl font-bold">{formatRsd(openReceivables)}</p>
+                  <p className="text-sm text-muted-foreground">{openCount} otvorenih</p>
+                </div>
+                <ul className="space-y-2">
+                  {openInvoices.map((invoice) => (
+                    <li key={invoice.id}>
+                      <Link
+                        href={`/invoices/${invoice.id}`}
+                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
+                      >
+                        <span className="truncate">
+                          {invoice.invoiceNumber}
+                          <span className="ml-2 text-muted-foreground">{invoice.clientName}</span>
+                        </span>
+                        <span className="ml-3 shrink-0 font-medium">
+                          {formatRsd(Number(invoice.totalAmount))}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/invoices">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Otvorene
+                </Link>
               </Button>
-            </Link>
-            <Link href="/catalogs/new">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
-                Create Catalog
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/finance">Finansije</Link>
               </Button>
-            </Link>
-            <Link href="/invoices/new">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
-                New Invoice
-              </Button>
-            </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Products Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-lg sm:text-xl">Recent Products</CardTitle>
-              <CardDescription className="text-sm">The 5 most recently added products</CardDescription>
-            </div>
-            <Link href="/inventory" className="w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {recentProducts.length > 0 ? (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                        Name
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                        SKU
-                      </th>
-                      <th className="text-right py-3 px-4 font-medium text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                        Price
-                      </th>
-                      <th className="text-right py-3 px-4 font-medium text-xs sm:text-sm text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                        Created
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentProducts.map((product: { id: string; name: string; sku: string; price: Decimal; createdAt: Date }) => (
-                      <tr key={product.id} className="border-b hover:bg-muted/50 transition-colors">
-                        <td className="py-3 px-4 font-medium text-sm whitespace-nowrap">{product.name}</td>
-                        <td className="py-3 px-4 text-xs sm:text-sm text-muted-foreground font-mono whitespace-nowrap">
-                          {product.sku}
-                        </td>
-                        <td className="py-3 px-4 text-right font-semibold text-sm whitespace-nowrap">
-                          {formatCurrency(product.price)}
-                        </td>
-                        <td className="py-3 px-4 text-right text-xs sm:text-sm text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                          {new Date(product.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 mb-3 opacity-50" />
-              <p>No products yet. Create your first product to get started!</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

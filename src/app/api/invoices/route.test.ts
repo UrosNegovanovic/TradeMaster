@@ -224,7 +224,7 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
     expect(mocks.invoiceItem.create.mock.calls[0][0].data.total.toString()).toBe('21.1')
   })
 
-  it('defaults omitted status to DRAFT and accepts an explicit enum value', async () => {
+  it('defaults omitted status to UNPAID and accepts an explicit enum value', async () => {
     await POST(
       postRequest({
         invoiceNumber: '2026-005',
@@ -241,7 +241,8 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
         ],
       })
     )
-    expect(mocks.invoice.create.mock.calls[0][0].data.status).toBe('DRAFT')
+    expect(mocks.invoice.create.mock.calls[0][0].data.status).toBe('UNPAID')
+    expect(mocks.invoice.create.mock.calls[0][0].data.paidAt).toBeNull()
 
     await POST(
       postRequest({

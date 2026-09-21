@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import { ProductForm } from '@/components/inventory/ProductForm'
 import { ProductList } from '@/components/inventory/ProductList'
@@ -14,6 +14,7 @@ import { Plus, Search } from 'lucide-react'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
+import { formatLocalYmd, isSameLocalDay, parseLocalYmd } from '@/lib/local-date'
 import {
   Dialog,
   DialogContent,
@@ -80,6 +81,8 @@ async function deleteProduct(id: string): Promise<void> {
 
 export default function InventoryPage() {
   const queryClient = useQueryClient()
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -87,13 +90,21 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [scannedData, setScannedData] = useState<Partial<ProductFormData> | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  
-  // ✅ Default to TODAY for daily batching view
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Normalize to midnight
-    return today
-  })
+  const selectedDate = useMemo(
+    () => parseLocalYmd(searchParams.get('date')),
+    [searchParams]
+  )
+
+  const handleDateChange = (date: Date | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (date) {
+      params.set('date', formatLocalYmd(date))
+    } else {
+      params.delete('date')
+    }
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
 
   // Handle Quick Scan from Dashboard - automatically open form with pre-filled data
   useEffect(() => {
@@ -103,22 +114,26 @@ export default function InventoryPage() {
       const name = searchParams.get('name') || ''
       const description = searchParams.get('description') || ''
       const imageUrl = searchParams.get('imageUrl') || ''
-      
+
       setScannedData({
         sku,
         name,
         description,
         imageUrl,
-        price: 0, // User must enter price manually
+        price: 0,
       })
       setIsFormOpen(true)
-      
-      // Clear URL params after reading (optional - keeps URL clean)
-      if (typeof window !== 'undefined') {
-        window.history.replaceState({}, '', '/inventory')
-      }
+
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('scan')
+      params.delete('sku')
+      params.delete('name')
+      params.delete('description')
+      params.delete('imageUrl')
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
     }
-  }, [searchParams])
+  }, [pathname, router, searchParams])
 
   // Fetch products
   const { data: products = [], isLoading } = useQuery({
@@ -147,17 +162,9 @@ export default function InventoryPage() {
 
     // Filter by date (only products created on selected date)
     if (selectedDate) {
-      filtered = filtered.filter((product) => {
-        const productDate = new Date(product.createdAt)
-        const selectedDateOnly = new Date(selectedDate)
-        
-        // Compare only date parts (ignore time)
-        return (
-          productDate.getFullYear() === selectedDateOnly.getFullYear() &&
-          productDate.getMonth() === selectedDateOnly.getMonth() &&
-          productDate.getDate() === selectedDateOnly.getDate()
-        )
-      })
+      filtered = filtered.filter((product) =>
+        isSameLocalDay(new Date(product.createdAt), selectedDate)
+      )
     }
 
     return filtered
@@ -295,23 +302,26 @@ export default function InventoryPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">Loading products...</p>
+        <p className="text-muted-foreground">Učitavanje asortimana...</p>
       </div>
     )
   }
+
+  const isEmptyAssortment = products.length === 0
+  const isEmptyFilterResults = !isEmptyAssortment && filteredProducts.length === 0
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Inventory</h1>
+          <h1 className="text-3xl font-bold">Asortiman</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your product inventory
+            Svi proizvodi, sa opcionim filterom po datumu
           </p>
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Product
+          Dodaj proizvod
         </Button>
       </div>
 
@@ -333,19 +343,38 @@ export default function InventoryPage() {
           selectedCategory={selectedCategory}
           selectedDate={selectedDate}
           onCategoryChange={setSelectedCategory}
-          onDateChange={setSelectedDate}
+          onDateChange={handleDateChange}
         />
       </div>
 
-      {/* Show empty state message for search results */}
-      {searchQuery.trim() && filteredProducts.length === 0 ? (
+      {isEmptyAssortment ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No products found matching &quot;{searchQuery}&quot;
-          </p>
+          <p className="font-medium">Asortiman je prazan</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Try adjusting your search terms.
+            Dodajte prvi proizvod ili ga skenirajte.
           </p>
+          <Button className="mt-4" onClick={() => setIsFormOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Dodaj proizvod
+          </Button>
+        </div>
+      ) : isEmptyFilterResults ? (
+        <div className="text-center py-12">
+          <p className="font-medium">Nema rezultata za izabrane filtere</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Uklonite datum, kategoriju ili pretragu da vidite ceo asortiman.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => {
+              setSearchQuery('')
+              setSelectedCategory(null)
+              handleDateChange(null)
+            }}
+          >
+            Ukloni filtere
+          </Button>
         </div>
       ) : (
         <ProductList

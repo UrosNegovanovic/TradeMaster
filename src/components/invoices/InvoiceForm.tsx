@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, Loader2 } from 'lucide-react'
 import { Product } from '@/types/product'
-import { InvoiceCreateInput } from '@/types/invoice'
+import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceWriteSchema } from '@/lib/validations'
 
 interface InvoiceFormProps {
@@ -157,6 +157,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       dueDate: validation.data.dueDate,
       clientName: validation.data.clientName,
       clientAddress: validation.data.clientAddress || undefined,
+      ...(initialData ? {} : { status: InvoiceStatus.UNPAID }),
       items: validation.data.items.map((item) => ({
         productId: item.productId ?? null,
         productName: item.productName,

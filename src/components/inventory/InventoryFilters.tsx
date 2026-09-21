@@ -16,6 +16,7 @@ import {
 import { CalendarIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { isSameLocalDay, startOfLocalDay } from '@/lib/local-date'
 
 interface InventoryFiltersProps {
   selectedCategory: string | null
@@ -39,8 +40,9 @@ export function InventoryFilters({
   onDateChange,
 }: InventoryFiltersProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const today = startOfLocalDay()
+  const isTodaySelected = isSameLocalDay(selectedDate, today)
 
-  // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
@@ -48,17 +50,16 @@ export function InventoryFilters({
 
   return (
     <div className="flex flex-col sm:flex-row gap-3">
-      {/* Category Filter */}
       <div className="flex-1 min-w-[200px]">
         <Select
           value={selectedCategory || 'all'}
           onValueChange={(value) => onCategoryChange(value === 'all' ? null : value)}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder="Sve kategorije" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">Sve kategorije</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -68,8 +69,16 @@ export function InventoryFilters({
         </Select>
       </div>
 
-      {/* Date Filter */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant={isTodaySelected ? 'default' : 'outline'}
+          aria-pressed={isTodaySelected}
+          onClick={() => onDateChange(isTodaySelected ? null : today)}
+        >
+          Danas
+        </Button>
+
         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -80,7 +89,7 @@ export function InventoryFilters({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
+              {selectedDate ? format(selectedDate, 'PPP') : <span>Svi datumi</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -96,17 +105,17 @@ export function InventoryFilters({
           </PopoverContent>
         </Popover>
 
-        {/* Clear Date Filter Button */}
-        {selectedDate && (
+        {selectedDate ? (
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onDateChange(null)}
-            title="Clear date filter"
+            aria-label="Ukloni datum"
+            title="Ukloni datum"
           >
             <X className="h-4 w-4" />
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   )

@@ -3,47 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { 
-  LayoutDashboard, 
-  Package, 
-  FileText, 
-  Settings,
-  Home,
-  Warehouse
-} from 'lucide-react'
-
-const navigation = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: Home,
-  },
-  {
-    name: 'Inventory',
-    href: '/inventory',
-    icon: Package,
-  },
-  {
-    name: 'Catalogs',
-    href: '/catalogs',
-    icon: FileText,
-  },
-  {
-    name: 'Invoices',
-    href: '/invoices',
-    icon: FileText,
-  },
-  {
-    name: 'Magacin',
-    href: '/warehouse',
-    icon: Warehouse,
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
-]
+import { navigation } from './navigation'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -59,10 +19,10 @@ export function Sidebar() {
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
           const Icon = item.icon
-          
+
           return (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',

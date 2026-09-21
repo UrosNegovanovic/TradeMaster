@@ -9,6 +9,8 @@ import {
   parseInvoiceWriteBody,
   parseJsonBody,
 } from '@/lib/invoice-service'
+import { OPEN_INVOICE_STATUS } from '@/lib/invoice-status'
+import { nextPaidAt } from '@/lib/invoice-finance'
 
 export async function GET() {
   try {
@@ -87,6 +89,8 @@ export async function POST(request: NextRequest) {
     const body = await parseJsonBody(request)
     const parsed = parseInvoiceWriteBody(body)
     const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
+    const status = parsed.status ?? OPEN_INVOICE_STATUS
+    const paidAt = nextPaidAt('UNPAID', null, status)
 
     const invoice = await prisma.$transaction(async (tx) => {
       await assertOwnedProducts(profile.id, items, tx)
@@ -97,7 +101,8 @@ export async function POST(request: NextRequest) {
           dueDate: new Date(parsed.dueDate),
           clientName: parsed.clientName,
           clientAddress: parsed.clientAddress || null,
-          status: parsed.status ?? 'DRAFT',
+          status,
+          paidAt: paidAt ?? null,
           totalAmount,
           profileId: profile.id,
         },

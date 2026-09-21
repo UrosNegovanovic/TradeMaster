@@ -5,10 +5,18 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceWriteSchema } from '@/lib/validations'
+import {
+  clampDiscountPercent,
+  lineDiscountAmount,
+  lineSubtotal,
+  lineTotal,
+  remainingStock,
+  stockBySku,
+} from '@/lib/invoice-line'
 
 interface InvoiceFormProps {
   products: Product[]
@@ -58,8 +66,12 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
             productName: item.productName,
             quantity: item.quantity,
             unitPrice: Number(item.unitPrice),
-            discount: item.discount || 0,
-            total: Number(item.total),
+            discount: Number(item.discount || 0),
+            total: lineTotal(
+              Number(item.quantity) || 1,
+              Number(item.unitPrice),
+              Number(item.discount || 0)
+            ),
           }))
         )
       }
@@ -70,6 +82,36 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
   const grandTotal = useMemo(() => {
     return items.reduce((sum, item) => sum + item.total, 0)
   }, [items])
+
+  const stockMap = useMemo(() => stockBySku(products), [products])
+  const productsById = useMemo(() => {
+    return new Map(products.map((product) => [product.id, product]))
+  }, [products])
+
+  const lineStock = useMemo(() => {
+    const lines = items.map((item) => ({
+      id: item.id,
+      sku: item.productId ? productsById.get(item.productId)?.sku ?? null : null,
+      quantity: item.quantity,
+    }))
+
+    return new Map(
+      items.map((item) => {
+        const sku = item.productId ? productsById.get(item.productId)?.sku ?? null : null
+        const available = remainingStock({
+          sku,
+          lineId: item.id,
+          lines,
+          stockBySku: stockMap,
+        })
+        const shortage =
+          available === null ? 0 : Math.max(0, item.quantity - Math.max(0, available))
+        return [item.id, { available, shortage, sku }] as const
+      })
+    )
+  }, [items, productsById, stockMap])
+
+  const hasShortage = [...lineStock.values()].some((entry) => entry.shortage > 0)
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -115,9 +157,11 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
             }
           }
 
-          // Recalculate total with discount
-          const subtotal = updated.quantity * updated.unitPrice
-          updated.total = subtotal * (1 - updated.discount / 100)
+          // Recalculate total as a percent of quantity × unit price
+          updated.discount = clampDiscountPercent(Number(updated.discount) || 0)
+          updated.quantity = Math.max(1, Math.trunc(Number(updated.quantity) || 1))
+          updated.unitPrice = Number(updated.unitPrice) || 0
+          updated.total = lineTotal(updated.quantity, updated.unitPrice, updated.discount)
 
           return updated
         }
@@ -256,7 +300,12 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
               <div className="col-span-1"></div>
             </div>
 
-            {items.map((item) => (
+            {items.map((item) => {
+              const stock = lineStock.get(item.id)
+              const subtotal = lineSubtotal(item.quantity, item.unitPrice)
+              const saved = lineDiscountAmount(item.quantity, item.unitPrice, item.discount)
+
+              return (
               <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-start border-b pb-4 md:border-0 md:pb-0">
                 {/* Product Select - Full width on mobile */}
                 <div className="md:col-span-3">
@@ -269,7 +318,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                     <option value="">Select Product</option>
                     {products.map((product) => (
                       <option key={product.id} value={product.id}>
-                        {product.name} (SKU: {product.sku})
+                        {product.name} (SKU: {product.sku}) — {product.quantity} kom
                       </option>
                     ))}
                   </select>
@@ -282,12 +331,31 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                     <Input
                       type="number"
                       min="1"
+                      inputMode="numeric"
                       value={item.quantity || ''}
                       onChange={(e) =>
-                        updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)
+                        updateItem(item.id, 'quantity', parseInt(e.target.value, 10) || 1)
                       }
+                      aria-invalid={Boolean(stock?.shortage)}
                       required
                     />
+                    {stock?.available !== null && stock?.available !== undefined ? (
+                      <p
+                        className={
+                          stock.shortage > 0
+                            ? 'mt-1 text-xs font-medium text-amber-700'
+                            : 'mt-1 text-xs text-muted-foreground'
+                        }
+                      >
+                        {stock.shortage > 0 ? (
+                          <>
+                            Manjak {stock.shortage} kom (na stanju {Math.max(0, stock.available)}).
+                          </>
+                        ) : (
+                          <>Na stanju: {Math.max(0, stock.available)} kom</>
+                        )}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="md:col-span-2">
                     <Label className="md:hidden text-sm mb-1.5 block">Unit Price</Label>
@@ -307,22 +375,43 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                 {/* Discount and Total - Row on mobile */}
                 <div className="grid grid-cols-2 gap-3 md:contents">
                   <div className="md:col-span-2">
-                    <Label className="md:hidden text-sm mb-1.5 block">Discount (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={item.discount || ''}
-                      onChange={(e) =>
-                        updateItem(item.id, 'discount', parseFloat(e.target.value) || 0)
-                      }
-                      placeholder="0"
-                    />
+                    <Label className="md:hidden text-sm mb-1.5 block">Popust (%)</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={item.discount}
+                        onChange={(e) =>
+                          updateItem(
+                            item.id,
+                            'discount',
+                            clampDiscountPercent(parseFloat(e.target.value) || 0)
+                          )
+                        }
+                        placeholder="0"
+                        className="pr-8"
+                        aria-label="Popust u procentima"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                        %
+                      </span>
+                    </div>
+                    {item.discount > 0 ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        −{item.discount}% ({formatCurrency(saved)})
+                      </p>
+                    ) : null}
                   </div>
-                  <div className="md:col-span-2 flex flex-col">
+                  <div className="md:col-span-2 flex flex-col justify-center">
                     <Label className="md:hidden text-sm mb-1.5 block">Total</Label>
-                    <div className="flex items-center h-10 text-sm font-semibold">
+                    {item.discount > 0 ? (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {formatCurrency(subtotal)}
+                      </span>
+                    ) : null}
+                    <div className="flex h-10 items-center text-sm font-semibold">
                       {formatCurrency(item.total)}
                     </div>
                   </div>
@@ -344,14 +433,24 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                   )}
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Summary */}
-          <div className="mt-6 pt-4 border-t">
-            <div className="flex justify-between items-center">
-              <span className="text-base sm:text-lg font-semibold">Grand Total:</span>
-              <span className="text-xl sm:text-2xl font-bold">{formatCurrency(grandTotal)}</span>
+          <div className="mt-6 space-y-3 border-t pt-4">
+            {hasShortage ? (
+              <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>
+                  Ima stavki iznad stanja. Faktura se može sačuvati (potraživanje), a manjak
+                  uskladite skidanjem robe u Magacinu — lager se ovde ne skida automatski.
+                </p>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between">
+              <span className="text-base font-semibold sm:text-lg">Grand Total:</span>
+              <span className="text-xl font-bold sm:text-2xl">{formatCurrency(grandTotal)}</span>
             </div>
           </div>
         </CardContent>

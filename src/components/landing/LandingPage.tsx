@@ -219,6 +219,31 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section
+          aria-labelledby="landing-demo-heading"
+          className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 sm:pb-12"
+        >
+          <h2
+            id="landing-demo-heading"
+            className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+          >
+            Kako izgleda
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-brand/10 bg-card shadow-[0_16px_40px_-24px_rgba(26,110,92,0.45)]">
+            <video
+              className="aspect-video w-full bg-brand"
+              controls
+              playsInline
+              preload="metadata"
+              poster="/landing-demo-poster.jpg"
+              controlsList="nodownload"
+            >
+              <source src="/landing-demo.mp4" type="video/mp4" />
+              Demo nije mogao da se učita.
+            </video>
+          </div>
+        </section>
+
         <section className="border-y border-brand/10 bg-brand-tint/80">
           <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-3 sm:gap-10 sm:px-6 sm:py-10">
             {who.map((item) => (

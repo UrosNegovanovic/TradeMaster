@@ -252,7 +252,7 @@ export default function WarehousePage() {
         <CardHeader>
           <CardTitle>Istorija kretanja</CardTitle>
           <CardDescription>
-            Poslednjih 50 ulaza i izlaza
+            Prvih 10 ulaza i izlaza
           </CardDescription>
         </CardHeader>
         <CardContent>

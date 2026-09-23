@@ -1,8 +1,9 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { MovementType, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { parseStockMovementListParams } from '@/lib/stock-movement-query'
 import { z } from 'zod'
-import { MovementType } from '@prisma/client'
 
 // Validation schema for stock movement creation
 const stockMovementSchema = z.object({
@@ -17,6 +18,7 @@ const stockMovementSchema = z.object({
  * Fetch stock movements for the authenticated user
  * Query params:
  *   - limit: number of movements to return (default: 50, max: 100)
+ *   - all=1 or limit=all: return every movement for the profile
  *   - productId: filter by specific product
  */
 export async function GET(request: NextRequest) {
@@ -38,11 +40,10 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
-    const productId = searchParams.get('productId')
+    const { take, productId } = parseStockMovementListParams(searchParams)
 
     // Build where clause
-    const where: any = {
+    const where: Prisma.StockMovementWhereInput = {
       profileId: profile.id,
     }
 
@@ -50,25 +51,31 @@ export async function GET(request: NextRequest) {
       where.productId = productId
     }
 
-    // Fetch stock movements
-    const movements = await prisma.stockMovement.findMany({
-      where,
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
+    const [movements, total] = await Promise.all([
+      prisma.stockMovement.findMany({
+        where,
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: limit,
-    })
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take,
+      }),
+      prisma.stockMovement.count({ where }),
+    ])
 
-    return NextResponse.json(movements)
+    return NextResponse.json(movements, {
+      headers: {
+        'X-Total-Count': String(total),
+      },
+    })
   } catch (error) {
     console.error('Error fetching stock movements:', error)
     return NextResponse.json(

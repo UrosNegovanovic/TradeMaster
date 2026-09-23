@@ -4,26 +4,18 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { AlertTriangle, ArrowDown, ArrowUp, Package, Minus, ChevronDown, ChevronRight } from 'lucide-react'
+import { AlertTriangle, Package, Minus, ChevronDown, ChevronRight } from 'lucide-react'
 import { StockMovement, LowStockProduct, StockMovementCreateInput } from '@/types/warehouse'
 import { Product } from '@/types/product'
 import { StockOutForm } from '@/components/warehouse/StockOutForm'
 import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
+import { StockMovementHistory } from '@/components/warehouse/StockMovementHistory'
 import { MovementType } from '@prisma/client'
 import { notify } from '@/lib/notify'
 import { ProductImage } from '@/components/shared/ProductImage'
@@ -47,13 +39,23 @@ async function fetchLowStockProducts(): Promise<LowStockProduct[]> {
   return response.json()
 }
 
+type StockMovementList = {
+  movements: StockMovement[]
+  totalCount: number
+}
+
 // Fetch stock movements
-async function fetchStockMovements(): Promise<StockMovement[]> {
+async function fetchStockMovements(): Promise<StockMovementList> {
   const response = await fetch('/api/stock-movements?limit=50')
   if (!response.ok) {
     throw new Error('Failed to fetch stock movements')
   }
-  return response.json()
+  const movements: StockMovement[] = await response.json()
+  const headerCount = Number(response.headers.get('X-Total-Count'))
+  return {
+    movements,
+    totalCount: Number.isFinite(headerCount) ? headerCount : movements.length,
+  }
 }
 
 // Create stock movement
@@ -74,17 +76,6 @@ async function createStockMovement(data: StockMovementCreateInput): Promise<Stoc
   return response.json()
 }
 
-// Format date for display
-function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat('sr-RS', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
-}
-
 export default function WarehousePage() {
   const queryClient = useQueryClient()
   const [stockOutOpen, setStockOutOpen] = useState(false)
@@ -101,10 +92,12 @@ export default function WarehousePage() {
     queryFn: fetchLowStockProducts,
   })
 
-  const { data: stockMovements = [], isLoading: isLoadingMovements } = useQuery({
+  const { data: movementList, isLoading: isLoadingMovements } = useQuery({
     queryKey: ['stockMovements'],
     queryFn: fetchStockMovements,
   })
+  const stockMovements = movementList?.movements ?? []
+  const movementTotalCount = movementList?.totalCount ?? stockMovements.length
 
   // Create stock movement mutation (OUT only - IN is handled by Scanner)
   const createMovementMutation = useMutation({
@@ -263,106 +256,11 @@ export default function WarehousePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoadingMovements ? (
-            <p className="text-center py-8 text-muted-foreground">Loading movements...</p>
-          ) : stockMovements.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="mx-auto h-12 w-12 mb-3 opacity-50 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                No stock movements yet. Use the Inventory Scanner to add products, or register stock out movements above.
-              </p>
-            </div>
-          ) : (
-            <div>
-              <ul className="space-y-2 lg:hidden">
-                {stockMovements.map((movement) => (
-                  <li
-                    key={movement.id}
-                    className="flex items-start gap-3 rounded-xl border p-3"
-                  >
-                    {movement.type === MovementType.IN ? (
-                      <Badge variant="default" className="mt-0.5 bg-green-600">
-                        <ArrowUp className="mr-1 h-3 w-3" />
-                        UL
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="mt-0.5">
-                        <ArrowDown className="mr-1 h-3 w-3" />
-                        IZ
-                      </Badge>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 font-medium leading-tight">
-                        {movement.product.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {movement.product.sku} · {formatDate(movement.createdAt)}
-                      </p>
-                      {movement.reason ? (
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {movement.reason}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span className="shrink-0 font-semibold">
-                      {movement.type === MovementType.IN ? '+' : '-'}
-                      {movement.quantity}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="hidden overflow-x-auto lg:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Proizvod</TableHead>
-                    <TableHead>Tip</TableHead>
-                    <TableHead className="text-right">Količina</TableHead>
-                    <TableHead>Razlog</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stockMovements.map((movement) => (
-                    <TableRow key={movement.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(movement.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{movement.product.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            SKU: {movement.product.sku}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {movement.type === MovementType.IN ? (
-                          <Badge variant="default" className="bg-green-500">
-                            <ArrowUp className="mr-1 h-3 w-3" />
-                            IN
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            <ArrowDown className="mr-1 h-3 w-3" />
-                            OUT
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {movement.type === MovementType.IN ? '+' : '-'}
-                        {movement.quantity}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {movement.reason}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              </div>
-            </div>
-          )}
+          <StockMovementHistory
+            movements={stockMovements}
+            totalCount={movementTotalCount}
+            isLoading={isLoadingMovements}
+          />
         </CardContent>
       </Card>
 

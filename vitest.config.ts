@@ -19,6 +19,8 @@ export default defineConfig({
       'src/lib/api-error.test.ts',
       'src/lib/route-access.test.ts',
       'src/lib/stock-backfill.test.ts',
+      'src/lib/stock-movement-query.test.ts',
+      'src/lib/stock-movement-filters.test.ts',
       'src/lib/draft-number.test.ts',
       'src/lib/persist-product-image.test.ts',
       'src/lib/public-catalog.test.ts',

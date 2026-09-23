@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input'
 import { DraftNumberInput } from '@/components/ui/draft-number-input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2, Loader2, AlertTriangle, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceWriteSchema } from '@/lib/validations'
+import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
 import {
   clampDiscountPercent,
   lineDiscountAmount,
@@ -40,9 +41,7 @@ interface InvoiceItemRow {
 const INVOICE_ITEM_TRACKS =
   'md:grid-cols-[minmax(0,2.8fr)_minmax(5.25rem,0.55fr)_minmax(5.75rem,0.6fr)_minmax(5.75rem,0.6fr)_minmax(6.5rem,0.65fr)_auto]'
 
-function productSelectLabel(product: Pick<Product, 'name' | 'sku' | 'quantity'>) {
-  return `${product.name} (SKU: ${product.sku}) — ${product.quantity} kom`
-}
+const mobileFieldLabelClass = 'mb-1.5 block text-sm leading-snug tracking-normal md:hidden'
 
 export function InvoiceForm({ products, onSubmit, isLoading = false, initialData }: InvoiceFormProps) {
   const [invoiceNumber, setInvoiceNumber] = useState('')
@@ -301,14 +300,23 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       {/* Items Section */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Invoice Items</CardTitle>
-              <CardDescription>Add products to the invoice</CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1.5">
+              <CardTitle className="text-xl leading-snug tracking-normal">
+                Stavke fakture
+              </CardTitle>
+              <CardDescription className="leading-snug">
+                Dodajte proizvode na fakturu
+              </CardDescription>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={addItem}>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 shrink-0 self-start"
+              onClick={addItem}
+            >
               <Plus className="mr-2 h-4 w-4" />
-              Add Item
+              Dodaj stavku
             </Button>
           </div>
         </CardHeader>
@@ -316,13 +324,13 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
           <div className="space-y-4">
             {/* Desktop Table Header */}
             <div
-              className={`hidden gap-3 border-b pb-2 text-sm font-medium text-muted-foreground md:grid ${INVOICE_ITEM_TRACKS}`}
+              className={`hidden gap-3 border-b pb-2 text-sm font-medium leading-snug tracking-normal text-muted-foreground md:grid ${INVOICE_ITEM_TRACKS}`}
             >
-              <div>Product</div>
-              <div>Quantity</div>
-              <div>Unit Price</div>
-              <div>Discount (%)</div>
-              <div>Total</div>
+              <div>Proizvod</div>
+              <div>Količina</div>
+              <div>Jedinična cena</div>
+              <div>Popust (%)</div>
+              <div>Ukupno</div>
               <div></div>
             </div>
 
@@ -330,47 +338,25 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
               const stock = lineStock.get(item.id)
               const subtotal = lineSubtotal(item.quantity, item.unitPrice)
               const saved = lineDiscountAmount(item.quantity, item.unitPrice, item.discount)
-              const selectedProduct = item.productId
-                ? productsById.get(item.productId)
-                : undefined
-              const selectedTitle = selectedProduct
-                ? productSelectLabel(selectedProduct)
-                : 'Select Product'
 
               return (
               <div
                 key={item.id}
                 className={`grid grid-cols-1 gap-3 border-b pb-4 md:items-start md:border-0 md:pb-0 ${INVOICE_ITEM_TRACKS}`}
               >
-                {/* Product Select - Full width on mobile, widest track on desktop */}
                 <div className="min-w-0">
-                  <Label className="md:hidden text-sm mb-1.5 block">Product</Label>
-                  <div className="relative min-w-0">
-                    <select
-                      className="h-11 w-full min-w-0 max-w-full appearance-none truncate rounded-md border border-input bg-background py-2 pl-3 pr-9 text-xs leading-tight md:h-10 md:text-sm"
-                      value={item.productId || ''}
-                      title={selectedTitle}
-                      aria-label={selectedTitle}
-                      onChange={(e) => updateItem(item.id, 'productId', e.target.value || null)}
-                    >
-                      <option value="">Select Product</option>
-                      {products.map((product) => {
-                        const label = productSelectLabel(product)
-                        return (
-                          <option key={product.id} value={product.id} title={label}>
-                            {label}
-                          </option>
-                        )
-                      })}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  </div>
+                  <Label className={mobileFieldLabelClass}>Proizvod</Label>
+                  <InvoiceProductPicker
+                    products={products}
+                    value={item.productId}
+                    onChange={(productId) => updateItem(item.id, 'productId', productId)}
+                  />
                 </div>
 
                 {/* Quantity and Unit Price - Row on mobile */}
                 <div className="grid grid-cols-2 gap-3 md:contents">
                   <div className="min-w-0">
-                    <Label className="md:hidden text-sm mb-1.5 block">Quantity</Label>
+                    <Label className={mobileFieldLabelClass}>Količina</Label>
                     <DraftNumberInput
                       kind="integer"
                       min={1}
@@ -384,8 +370,8 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                       <p
                         className={
                           stock.shortage > 0
-                            ? 'mt-1 text-xs font-medium text-amber-700'
-                            : 'mt-1 text-xs text-muted-foreground'
+                            ? 'mt-1 break-words text-xs font-medium leading-snug tracking-normal text-amber-700'
+                            : 'mt-1 break-words text-xs leading-snug tracking-normal text-muted-foreground'
                         }
                       >
                         {stock.shortage > 0 ? (
@@ -399,7 +385,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                     ) : null}
                   </div>
                   <div className="min-w-0">
-                    <Label className="md:hidden text-sm mb-1.5 block">Unit Price</Label>
+                    <Label className={mobileFieldLabelClass}>Jedinična cena</Label>
                     <DraftNumberInput
                       kind="decimal"
                       min={0}
@@ -414,7 +400,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                 {/* Discount and Total - Row on mobile */}
                 <div className="grid grid-cols-2 gap-3 md:contents">
                   <div className="min-w-0">
-                    <Label className="md:hidden text-sm mb-1.5 block">Popust (%)</Label>
+                    <Label className={mobileFieldLabelClass}>Popust (%)</Label>
                     <div className="relative">
                       <DraftNumberInput
                         kind="decimal"
@@ -438,7 +424,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                     ) : null}
                   </div>
                   <div className="flex min-w-0 flex-col justify-center">
-                    <Label className="md:hidden text-sm mb-1.5 block">Total</Label>
+                    <Label className={mobileFieldLabelClass}>Ukupno</Label>
                     {item.discount > 0 ? (
                       <span className="text-xs text-muted-foreground line-through">
                         {formatCurrency(subtotal)}
@@ -458,10 +444,10 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                       variant="outline"
                       size="sm"
                       onClick={() => removeItem(item.id)}
-                      className="w-full md:w-auto"
+                      className="h-11 w-full md:h-9 md:w-auto"
                     >
                       <Trash2 className="h-4 w-4 md:mr-0" />
-                      <span className="md:hidden ml-2">Remove</span>
+                      <span className="ml-2 md:hidden">Ukloni</span>
                     </Button>
                   )}
                 </div>
@@ -481,9 +467,13 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                 </p>
               </div>
             ) : null}
-            <div className="flex items-center justify-between">
-              <span className="text-base font-semibold sm:text-lg">Grand Total:</span>
-              <span className="text-xl font-bold sm:text-2xl">{formatCurrency(grandTotal)}</span>
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-base font-semibold leading-snug tracking-normal sm:text-lg">
+                Ukupno
+              </span>
+              <span className="text-xl font-bold tabular-nums sm:text-2xl">
+                {formatCurrency(grandTotal)}
+              </span>
             </div>
           </div>
         </CardContent>
@@ -497,14 +487,14 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
 
       {/* Submit Button */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || hasShortage}>
+        <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isLoading || hasShortage}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              Čuvanje...
             </>
           ) : (
-            'Save Invoice'
+            'Sačuvaj fakturu'
           )}
         </Button>
       </div>

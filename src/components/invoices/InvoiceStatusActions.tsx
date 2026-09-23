@@ -6,6 +6,7 @@ import { Check, RotateCcw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InvoiceStatus } from '@/types/invoice'
 import { notify } from '@/lib/notify'
+import { readApiErrorMessage } from '@/lib/api-error'
 import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 
 async function patchInvoiceStatus(id: string, status: InvoiceStatus) {
@@ -18,8 +19,7 @@ async function patchInvoiceStatus(id: string, status: InvoiceStatus) {
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to update invoice' }))
-    throw new Error(error.error || 'Failed to update invoice')
+    throw new Error(await readApiErrorMessage(response, 'Failed to update invoice'))
   }
 
   return response.json()

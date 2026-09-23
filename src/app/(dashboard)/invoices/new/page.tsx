@@ -7,6 +7,7 @@ import { Product } from '@/types/product'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { readApiErrorMessage } from '@/lib/api-error'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -26,8 +27,7 @@ async function createInvoice(data: InvoiceCreateInput) {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to create invoice')
+    throw new Error(await readApiErrorMessage(response, 'Failed to create invoice'))
   }
 
   return response.json()

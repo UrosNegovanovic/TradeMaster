@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { X, Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
+import { Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
 import { notify } from '@/lib/notify'
 
 // EAN-13 Checksum Validation (Luhn Algorithm) - PRESERVED
@@ -730,28 +730,16 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
-        {/* Header */}
+        {/* Header — DialogContent already renders one close control */}
         <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Skeniraj barkod
-              </DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm mt-1">
-                {zoomSupported && 'Zumirajte teško čitljive barkodove • '}
-                Postavite barkod u okvir
-              </DialogDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="h-8 w-8 sm:h-10 sm:w-10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
+            <Camera className="h-5 w-5" />
+            Skeniraj barkod
+          </DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm mt-1">
+            {zoomSupported && 'Zumirajte teško čitljive barkodove • '}
+            Postavite barkod u okvir
+          </DialogDescription>
         </DialogHeader>
 
         {/* Scanner Container */}

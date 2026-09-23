@@ -252,34 +252,41 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
 
             {/* Pagination Controls */}
             {itemsPerPage !== 'all' && totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8 pt-6 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Prikaz {((currentPage - 1) * itemsPerPageNum) + 1}–{' '}
-                  {Math.min(currentPage * itemsPerPageNum, totalItems)} od{' '}
-                  {totalItems} proizvoda
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Prethodna
-                  </Button>
-                  <div className="text-sm text-muted-foreground px-3">
-                    Strana {currentPage} / {totalPages}
+              <nav
+                className="mt-8 min-w-0 border-t pt-6"
+                aria-label="Paginacija"
+              >
+                <div className="flex min-w-0 flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                  <p className="text-center text-sm text-muted-foreground sm:text-left">
+                    Prikaz {((currentPage - 1) * itemsPerPageNum) + 1}–{' '}
+                    {Math.min(currentPage * itemsPerPageNum, totalItems)} od{' '}
+                    {totalItems} proizvoda
+                  </p>
+                  <div className="flex w-full min-w-0 items-center justify-center gap-2 sm:w-auto sm:justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-11 min-w-11 shrink-0 px-3"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Prethodna
+                    </Button>
+                    <p className="shrink-0 whitespace-nowrap px-1 text-sm tabular-nums text-muted-foreground">
+                      Strana {currentPage} / {totalPages}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-11 min-w-11 shrink-0 px-3"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Sledeća
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Sledeća
-                  </Button>
                 </div>
-              </div>
+              </nav>
             )}
           </>
         ) : (

@@ -163,8 +163,9 @@ model Invoice {
   profileId String
 
   // Relations
-  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  items   InvoiceItem[]
+  profile        Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items          InvoiceItem[]
+  stockMovements StockMovement[]
 
   @@index([profileId])
   @@index([invoiceNumber])
@@ -209,24 +210,36 @@ enum MovementType {
   OUT
 }
 
+enum StockMovementSource {
+  INTAKE
+  INVOICE
+  MANUAL
+}
+
 // Stock Movement model - tracks inventory changes
 model StockMovement {
-  id        String       @id @default(cuid())
+  id        String              @id @default(cuid())
   type      MovementType // IN or OUT
   quantity  Int // Amount moved
   reason    String // e.g., "Purchase", "Sale", "Damaged", "Return"
-  createdAt DateTime     @default(now())
+  source    StockMovementSource @default(MANUAL)
+  sourceKey String? // intake:<key> or invoice:<invoiceId>:<productId>
+  createdAt DateTime            @default(now())
 
   // Foreign keys
   profileId String
   productId String
+  invoiceId String?
 
   // Relations
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  profile Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
+  @@unique([profileId, source, sourceKey])
   @@index([profileId])
   @@index([productId])
+  @@index([invoiceId])
   @@index([createdAt])
   @@index([profileId, createdAt]) // 🚀 CRITICAL: Faster warehouse history queries (10x faster)
   @@map("stock_movements")

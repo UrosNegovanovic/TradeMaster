@@ -15,8 +15,9 @@ vi.mock('@clerk/nextjs/server', () => ({
 
 import { auth } from '@clerk/nextjs/server'
 import { POST } from './route'
-import { PUT } from './[id]/route'
+import { PUT, PATCH, DELETE } from './[id]/route'
 import { prisma } from '@/lib/prisma'
+import { invoiceSourceKey } from '@/lib/invoice-stock'
 
 const testPrefix = `invoice-db-${Date.now()}`
 
@@ -41,6 +42,20 @@ function putRequest(id: string, body: unknown) {
   })
 }
 
+function patchRequest(id: string, body: unknown) {
+  return new NextRequest(`http://localhost/api/invoices/${id}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+function deleteRequest(id: string) {
+  return new NextRequest(`http://localhost/api/invoices/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 describe('invoice handlers against a real test database', () => {
   beforeAll(async () => {
     const profileA = await prisma.profile.create({
@@ -57,7 +72,7 @@ describe('invoice handlers against a real test database', () => {
         name: `${testPrefix} Coffee`,
         sku: `${testPrefix}-sku-a`,
         price: 10,
-        quantity: 5,
+        quantity: 100,
         profileId: profileA.id,
       },
     })
@@ -74,8 +89,15 @@ describe('invoice handlers against a real test database', () => {
     users.b.productId = productB.id
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.mocked(auth).mockResolvedValue({ userId: users.a.clerkUserId } as never)
+    await prisma.stockMovement.deleteMany({
+      where: { productId: { in: [users.a.productId, users.b.productId] } },
+    })
+    await prisma.product.update({
+      where: { id: users.a.productId },
+      data: { quantity: 100 },
+    })
   })
 
   afterAll(async () => {
@@ -395,5 +417,144 @@ describe('invoice handlers against a real test database', () => {
     })
     expect(leftover).toBeNull()
     await isolated.$disconnect()
+  })
+
+  it('deducts issued invoice lines once and restores them on delete', async () => {
+    const created = await POST(
+      postRequest({
+        invoiceNumber: `${testPrefix}-stock-001`,
+        dueDate: '2026-10-01',
+        clientName: 'Magacin',
+        status: 'UNPAID',
+        items: [
+          {
+            productId: users.a.productId,
+            productName: 'Coffee',
+            quantity: 3,
+            unitPrice: 10,
+            discount: 0,
+          },
+        ],
+      })
+    )
+    expect(created.status).toBe(201)
+    const invoice = await created.json()
+
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(97)
+    const firstMovements = await prisma.stockMovement.findMany({
+      where: { invoiceId: invoice.id },
+    })
+    expect(firstMovements).toHaveLength(1)
+    expect(firstMovements[0]).toMatchObject({
+      type: 'OUT',
+      quantity: 3,
+      reason: `Faktura ${testPrefix}-stock-001`,
+      source: 'INVOICE',
+      sourceKey: invoiceSourceKey(invoice.id, users.a.productId),
+    })
+
+    const paid = await PATCH(patchRequest(invoice.id, { status: 'PAID' }), {
+      params: Promise.resolve({ id: invoice.id }),
+    })
+    expect(paid.status).toBe(200)
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(97)
+    expect(await prisma.stockMovement.count({ where: { invoiceId: invoice.id } })).toBe(1)
+
+    const reopened = await PATCH(patchRequest(invoice.id, { status: 'UNPAID' }), {
+      params: Promise.resolve({ id: invoice.id }),
+    })
+    expect(reopened.status).toBe(200)
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(97)
+
+    const edited = await PUT(
+      putRequest(invoice.id, {
+        invoiceNumber: `${testPrefix}-stock-001`,
+        dueDate: '2026-10-01',
+        clientName: 'Magacin',
+        items: [
+          {
+            productId: users.a.productId,
+            productName: 'Coffee',
+            quantity: 5,
+            unitPrice: 10,
+            discount: 0,
+          },
+        ],
+      }),
+      { params: Promise.resolve({ id: invoice.id }) }
+    )
+    expect(edited.status).toBe(200)
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(95)
+    expect((await prisma.stockMovement.findFirst({ where: { invoiceId: invoice.id } }))?.quantity).toBe(5)
+
+    const removed = await DELETE(deleteRequest(invoice.id), {
+      params: Promise.resolve({ id: invoice.id }),
+    })
+    expect(removed.status).toBe(200)
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(100)
+    expect(await prisma.stockMovement.count({ where: { invoiceId: invoice.id } })).toBe(0)
+  })
+
+  it('blocks an issued invoice when stock would go negative', async () => {
+    const response = await POST(
+      postRequest({
+        invoiceNumber: `${testPrefix}-stock-002`,
+        dueDate: '2026-10-01',
+        clientName: 'Magacin',
+        status: 'PAID',
+        items: [
+          {
+            productId: users.a.productId,
+            productName: 'Coffee',
+            quantity: 101,
+            unitPrice: 10,
+            discount: 0,
+          },
+        ],
+      })
+    )
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining('Nema dovoljno na stanju'),
+    })
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(100)
+    expect(await prisma.invoice.findFirst({ where: { invoiceNumber: `${testPrefix}-stock-002` } })).toBeNull()
+  })
+
+  it('does not deduct draft invoices until they are issued', async () => {
+    const created = await POST(
+      postRequest({
+        invoiceNumber: `${testPrefix}-stock-003`,
+        dueDate: '2026-10-01',
+        clientName: 'Magacin',
+        status: 'DRAFT',
+        items: [
+          {
+            productId: users.a.productId,
+            productName: 'Coffee',
+            quantity: 4,
+            unitPrice: 10,
+            discount: 0,
+          },
+        ],
+      })
+    )
+    expect(created.status).toBe(201)
+    const invoice = await created.json()
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(100)
+    expect(await prisma.stockMovement.count({ where: { invoiceId: invoice.id } })).toBe(0)
+
+    const issued = await PATCH(patchRequest(invoice.id, { status: 'UNPAID' }), {
+      params: Promise.resolve({ id: invoice.id }),
+    })
+    expect(issued.status).toBe(200)
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(96)
+
+    const reverted = await PATCH(patchRequest(invoice.id, { status: 'DRAFT' }), {
+      params: Promise.resolve({ id: invoice.id }),
+    })
+    expect(reverted.status).toBe(200)
+    expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(100)
+    expect(await prisma.stockMovement.count({ where: { invoiceId: invoice.id } })).toBe(0)
   })
 })

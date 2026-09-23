@@ -44,6 +44,18 @@ export function stockBySku(
   return map
 }
 
+export function addReservedStock(
+  stock: Map<string, number>,
+  reserved: Array<{ sku: string | null; quantity: number }>
+): Map<string, number> {
+  const next = new Map(stock)
+  for (const row of reserved) {
+    if (!row.sku) continue
+    next.set(row.sku, (next.get(row.sku) ?? 0) + (Number.isFinite(row.quantity) ? row.quantity : 0))
+  }
+  return next
+}
+
 export function remainingStock(options: {
   sku: string | null
   lineId: string

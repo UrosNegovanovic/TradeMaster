@@ -22,6 +22,12 @@ vi.mock('@/lib/prisma', () => ({
   prisma: mocks,
 }))
 
+const stockMocks = vi.hoisted(() => ({
+  syncInvoiceStock: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/lib/invoice-stock', () => stockMocks)
+
 import { auth } from '@clerk/nextjs/server'
 import { PATCH, PUT } from './route'
 
@@ -68,6 +74,7 @@ const validPutBody = {
 describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
     mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
     vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
     mocks.profile.findUnique.mockResolvedValue(profile)
@@ -117,10 +124,15 @@ describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
 describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
+    mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
     vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
     mocks.profile.findUnique.mockResolvedValue(profile)
     mocks.invoice.findFirst.mockResolvedValue(paidInvoice)
-    mocks.invoice.update.mockResolvedValue({ ...paidInvoice, status: 'UNPAID' })
+    mocks.$queryRaw.mockResolvedValue([
+      { id: paidInvoice.id, status: 'PAID', invoiceNumber: paidInvoice.invoiceNumber, paidAt: null },
+    ])
+    mocks.invoice.update.mockResolvedValue({ ...paidInvoice, status: 'UNPAID', items: [] })
   })
 
   it('updates status through PATCH after validating the enum', async () => {
@@ -128,11 +140,14 @@ describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
     expect(response.status).toBe(200)
     expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('UNPAID')
     expect(mocks.invoice.update.mock.calls[0][0].data.paidAt).toBeNull()
+    expect(stockMocks.syncInvoiceStock).toHaveBeenCalledTimes(1)
   })
 
   it('stamps paidAt when an open invoice is marked paid', async () => {
-    mocks.invoice.findFirst.mockResolvedValue({ ...unpaidInvoice, paidAt: null })
-    mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, status: 'PAID' })
+    mocks.$queryRaw.mockResolvedValue([
+      { id: unpaidInvoice.id, status: 'UNPAID', invoiceNumber: unpaidInvoice.invoiceNumber, paidAt: null },
+    ])
+    mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, status: 'PAID', items: [] })
     const response = await PATCH(request('PATCH', { status: 'PAID' }), {
       params: Promise.resolve({ id: unpaidInvoice.id }),
     })
@@ -143,8 +158,10 @@ describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
 
   it('keeps the original paidAt if the invoice is already paid', async () => {
     const paidAt = new Date('2026-01-15T10:00:00.000Z')
-    mocks.invoice.findFirst.mockResolvedValue({ ...paidInvoice, paidAt })
-    mocks.invoice.update.mockResolvedValue({ ...paidInvoice, paidAt })
+    mocks.$queryRaw.mockResolvedValue([
+      { id: paidInvoice.id, status: 'PAID', invoiceNumber: paidInvoice.invoiceNumber, paidAt },
+    ])
+    mocks.invoice.update.mockResolvedValue({ ...paidInvoice, paidAt, items: [] })
     const response = await PATCH(request('PATCH', { status: 'PAID' }), context)
     expect(response.status).toBe(200)
     expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('PAID')
@@ -155,6 +172,7 @@ describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
     const response = await PATCH(request('PATCH', { clientName: 'Changed' }), context)
     expect(response.status).toBe(409)
     expect(mocks.invoice.update).not.toHaveBeenCalled()
+    expect(stockMocks.syncInvoiceStock).not.toHaveBeenCalled()
   })
 
   it('rejects an unsupported PATCH body', async () => {

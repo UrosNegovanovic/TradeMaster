@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addReservedStock,
   clampDiscountPercent,
   lineDiscountAmount,
   lineSubtotal,
@@ -48,5 +49,21 @@ describe('invoice line stock', () => {
       ],
     })
     expect(available).toBe(4)
+  })
+
+  it('adds this invoice reserved stock back when editing an already issued invoice', () => {
+    const map = addReservedStock(new Map([['ABC', 4]]), [
+      { sku: 'ABC', quantity: 3 },
+      { sku: null, quantity: 2 },
+    ])
+    expect(map.get('ABC')).toBe(7)
+    expect(
+      remainingStock({
+        sku: 'ABC',
+        lineId: 'line-1',
+        stockBySku: map,
+        lines: [{ id: 'line-1', sku: 'ABC', quantity: 3 }],
+      })
+    ).toBe(7)
   })
 })

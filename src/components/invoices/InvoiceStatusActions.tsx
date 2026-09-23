@@ -59,6 +59,9 @@ export function InvoiceStatusActions({
       )
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
+      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       if (pathname === '/invoices') {
         router.push(invoicesListHref(nextStatus))
       } else {

@@ -28,8 +28,23 @@ model Profile {
   catalogs       Catalog[]
   invoices       Invoice[]
   stockMovements StockMovement[]
+  productIntakes ProductIntake[]
 
   @@map("profiles")
+}
+
+// Durable receipts for retries; written atomically with the stock change.
+model ProductIntake {
+  profileId String
+  key       String
+  fingerprint String
+  response  Json
+  status    Int
+  createdAt DateTime @default(now())
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, key])
+  @@map("product_intakes")
 }
 
 // Product categories

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
+import { IntakeConflictError, saveProductIntake } from '@/lib/product-intake'
 
 // GET: Fetch all products for the current user
 export async function GET() {
@@ -83,144 +84,23 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = productSchema.parse(body)
 
-    // ✅ DAILY BATCHING LOGIC: Check if SKU was scanned TODAY for this profile
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
-    
-    const endOfToday = new Date()
-    endOfToday.setHours(23, 59, 59, 999)
-
-    const existingProductToday = await prisma.product.findFirst({
-      where: {
-        profileId: profile.id,
-        sku: validatedData.sku,
-        createdAt: {
-          gte: startOfToday,
-          lte: endOfToday,
-        },
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc', // Get the most recent entry from today
-      },
-    })
-
-    if (existingProductToday) {
-      // ✅ PRODUCT SCANNED TODAY: Increment quantity in today's batch
-      const quantityToAdd = validatedData.quantity ?? 1
-      const newQuantity = existingProductToday.quantity + quantityToAdd
-
-      // Prepare update data
-      const updateData: {
-        quantity: number
-        price?: number
-        categoryId?: string | null
-        imageUrl?: string | null
-        updatedAt: Date
-      } = {
-        quantity: newQuantity,
-        updatedAt: new Date(),
-      }
-
-      // Update price if user provided a new non-zero value
-      if (validatedData.price > 0) {
-        updateData.price = validatedData.price
-      }
-
-      // Update category if provided
-      if (validatedData.categoryId !== undefined) {
-        updateData.categoryId = validatedData.categoryId
-      }
-
-      const incomingImage =
-        validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
-      if (!existingProductToday.imageUrl && incomingImage) {
-        updateData.imageUrl = incomingImage
-      }
-
-      // Update today's batch entry
-      const updatedProduct = await prisma.product.update({
-        where: { id: existingProductToday.id },
-        data: updateData,
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      })
-
+    const key = request.headers.get('Idempotency-Key')
+    if (key !== null && !/^[a-zA-Z0-9_-]{16,128}$/.test(key)) {
+      return NextResponse.json({ error: 'Invalid idempotency key' }, { status: 400 })
+    }
+    const result = await saveProductIntake(profile.id, validatedData, key)
+    if (result.image) {
+      const image = result.image
       scheduleProductImagePersist(
-        (storedUrl) =>
-          prisma.product.update({
-            where: { id: existingProductToday.id },
-            data: { imageUrl: storedUrl },
-          }),
-        updateData.imageUrl ?? existingProductToday.imageUrl
-      )
-
-      return NextResponse.json(
-        {
-          ...updatedProduct,
-          action: 'updated' as const,
-          batchMode: 'daily',
-          quantityAdded: quantityToAdd,
-          previousQuantity: existingProductToday.quantity,
-        },
-        { status: 200 }
+        (storedUrl) => prisma.product.update({ where: { id: image.id }, data: { imageUrl: storedUrl } }),
+        image.url
       )
     }
-
-    // ✅ NEW DAILY BATCH: Create new product entry for today
-    const imageUrl =
-      validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
-    const product = await prisma.product.create({
-      data: {
-        name: validatedData.name,
-        sku: validatedData.sku,
-        price: validatedData.price,
-        quantity: validatedData.quantity ?? 1,
-        description: validatedData.description === '' ? null : validatedData.description ?? null,
-        imageUrl,
-        categoryId: validatedData.categoryId ?? null,
-        profileId: profile.id,
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    })
-
-    scheduleProductImagePersist(
-      (storedUrl) =>
-        prisma.product.update({
-          where: { id: product.id },
-          data: { imageUrl: storedUrl },
-        }),
-      imageUrl
-    )
-
-    return NextResponse.json(
-      {
-        ...product,
-        action: 'created' as const,
-      },
-      { status: 201 }
-    )
+    return NextResponse.json(result.body, { status: result.status })
   } catch (error) {
+    if (error instanceof IntakeConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 })
+    }
     console.error('Error creating/updating product:', error)
 
     // Handle validation errors

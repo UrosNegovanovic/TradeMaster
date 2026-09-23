@@ -10,6 +10,8 @@ import { isValidBarcode } from '@/lib/openfoodfacts'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@clerk/nextjs'
+import { submitIntake } from '@/lib/intake-request'
 
 interface ProductMetadata {
   name: string
@@ -32,6 +34,7 @@ const QuickScanContext = createContext<{
 
 /** One scanner and one processing/cooldown state for all dashboard entry points. */
 export function QuickScanProvider({ children }: { children: ReactNode }) {
+  const { userId } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -120,20 +123,8 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         categoryId: metadata.categoryId || null,
       }
 
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save product')
-      }
-
-      const result = await response.json()
+      if (!userId) return { success: false }
+      const result = await submitIntake(userId, productData, window.sessionStorage)
 
       // Invalidate products query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['products'] })
@@ -369,7 +360,7 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
           })
         } else {
           notify.error('Greška pri čuvanju', {
-            description: 'Proizvod je pronađen ali nije mogao biti sačuvan. Pokušajte ponovo.',
+            description: 'Unos nije potvrđen. Ponovo skenirajte isti barkod u ovoj kartici da bezbedno proverite i završite unos.',
             duration: 3000,
           })
           // Reset lastScanRef and cumulative quantity on failure to allow retry

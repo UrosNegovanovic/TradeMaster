@@ -2,6 +2,19 @@
 
 Datum: 23.09.2026. Predmet: lokalni kod i lokalna aplikacija, ne potvrda stanja produkcije.
 
+## Nastavak — P0 pouzdanost unosa, 23.09.2026.
+
+- Mobilni shell objavljen u `40e0177`; GitHub Vercel check: success.
+- Izolovan PostgreSQL 16 u Docker-u, bez upisa poslovnih podataka: reprodukovano 5 grešaka među 6 početnih testova (dupli prvi dnevni red, izgubljen increment, nebezbedan retry).
+- Intake sada koristi transakciju, zaključavanje po firmi/SKU-u i atomski increment. Dnevni batch model ostaje server-lokalni dan. Bez promene decoder-a, validacije frejmova ili cooldown-a.
+- `Idempotency-Key` je vezan za profil; receipt i roba upisuju se u istoj transakciji. Isti ključ/payload vraća originalni odgovor; drugi payload daje 409. Stari klijenti bez ključa imaju zaštitu paralelnih increment-a, ali nemaju retry garanciju.
+- QuickScan pamti nedovršen zahtev u sessionStorage po Clerk korisniku/SKU-u, pre slanja. Ponovni sken u istoj kartici koristi isti ključ i originalni payload, uključujući posle reload-a. Posle potvrđenog uspeha novi sken dobija novi ključ. Zatvaranje kartice/brisanje browser podataka prekida ovu klijentsku retry garanciju; ovo nije offline red niti oporavak između uređaja. Ako sessionStorage nije dostupan, automatski upis se ne šalje.
+- Nova tabela `product_intakes`: migracija `supabase/migrations/20260923095239_product_intake_receipts.sql`, RLS uključen, bez javnih politika; anon/authenticated nemaju privilegije. Receipts se za sada ne brišu automatski: proizvoljno brisanje bi oslabilo garanciju za stare zahteve.
+- Provere: 67 unit/API mock testova; 11 real-DB intake testova (uključuju rollback create/increment, jučerašnji receipt, legacy upise, tenant izolaciju); postojećih 6 invoice DB testova. Typecheck, lint i kompletan production build prošli. Browser shell/scanner-open matrica na 7 veličina prošla. Snyk ponovo blokiran neprijavljenim nalogom.
+- Migracija proverena lokalno pa primenjena na povezani TradeMaster Supabase projekat. Fizička kamera/zvuk i brzina na mobilnoj mreži još nisu potvrđeni; nema tvrdnje da je celokupan launch završen.
+
+Preostale P0 stavke ispod (pristup katalogu i debug ingest) ostaju otvorene. Istorijski rezultati u ostatku izveštaja odnose se na prvo UI testiranje.
+
 ## Izvedeno
 
 - Mobilno zaglavlje sa TradeMaster tekstualnim nazivom, odvojeno od identiteta firme. Odobren grafički znak nije pronađen; nije izmišljen novi logo.

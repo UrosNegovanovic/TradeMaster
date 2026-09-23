@@ -6,7 +6,7 @@ export default defineConfig({
     globals: false,
     environment: 'node',
     setupFiles: ['src/test/setup-test-database.ts'],
-    include: ['src/app/api/invoices/invoice.db.test.ts'],
+    include: ['src/app/api/invoices/invoice.db.test.ts', 'src/app/api/products/intake.db.test.ts'],
     fileParallelism: false,
   },
   resolve: {

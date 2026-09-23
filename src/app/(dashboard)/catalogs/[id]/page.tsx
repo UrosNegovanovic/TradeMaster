@@ -344,36 +344,45 @@ export default function CatalogDetailsPage() {
               
               {/* Pagination Controls */}
               {itemsPerPage !== 'all' && totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {((currentPage - 1) * itemsPerPageNum) + 1} to{' '}
-                    {Math.min(currentPage * itemsPerPageNum, totalItems)} of{' '}
-                    {totalItems} products
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
-                    </Button>
-                    <div className="text-sm text-muted-foreground px-2">
-                      Page {currentPage} of {totalPages}
+                <nav
+                  className="mt-6 min-w-0 border-t pt-4"
+                  aria-label="Paginacija"
+                >
+                  <div className="flex min-w-0 flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                    <p className="text-center text-sm text-muted-foreground sm:text-left">
+                      Prikaz {((currentPage - 1) * itemsPerPageNum) + 1}–{' '}
+                      {Math.min(currentPage * itemsPerPageNum, totalItems)} od{' '}
+                      {totalItems} proizvoda
+                    </p>
+                    <div className="flex w-full min-w-0 items-center justify-center gap-2 sm:w-auto sm:justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11 min-w-11 shrink-0 px-3"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        aria-label="Prethodna"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="ml-1 hidden sm:inline">Prethodna</span>
+                      </Button>
+                      <p className="shrink-0 whitespace-nowrap px-1 text-sm tabular-nums text-muted-foreground">
+                        Strana {currentPage} / {totalPages}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11 min-w-11 shrink-0 px-3"
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        aria-label="Sledeća"
+                      >
+                        <span className="mr-1 hidden sm:inline">Sledeća</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
                   </div>
-                </div>
+                </nav>
               )}
             </>
           ) : (

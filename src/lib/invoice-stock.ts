@@ -10,7 +10,7 @@ export type InvoiceStockItem = {
 }
 
 export type InvoiceStockTx = {
-  $executeRaw: (query: TemplateStringsArray | Prisma.Sql, ...values: unknown[]) => Promise<unknown>
+  $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>
   product: {
     findMany: (args: {
       where: { id: { in: string[] }; profileId: string }
@@ -38,7 +38,9 @@ export type InvoiceStockTx = {
         sourceKey: string | null
       }>
     >
-    create: (args: { data: Prisma.StockMovementCreateInput }) => Promise<unknown>
+    create: (args: {
+      data: Prisma.StockMovementCreateInput | Prisma.StockMovementUncheckedCreateInput
+    }) => Promise<unknown>
     update: (args: {
       where: { id: string }
       data: { quantity?: number; reason?: string }
@@ -87,8 +89,8 @@ export async function recordIntakeMovement(
       reason: INTAKE_REASON,
       source: StockMovementSource.INTAKE,
       sourceKey: intakeSourceKey(input.key ?? randomUUID()),
-      profile: { connect: { id: input.profileId } },
-      product: { connect: { id: input.productId } },
+      profileId: input.profileId,
+      productId: input.productId,
     },
   })
 }
@@ -103,9 +105,7 @@ export async function syncInvoiceStock(
     items: InvoiceStockItem[]
   }
 ) {
-  await tx.$executeRaw(
-    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(['invoice-stock', input.profileId, input.invoiceId])}, 0))`
-  )
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(['invoice-stock', input.profileId, input.invoiceId])}, 0))`
 
   const desired = isInvoiceStockActive(input.status)
     ? desiredInvoiceQuantities(input.items)
@@ -125,9 +125,7 @@ export async function syncInvoiceStock(
   }
 
   for (const productId of productIds) {
-    await tx.$executeRaw(
-      Prisma.sql`SELECT id FROM products WHERE id = ${productId} AND "profileId" = ${input.profileId} FOR UPDATE`
-    )
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(['invoice-product', input.profileId, productId])}, 0))`
   }
 
   const products = await tx.product.findMany({
@@ -183,9 +181,9 @@ export async function syncInvoiceStock(
           reason,
           source: StockMovementSource.INVOICE,
           sourceKey: invoiceSourceKey(input.invoiceId, productId),
-          profile: { connect: { id: input.profileId } },
-          product: { connect: { id: productId } },
-          invoice: { connect: { id: input.invoiceId } },
+          profileId: input.profileId,
+          productId,
+          invoiceId: input.invoiceId,
         },
       })
       await tx.product.update({

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
 import { notify } from '@/lib/notify'
+import { readApiErrorMessage } from '@/lib/api-error'
 
 async function fetchInvoices() {
   const response = await fetch('/api/invoices')
@@ -30,8 +31,7 @@ async function deleteInvoice(id: string) {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to delete invoice')
+    throw new Error(await readApiErrorMessage(response, 'Failed to delete invoice'))
   }
 
   return response.json()

@@ -9,6 +9,7 @@ import { Product } from '@/types/product'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { readApiErrorMessage } from '@/lib/api-error'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
@@ -39,8 +40,7 @@ async function updateInvoice(id: string, data: InvoiceCreateInput) {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to update invoice')
+    throw new Error(await readApiErrorMessage(response, 'Failed to update invoice'))
   }
 
   return response.json()

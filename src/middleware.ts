@@ -1,18 +1,9 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-
-const isPublicRoute = createRouteMatcher([
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/',
-  '/shared/catalog/(.*)', // Public catalog preview
-  '/api/public/catalogs/(.*)', // Unlisted catalog JSON for that preview
-  '/robots.txt',
-  '/sitemap.xml',
-])
+import { clerkMiddleware } from '@clerk/nextjs/server'
+import { isPublicRoute, shouldProtectHtmlRoute } from '@/lib/route-access'
 
 const withClerk = clerkMiddleware((auth, request) => {
-  if (!isPublicRoute(request)) {
+  if (shouldProtectHtmlRoute(request)) {
     auth().protect()
   }
 })

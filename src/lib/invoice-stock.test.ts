@@ -29,7 +29,13 @@ function createTx(seed?: {
     ])
   )
   const movements = [...(seed?.movements ?? [])]
-  const tx: InvoiceStockTx & { products: typeof products; movements: typeof movements } = {
+  const created: unknown[] = []
+  const tx: InvoiceStockTx & {
+    products: typeof products
+    movements: typeof movements
+    created: unknown[]
+  } = {
+    created,
     products,
     movements,
     $executeRaw: vi.fn().mockResolvedValue(1),
@@ -51,6 +57,7 @@ function createTx(seed?: {
     stockMovement: {
       findMany: async () => movements,
       create: async ({ data }) => {
+        created.push(data)
         const row = {
           id: `m-${movements.length + 1}`,
           productId: String(
@@ -142,6 +149,17 @@ describe('syncInvoiceStock', () => {
         sourceKey: 'invoice:inv-1:p1',
       }),
     ])
+    expect(tx.created[0]).toMatchObject({
+      profileId: 'prof',
+      productId: 'p1',
+      invoiceId: 'inv-1',
+    })
+    expect(tx.created[0]).not.toHaveProperty('invoice')
+    expect(tx.$executeRaw).toHaveBeenCalled()
+    for (const [query] of vi.mocked(tx.$executeRaw).mock.calls) {
+      expect(Array.isArray(query)).toBe(true)
+      expect(String(query[0])).toContain('pg_advisory_xact_lock')
+    }
   })
 
   it('is idempotent on paid toggle and repeated sync of the same lines', async () => {

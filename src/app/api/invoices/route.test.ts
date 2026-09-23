@@ -28,6 +28,7 @@ const stockMocks = vi.hoisted(() => ({
 vi.mock('@/lib/invoice-stock', () => stockMocks)
 
 import { auth } from '@clerk/nextjs/server'
+import { InvoiceClientError } from '@/lib/invoice-service'
 import { POST } from './route'
 
 const profile = {
@@ -270,5 +271,55 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
       })
     )
     expect(mocks.invoice.create.mock.calls[1][0].data.status).toBe('UNPAID')
+  })
+
+  it('returns JSON 400 when stock sync reports insufficient stock', async () => {
+    stockMocks.syncInvoiceStock.mockRejectedValue(
+      new InvoiceClientError('Nema dovoljno na stanju za „Coffee“. Traženo: 8 kom, na stanju: 1 kom.', 400)
+    )
+    const response = await POST(
+      postRequest({
+        invoiceNumber: '2026-007',
+        dueDate: '2026-10-01',
+        clientName: 'Acme',
+        items: [
+          {
+            productId: 'product-a',
+            productName: 'Coffee',
+            quantity: 8,
+            unitPrice: 10,
+            discount: 0,
+          },
+        ],
+      })
+    )
+    expect(response.status).toBe(400)
+    expect(response.headers.get('content-type')).toContain('application/json')
+    await expect(response.json()).resolves.toEqual({
+      error: 'Nema dovoljno na stanju za „Coffee“. Traženo: 8 kom, na stanju: 1 kom.',
+    })
+  })
+
+  it('returns JSON 500 when stock sync throws an unexpected error', async () => {
+    stockMocks.syncInvoiceStock.mockRejectedValue(new Error('advisory lock exploded'))
+    const response = await POST(
+      postRequest({
+        invoiceNumber: '2026-008',
+        dueDate: '2026-10-01',
+        clientName: 'Acme',
+        items: [
+          {
+            productId: 'product-a',
+            productName: 'Coffee',
+            quantity: 1,
+            unitPrice: 10,
+            discount: 0,
+          },
+        ],
+      })
+    )
+    expect(response.status).toBe(500)
+    expect(response.headers.get('content-type')).toContain('application/json')
+    await expect(response.json()).resolves.toEqual({ error: 'Internal server error' })
   })
 })

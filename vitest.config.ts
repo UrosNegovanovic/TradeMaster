@@ -21,6 +21,8 @@ export default defineConfig({
       'src/lib/stock-backfill.test.ts',
       'src/lib/stock-movement-query.test.ts',
       'src/lib/stock-movement-filters.test.ts',
+      'src/lib/low-stock.test.ts',
+      'src/lib/dashboard-activity.test.ts',
       'src/lib/draft-number.test.ts',
       'src/lib/persist-product-image.test.ts',
       'src/lib/public-catalog.test.ts',

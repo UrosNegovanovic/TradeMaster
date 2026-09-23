@@ -14,6 +14,7 @@ export default defineConfig({
       'src/lib/invoice-status.test.ts',
       'src/lib/invoice-finance.test.ts',
       'src/lib/invoice-line.test.ts',
+      'src/lib/product-picker.test.ts',
       'src/lib/invoice-stock.test.ts',
       'src/lib/api-error.test.ts',
       'src/lib/route-access.test.ts',

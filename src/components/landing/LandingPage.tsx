@@ -96,9 +96,13 @@ function ShiftPanel({ className }: { className?: string }) {
 function ShiftDevice() {
   return (
     <div className="relative mx-auto w-full max-w-[380px]">
+      <TradeMasterMark
+        decorative
+        className="pointer-events-none absolute -right-10 -top-8 -z-10 h-56 w-56 text-primary opacity-[0.08]"
+      />
       <div
         aria-hidden
-        className="absolute -inset-10 -z-10 rounded-full bg-brand-mid/25 blur-3xl"
+        className="absolute -inset-10 -z-10 rounded-full bg-brand-mid/20 blur-3xl"
       />
       <div className="rounded-[2.35rem] bg-brand p-[11px] shadow-[0_28px_64px_-24px_rgba(26,110,92,0.55)]">
         <div className="overflow-hidden rounded-[1.85rem] bg-card">
@@ -116,10 +120,10 @@ function ShiftDevice() {
           </div>
           <div className="mt-1 grid grid-cols-5 items-end border-t bg-card px-1 pb-3 pt-2">
             <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
-              Roba
+              Proizvodi
             </span>
             <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
-              Lager
+              Magacin
             </span>
             <span className="-mt-3 flex flex-col items-center">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
@@ -128,10 +132,10 @@ function ShiftDevice() {
               <span className="mt-1 text-[10px] font-semibold text-primary">Sken</span>
             </span>
             <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
-              Ponuda
+              Ponude
             </span>
             <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
-              Račun
+              Više
             </span>
           </div>
         </div>
@@ -147,11 +151,6 @@ export function LandingPage() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[36rem] bg-[radial-gradient(80%_60%_at_12%_0%,#e8f5f1_0%,transparent_58%),radial-gradient(50%_40%_at_92%_8%,rgba(45,158,128,0.16)_0%,transparent_55%)]"
       />
-      <TradeMasterMark
-        decorative
-        className="pointer-events-none absolute -right-16 top-24 h-64 w-64 text-primary opacity-[0.06] sm:right-8 sm:h-80 sm:w-80"
-      />
-
       <header className="sticky top-0 z-40 border-b border-brand/10 bg-brand-surface/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
           <TradeMasterWordmark size="sm" showTagline taglineClassName="hidden sm:block" />
@@ -182,7 +181,7 @@ export function LandingPage() {
               <br />
               Pošalji katalog.
               <br />
-              <span className="text-primary">Izdaj fakturu.</span>
+              <span className="text-brand-mid">Izdaj fakturu.</span>
             </h1>
             <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
               Od kamere u hali do PDF-a za klijenta. Jedan alat, bez Excel-a.

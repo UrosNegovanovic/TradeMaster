@@ -7,6 +7,7 @@ export default defineConfig({
     environment: 'node',
     include: [
       'src/lib/intake-request.test.ts',
+      'src/lib/scan-gate.test.ts',
       'src/lib/local-date.test.ts',
       'src/lib/invoice-totals.test.ts',
       'src/lib/invoice-validation.test.ts',

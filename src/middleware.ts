@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/',
   '/shared/catalog/(.*)', // Public catalog preview
+  '/api/public/catalogs/(.*)', // Unlisted catalog JSON for that preview
 ])
 
 export default clerkMiddleware((auth, request) => {

@@ -12,12 +12,22 @@ export async function GET(
   try {
     const { userId } = await auth()
 
-    // Allow unauthenticated access for public preview
-    let profile = null
-    if (userId) {
-      profile = await prisma.profile.findUnique({
-        where: { clerkUserId: userId },
-      })
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const profile = await prisma.profile.findUnique({
+      where: { clerkUserId: userId },
+    })
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      )
     }
 
     const catalog = await prisma.catalog.findUnique({
@@ -60,8 +70,7 @@ export async function GET(
       )
     }
 
-    // If authenticated, verify ownership. If not authenticated, allow public access.
-    if (profile && catalog.profileId !== profile.id) {
+    if (catalog.profileId !== profile.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }

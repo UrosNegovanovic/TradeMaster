@@ -7,35 +7,37 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { TradeMasterMark } from '@/components/brand/TradeMasterMark'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
+import { cn } from '@/lib/utils'
 
 const jobs = [
   {
     n: '1',
     title: 'Skeniraj',
     hint: 'Barkod kamerom. Artikal u bazi, količina +1.',
-    meta: 'Kamera',
+    chip: 'Kamera',
     icon: ScanBarcode,
   },
   {
     n: '2',
     title: 'Lager',
     hint: 'Šta ima i šta je nisko. Ulaz skenerom, izlaz u Magacinu.',
-    meta: 'Stanje',
+    chip: 'Stanje',
     icon: Warehouse,
   },
   {
     n: '3',
     title: 'Katalog',
-    hint: 'Popust po klijentu. PDF ili link.',
-    meta: 'PDF · link',
+    hint: 'Popust po klijentu. PDF ili javni link.',
+    chip: 'PDF · link',
     icon: Share2,
   },
   {
     n: '4',
     title: 'Faktura',
-    hint: 'PIB, logo, status plaćeno.',
-    meta: 'RSD · PIB',
+    hint: 'PIB, logo, status plaćeno. RSD.',
+    chip: 'RSD · PIB',
     icon: Receipt,
   },
 ] as const
@@ -46,11 +48,112 @@ const who = [
   { title: 'Mali magacin', line: 'Telefon u ruci. Sken umesto tabele.' },
 ] as const
 
+const trust = ['Pregledač', 'PWA', 'RSD', 'PIB'] as const
+
+function ShiftPanel({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex min-w-0 flex-col', className)}>
+      <div className="flex items-end justify-between gap-3">
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          Današnja smena
+        </p>
+        <span className="rounded-full bg-brand-tint px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+          U hali
+        </span>
+      </div>
+      <ol className="relative mt-3">
+        {jobs.map((job, index) => {
+          const Icon = job.icon
+          return (
+            <li key={job.n} className="relative flex items-start gap-3 pb-4 last:pb-0">
+              {index < jobs.length - 1 ? (
+                <span
+                  aria-hidden
+                  className="absolute left-[15px] top-8 h-[calc(100%-12px)] w-px bg-brand-tint"
+                />
+              ) : null}
+              <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {job.n}
+              </span>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold leading-none">{job.title}</p>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-brand-tint px-2 py-0.5 text-[11px] font-medium text-primary">
+                    <Icon className="h-3 w-3" />
+                    {job.chip}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm leading-snug text-muted-foreground">{job.hint}</p>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+  )
+}
+
+function ShiftDevice() {
+  return (
+    <div className="relative mx-auto w-full max-w-[380px]">
+      <div
+        aria-hidden
+        className="absolute -inset-10 -z-10 rounded-full bg-brand-mid/25 blur-3xl"
+      />
+      <div className="rounded-[2.35rem] bg-brand p-[11px] shadow-[0_28px_64px_-24px_rgba(26,110,92,0.55)]">
+        <div className="overflow-hidden rounded-[1.85rem] bg-card">
+          <div className="flex items-center justify-center pt-2">
+            <span aria-hidden className="h-5 w-[7.25rem] rounded-full bg-foreground/85" />
+          </div>
+          <div className="flex items-center justify-between px-4 pb-1 pt-3">
+            <TradeMasterWordmark href="" size="sm" showTagline />
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              PWA
+            </span>
+          </div>
+          <div className="px-4 pb-2 pt-1">
+            <ShiftPanel />
+          </div>
+          <div className="mt-1 grid grid-cols-5 items-end border-t bg-card px-1 pb-3 pt-2">
+            <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
+              Roba
+            </span>
+            <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
+              Lager
+            </span>
+            <span className="-mt-3 flex flex-col items-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                <ScanBarcode className="h-5 w-5" />
+              </span>
+              <span className="mt-1 text-[10px] font-semibold text-primary">Sken</span>
+            </span>
+            <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
+              Ponuda
+            </span>
+            <span className="pb-1 text-center text-[10px] font-medium text-muted-foreground">
+              Račun
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-brand-surface">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[36rem] bg-[radial-gradient(80%_60%_at_12%_0%,#e8f5f1_0%,transparent_58%),radial-gradient(50%_40%_at_92%_8%,rgba(45,158,128,0.16)_0%,transparent_55%)]"
+      />
+      <TradeMasterMark
+        decorative
+        className="pointer-events-none absolute -right-16 top-24 h-64 w-64 text-primary opacity-[0.06] sm:right-8 sm:h-80 sm:w-80"
+      />
+
+      <header className="sticky top-0 z-40 border-b border-brand/10 bg-brand-surface/90 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
           <TradeMasterWordmark size="sm" showTagline taglineClassName="hidden sm:block" />
           <div className="flex items-center gap-1 sm:gap-2">
             <Button variant="ghost" size="sm" asChild>
@@ -66,93 +169,84 @@ export function LandingPage() {
         </div>
       </header>
 
-      <main className="flex-1">
-        <section className="mx-auto grid max-w-5xl gap-10 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-14 lg:py-20">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+      <main className="relative flex-1">
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-8 pt-8 sm:px-6 sm:pb-14 sm:pt-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 lg:pb-20 lg:pt-16">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-mid">
               Trgovac · veleprodaja · mali magacin
             </p>
-            <h1 className="mt-4 text-[2rem] font-bold leading-[1.12] tracking-tight text-foreground sm:text-5xl">
+            <h1 className="mt-4 border-l-[3px] border-brand-mid pl-4 text-[2.05rem] font-bold leading-[1.08] tracking-tight text-foreground sm:pl-5 sm:text-5xl lg:text-[3.35rem] lg:leading-[1.05]">
               Skeniraj robu.
               <br />
               Vidi lager.
               <br />
               Pošalji katalog.
               <br />
-              Izdaj fakturu.
+              <span className="text-primary">Izdaj fakturu.</span>
             </h1>
-            <p className="mt-5 max-w-md text-base text-muted-foreground sm:text-lg">
+            <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
               Od kamere u hali do PDF-a za klijenta. Jedan alat, bez Excel-a.
             </p>
+            <ul className="mt-5 flex flex-wrap gap-2">
+              {trust.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-full border border-brand/15 bg-white/80 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-primary"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
             <div className="mt-7 hidden items-center gap-3 sm:flex">
-              <Button size="lg" asChild>
+              <Button size="lg" className="h-12 px-7 shadow-sm" asChild>
                 <Link href="/sign-up">
                   Počni
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="ghost" asChild>
+              <Button size="lg" variant="ghost" className="h-12" asChild>
                 <Link href="/sign-in">Već imaš nalog</Link>
               </Button>
             </div>
           </div>
 
-          <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Današnja smena
-            </p>
-            <ol className="divide-y">
-              {jobs.map((job) => {
-                const Icon = job.icon
-                return (
-                  <li key={job.n} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      {job.n}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold leading-none">{job.title}</p>
-                        <span className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:inline-flex">
-                          <Icon className="h-3.5 w-3.5" />
-                          {job.meta}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-sm text-muted-foreground">{job.hint}</p>
-                    </div>
-                  </li>
-                )
-              })}
-            </ol>
+          <div className="min-w-0">
+            <div className="lg:hidden rounded-2xl border border-brand/10 bg-card p-4 shadow-[0_16px_40px_-24px_rgba(26,110,92,0.45)]">
+              <ShiftPanel />
+            </div>
+            <div className="hidden lg:block">
+              <ShiftDevice />
+            </div>
           </div>
         </section>
 
-        <section className="border-t bg-secondary/80">
-          <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:grid-cols-3 sm:gap-8 sm:px-6 sm:py-10">
+        <section className="border-y border-brand/10 bg-brand-tint/80">
+          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-3 sm:gap-10 sm:px-6 sm:py-10">
             {who.map((item) => (
-              <div key={item.title} className="min-w-0">
+              <div key={item.title} className="min-w-0 border-l-2 border-brand-mid pl-3">
                 <h2 className="text-sm font-semibold text-primary">{item.title}</h2>
-                <p className="mt-1 text-sm text-foreground">{item.line}</p>
+                <p className="mt-1 text-sm leading-snug text-foreground">{item.line}</p>
               </div>
             ))}
           </div>
         </section>
       </main>
 
-      <footer className="border-t px-4 py-6 pb-24 sm:px-6 sm:pb-6">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <footer className="px-4 py-6 pb-24 sm:px-6 sm:pb-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <TradeMasterWordmark size="sm" showTagline href="/" />
-          <p className="max-w-sm text-xs text-muted-foreground">
-            Radi u pregledaču na telefonu i računaru. Sopstveni domen i App Store
-            dolaze kasnije.
+          <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
+            Radi u pregledaču na telefonu i računaru. Dodaj na početni ekran (PWA).
+            Sopstveni domen kasnije — App Store nije potreban.
           </p>
         </div>
-        <p className="mx-auto mt-4 max-w-5xl text-xs text-muted-foreground">
+        <p className="mx-auto mt-4 max-w-6xl text-xs text-muted-foreground">
           © {new Date().getFullYear()} TradeMaster
         </p>
       </footer>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
-        <Button className="w-full" size="lg" asChild>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-brand/10 bg-brand-surface/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+        <Button className="h-12 w-full shadow-sm" size="lg" asChild>
           <Link href="/sign-up">
             Počni
             <ArrowRight className="ml-2 h-5 w-5" />

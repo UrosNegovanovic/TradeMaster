@@ -20,6 +20,7 @@ import {
 // Removed Popover and Command - using native dropdown instead
 import { Loader2, AlertTriangle, Check, ChevronsUpDown } from 'lucide-react'
 import { Product } from '@/types/product'
+import { pickerProductForId, productsForPicker } from '@/lib/product-picker'
 import { cn } from '@/lib/utils'
 
 // Base schema - we'll add dynamic validation
@@ -49,15 +50,16 @@ export function StockOutForm({
   const [productSearchOpen, setProductSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   
+  const pickerProducts = useMemo(() => productsForPicker(products), [products])
+
   // Filter products based on search
   const filteredProducts = useMemo(() => {
-    if (!searchQuery) return products;
-    const query = searchQuery.toLowerCase();
-    return products.filter(p => 
-      p.name.toLowerCase().includes(query) || 
-      p.sku.toLowerCase().includes(query)
-    );
-  }, [products, searchQuery])
+    if (!searchQuery) return pickerProducts
+    const query = searchQuery.toLowerCase()
+    return pickerProducts.filter(
+      (p) => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)
+    )
+  }, [pickerProducts, searchQuery])
 
   // Native dropdown - no need for portal fixes anymore!
 
@@ -66,7 +68,7 @@ export function StockOutForm({
     return baseStockOutSchema.refine(
       (data) => {
         if (!data.productId) return true // Will be caught by base validation
-        const product = products.find((p) => p.id === data.productId)
+        const product = pickerProductForId(products, data.productId)
         if (!product) return true
         
         const availableStock = product.quantity || 0
@@ -76,7 +78,7 @@ export function StockOutForm({
       },
       (data) => {
         // Dynamic error message based on current product
-        const product = products.find((p) => p.id === data.productId)
+        const product = pickerProductForId(products, data.productId)
         const availableStock = product?.quantity || 0
         
         return {
@@ -105,7 +107,7 @@ export function StockOutForm({
 
   // ✅ Now watch is available - use it after useForm
   const selectedProductId = watch('productId')
-  const selectedProduct = products.find((p) => p.id === selectedProductId)
+  const selectedProduct = pickerProductForId(products, selectedProductId)
   const availableStock = selectedProduct?.quantity || 0
 
   const handleFormSubmit = async (data: StockOutFormData) => {
@@ -182,7 +184,7 @@ export function StockOutForm({
                       ) : (
                         filteredProducts.map((product) => (
                           <div
-                            key={product.id}
+                            key={product.sku}
                             onClick={(e: React.MouseEvent<HTMLDivElement>) => {
                               setValue('productId', product.id, { shouldValidate: true })
                               setValue('quantity', 1)
@@ -191,13 +193,13 @@ export function StockOutForm({
                             }}
                             className={cn(
                               "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-                              selectedProductId === product.id && "bg-accent"
+                              selectedProduct?.sku === product.sku && "bg-accent"
                             )}
                           >
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                selectedProductId === product.id ? "opacity-100" : "opacity-0"
+                                selectedProduct?.sku === product.sku ? "opacity-100" : "opacity-0"
                               )}
                             />
                             <div className="flex-1 min-w-0">

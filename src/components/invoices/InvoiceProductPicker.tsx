@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { ChevronDown, Search } from 'lucide-react'
 import { Product } from '@/types/product'
+import { pickerProductForId, productsForPicker } from '@/lib/product-picker'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import {
@@ -61,17 +62,18 @@ export function InvoiceProductPicker({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
-  const selected = value ? products.find((product) => product.id === value) : undefined
+  const pickerProducts = useMemo(() => productsForPicker(products), [products])
+  const selected = pickerProductForId(products, value)
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    if (!needle) return products
-    return products.filter(
+    if (!needle) return pickerProducts
+    return pickerProducts.filter(
       (product) =>
         product.name.toLowerCase().includes(needle) ||
         product.sku.toLowerCase().includes(needle)
     )
-  }, [products, query])
+  }, [pickerProducts, query])
 
   const aria = selected ? invoiceProductAriaLabel(selected) : 'Izaberi proizvod'
 
@@ -150,10 +152,11 @@ export function InvoiceProductPicker({
           ) : (
             filtered.map((product) => (
               <PickerRow
-                key={product.id}
-                selected={product.id === value}
+                key={product.sku}
+                selected={selected?.sku === product.sku}
                 onSelect={() => {
-                  onChange(product.id)
+                  const current = value ? products.find((row) => row.id === value) : undefined
+                  onChange(current?.sku === product.sku && value ? value : product.id)
                   setOpen(false)
                 }}
                 ariaLabel={invoiceProductAriaLabel(product)}

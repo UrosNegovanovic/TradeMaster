@@ -211,8 +211,8 @@ export default function InventoryPage() {
           unstyled: true,
         })
         
-        notify.success('Stock updated', {
-          description: `Added ${response.quantityAdded || 0} units. Total stock: ${response.quantity}`,
+        notify.success('Stanje je ažurirano', {
+          description: `Dodato ${response.quantityAdded || 0} kom. Ukupno: ${response.quantity}`,
           duration: 4000,
         })
       } else {
@@ -233,8 +233,8 @@ export default function InventoryPage() {
       }
     },
     onError: (error: Error) => {
-      notify.error('Failed to create product', {
-        description: error.message || 'An error occurred while creating the product.',
+      notify.error('Proizvod nije sačuvan', {
+        description: error.message || 'Pokušajte ponovo.',
       })
     },
   })
@@ -247,13 +247,13 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setEditingProduct(null)
-      notify.success('Product updated', {
-        description: 'Inventory changes have been saved.',
+      notify.success('Proizvod je ažuriran', {
+        description: 'Izmene u asortimanu su sačuvane.',
       })
     },
     onError: (error: Error) => {
-      notify.error('Failed to update product', {
-        description: error.message || 'An error occurred while updating the product.',
+      notify.error('Ažuriranje nije uspelo', {
+        description: error.message || 'Pokušajte ponovo.',
       })
     },
   })

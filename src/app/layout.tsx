@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 
 // Enhanced SEO metadata with OpenGraph and Twitter Card support
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-git-main-uros-projects-fe7ff8aa.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'),
   
   title: {
     default: "TradeMaster — skeniraj, lager, katalog, faktura",

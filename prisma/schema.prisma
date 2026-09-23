@@ -70,7 +70,7 @@ model Product {
   imageUrl    String? // URL to product image (stored in Supabase Storage)
   description String?
   quantity    Int      @default(0) // Current stock quantity
-  minStock    Int      @default(10) // Minimum stock threshold for alerts
+  minStock    Int      @default(2) // Alert only when stock is nearly gone
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

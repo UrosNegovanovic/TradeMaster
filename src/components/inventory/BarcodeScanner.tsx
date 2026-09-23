@@ -383,11 +383,11 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       setIsLoading(false)
       
       if (err.name === 'NotAllowedError' || err.message?.includes('permission')) {
-        setError('Camera permission denied. Please allow camera access.')
+        setError('Nema dozvole za kameru. Dozvolite pristup u pregledaču.')
       } else if (err.name === 'NotFoundError' || err.message?.includes('No cameras')) {
-        setError('No camera found on this device.')
+        setError('Kamera nije pronađena na ovom uređaju.')
       } else {
-        setError(`Failed to access camera: ${err.message || 'Unknown error'}`)
+        setError(`Kamera nije dostupna: ${err.message || 'nepoznata greška'}`)
       }
     }
   }
@@ -736,11 +736,11 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
             <div>
               <DialogTitle className="text-lg sm:text-xl flex items-center gap-2">
                 <Camera className="h-5 w-5" />
-                Scan Barcode (Optimized HD)
+                Skeniraj barkod
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm mt-1">
-                {zoomSupported && 'Use zoom slider for difficult barcodes • '}
-                Position barcode within the box
+                {zoomSupported && 'Zumirajte teško čitljive barkodove • '}
+                Postavite barkod u okvir
               </DialogDescription>
             </div>
             <Button
@@ -783,12 +783,12 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                 {/* Status Badge (Top Center) */}
                 {scanStatus === 'detecting' && (
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-400/90 text-yellow-900 px-4 py-2 rounded-full text-sm font-semibold shadow-lg animate-pulse">
-                    Detecting...
+                    Detektovanje...
                   </div>
                 )}
                 {scanStatus === 'success' && (
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                    ✓ Scanned
+                    Skenirano
                   </div>
                 )}
               </div>
@@ -878,7 +878,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                 <Select value={selectedCamera} onValueChange={handleCameraChange}>
                   <SelectTrigger className="w-[200px] bg-background/90 backdrop-blur-sm">
                     <SwitchCamera className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Select camera" />
+                    <SelectValue placeholder="Izaberi kameru" />
                   </SelectTrigger>
                   <SelectContent>
                     {cameras.map(camera => (
@@ -900,21 +900,21 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                 onClick={handleClose}
                 className="w-full sm:w-auto"
               >
-                Cancel
+                Otkaži
               </Button>
               <div className="flex-1 text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
                 {isLoading ? (
                   <span className="flex items-center justify-center sm:justify-start gap-2">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Initializing HD scanner...
+                    Pokretanje skenera...
                   </span>
                 ) : isScanning ? (
                   <span className="flex items-center justify-center sm:justify-start gap-2">
                     <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    HD Scanner active • Native AI detection enabled
+                    Skener je aktivan
                   </span>
                 ) : (
-                  'Ready to scan'
+                  'Spreman za sken'
                 )}
               </div>
             </div>

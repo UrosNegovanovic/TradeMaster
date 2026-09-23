@@ -40,26 +40,26 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
   }
 
   // Render stock status badge based on quantity
-  const renderStockBadge = (quantity: number) => {
+  const renderStockBadge = (quantity: number, minStock: number) => {
     if (quantity === 0) {
       return (
         <Badge variant="destructive" className="gap-1">
           <XCircle className="h-3 w-3" />
-          Out of Stock
+          Nema na stanju
         </Badge>
       )
-    } else if (quantity <= 10) {
+    } else if (quantity <= minStock) {
       return (
         <Badge variant="outline" className="gap-1 border-yellow-500 text-yellow-700 dark:text-yellow-400">
           <AlertTriangle className="h-3 w-3" />
-          {quantity} units
+          {quantity} kom
         </Badge>
       )
     } else {
       return (
         <Badge variant="outline" className="gap-1 border-green-500 text-green-700 dark:text-green-400">
           <Package className="h-3 w-3" />
-          {quantity} units
+          {quantity} kom
         </Badge>
       )
     }
@@ -154,7 +154,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
             <div className="relative flex-1 max-w-md w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by product name or SKU..."
+                placeholder="Pretraga po nazivu ili SKU..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -173,7 +173,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, 'PPP') : <span>Filter by date</span>}
+                    {selectedDate ? format(selectedDate, 'PPP') : <span>Filter po datumu</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -195,7 +195,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
                   variant="ghost"
                   size="icon"
                   onClick={clearFilters}
-                  title="Clear all filters"
+                  title="Obriši filtere"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -205,7 +205,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
 
           {/* Total Value */}
           <div className="text-sm text-muted-foreground whitespace-nowrap">
-            <span className="font-semibold text-foreground">Total Value:</span>{' '}
+            <span className="font-semibold text-foreground">Ukupna vrednost:</span>{' '}
             {formatPrice(totalValue)}
           </div>
         </div>
@@ -213,7 +213,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
         {/* Results Count */}
         {hasActiveFilters && (
           <p className="text-sm text-muted-foreground">
-            Found {filteredProducts.length} of {aggregatedProducts.length} products
+            Pronađeno {filteredProducts.length} od {aggregatedProducts.length} proizvoda
             {selectedDate && ` on ${format(selectedDate, 'PPP')}`}
           </p>
         )}
@@ -226,12 +226,12 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
           <p className="text-muted-foreground">
             {hasActiveFilters ? (
               <>
-                No products found
+                Nema proizvoda
                 {searchQuery && ` matching "${searchQuery}"`}
                 {selectedDate && ` on ${format(selectedDate, 'PPP')}`}
               </>
             ) : (
-              'No products in inventory'
+              'Nema proizvoda u magacinu'
             )}
           </p>
           {hasActiveFilters && (
@@ -240,7 +240,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
               onClick={clearFilters}
               className="mt-2"
             >
-              Clear filters
+              Obriši filtere
             </Button>
           )}
         </div>
@@ -259,7 +259,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
                   {product.sku}
                 </code>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {renderStockBadge(product.totalQuantity)}
+                  {renderStockBadge(product.totalQuantity, product.minStock)}
                   <span className="text-sm text-muted-foreground">
                     {formatPrice(Number(product.price))}
                   </span>
@@ -307,7 +307,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
                       )}
                     </TableCell>
                     <TableCell>
-                      {renderStockBadge(product.totalQuantity)}
+                      {renderStockBadge(product.totalQuantity, product.minStock)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatPrice(Number(product.price))}
@@ -336,12 +336,12 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
             {isExpanded ? (
               <>
                 <ChevronUp className="h-4 w-4" />
-                Show Less
+                Prikaži manje
               </>
             ) : (
               <>
                 <ChevronDown className="h-4 w-4" />
-                Show All ({filteredProducts.length} products)
+                Prikaži sve ({filteredProducts.length})
               </>
             )}
           </Button>

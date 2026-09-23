@@ -260,8 +260,8 @@ export default function InvoicesPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg">{invoice.invoiceNumber}</CardTitle>
-                    <CardDescription className="mt-1">
+                    <CardTitle className="text-lg leading-snug break-words">{invoice.invoiceNumber}</CardTitle>
+                    <CardDescription className="mt-2 block break-words">
                       {invoice.clientName}
                     </CardDescription>
                   </div>

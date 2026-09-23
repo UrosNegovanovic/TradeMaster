@@ -79,9 +79,9 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Catalog Not Found</h1>
+          <h1 className="text-2xl font-bold mb-2">Katalog nije pronađen</h1>
           <p className="text-muted-foreground">
-            The catalog you&apos;re looking for doesn&apos;t exist or has been removed.
+            Link je nevažeći ili je katalog uklonjen.
           </p>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">Items per page:</span>
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Po strani:</span>
                 <Select
                   value={itemsPerPage === 'all' ? 'all' : itemsPerPage.toString()}
                   onValueChange={(value) => {
@@ -185,10 +185,10 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="12">12 per page</SelectItem>
-                    <SelectItem value="24">24 per page</SelectItem>
-                    <SelectItem value="48">48 per page</SelectItem>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="12">12 po strani</SelectItem>
+                    <SelectItem value="24">24 po strani</SelectItem>
+                    <SelectItem value="48">48 po strani</SelectItem>
+                    <SelectItem value="all">Sve</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -196,7 +196,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
           </div>
           <div className="mt-4">
             <span className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-semibold">
-              {Number(catalog.discount).toFixed(2)}% Discount Applied
+              {Number(catalog.discount).toFixed(0)}% popusta
             </span>
           </div>
         </div>
@@ -254,9 +254,9 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
             {itemsPerPage !== 'all' && totalPages > 1 && (
               <div className="flex items-center justify-between mt-8 pt-6 border-t">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * itemsPerPageNum) + 1} to{' '}
-                  {Math.min(currentPage * itemsPerPageNum, totalItems)} of{' '}
-                  {totalItems} products
+                  Prikaz {((currentPage - 1) * itemsPerPageNum) + 1}–{' '}
+                  {Math.min(currentPage * itemsPerPageNum, totalItems)} od{' '}
+                  {totalItems} proizvoda
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -265,10 +265,10 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
                     onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                   >
-                    Previous
+                    Prethodna
                   </Button>
                   <div className="text-sm text-muted-foreground px-3">
-                    Page {currentPage} of {totalPages}
+                    Strana {currentPage} / {totalPages}
                   </div>
                   <Button
                     variant="outline"
@@ -276,7 +276,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
                     onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
+                    Sledeća
                   </Button>
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No products in this catalog.</p>
+              <p className="text-muted-foreground">Nema proizvoda u ovom katalogu.</p>
             </CardContent>
           </Card>
         )}

@@ -9,7 +9,7 @@ import { MetadataRoute } from 'next'
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   // Use environment variable or fallback to Vercel URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-git-main-uros-projects-fe7ff8aa.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'
   
   return [
     {

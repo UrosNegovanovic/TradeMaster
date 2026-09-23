@@ -21,3 +21,9 @@
     1.  Success (Product Image + Badge).
     2.  Error ("Not Found" / "Save Failed").
 * **Forbidden Toasts:** "Processing...", "Duplicate scan prevented", "Hold steady".
+
+## 5. Repeat Scans of the Same Barcode
+* **Single constant:** `SAME_CODE_COOLDOWN_MS` in `src/lib/scan-gate.ts` (700ms). While a code stays in frame it counts at most once per cooldown, so holding it steady gives one "+1" roughly every 0.7–0.9s.
+* **Leaving the frame re-arms the code:** no validated reads for `FRAME_EXIT_MS` (and at least twice the observed read cadence) means the code left; showing it again counts immediately.
+* **Never wait on the network:** the cooldown is decided at read time. Repeat reads of a product already saved in this scanner session show the "+N" toast at once; the save runs in a serialized background queue.
+* **Idempotency per scan event:** every scan gets its own `Idempotency-Key`, persisted before sending and resent unchanged on lost responses, so retries never double-count. After the "Greška pri čuvanju" toast, rescanning the same barcode confirms the unconfirmed scan instead of adding another unit.

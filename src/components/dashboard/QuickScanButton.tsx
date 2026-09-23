@@ -11,7 +11,8 @@ import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@clerk/nextjs'
-import { submitIntake } from '@/lib/intake-request'
+import { createIntakeQueue } from '@/lib/intake-request'
+import { createScanGate } from '@/lib/scan-gate'
 
 interface ProductMetadata {
   name: string
@@ -39,28 +40,43 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const processingRef = useRef(false) // Prevent duplicate processing
-  const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null) // Smart cooldown tracking
+  const processingRef = useRef(false)
+  const pendingScansRef = useRef(0)
+  const scannerOpenRef = useRef(false)
+  // Same-code cooldown is decided at read time, never by waiting on the network.
+  const scanGateRef = useRef(createScanGate())
   // ✅ Cumulative quantity tracking for same product in sequence
   const cumulativeQuantityRef = useRef<{ barcode: string; quantity: number; timestamp: number } | null>(null)
+  const lookupsRef = useRef(new Map<string, Promise<ProductMetadata>>())
+  // Products saved in this scanner session: repeat reads show feedback without waiting for the save.
+  const savedMetadataRef = useRef(new Map<string, ProductMetadata>())
+  const intakeQueueRef = useRef<{ userId: string; queue: ReturnType<typeof createIntakeQueue> } | null>(null)
   const queryClient = useQueryClient()
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const previousPathRef = useRef(pathname)
 
   useEffect(() => {
+    scannerOpenRef.current = scannerOpen
+  }, [scannerOpen])
+
+  const resetScanSession = () => {
+    scanGateRef.current.reset()
+    cumulativeQuantityRef.current = null
+    savedMetadataRef.current.clear()
+  }
+
+  useEffect(() => {
     if (previousPathRef.current !== pathname) {
       setScannerOpen(false)
-      lastScanRef.current = null
-      cumulativeQuantityRef.current = null
+      resetScanSession()
       previousPathRef.current = pathname
     }
   }, [pathname])
 
   const closeScanner = () => {
     setScannerOpen(false)
-    // An in-flight save still owns the processing lock until its finally block.
-    lastScanRef.current = null
-    cumulativeQuantityRef.current = null
+    // In-flight saves keep running in the intake queue after the scanner closes.
+    resetScanSession()
     requestAnimationFrame(() => {
       const trigger = triggerRef.current
       if (trigger?.isConnected && trigger.getClientRects().length && !trigger.disabled) {
@@ -75,6 +91,14 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
   
   // ✅ Fixed toast ID to prevent stacking (new scans replace old toast)
   const SUCCESS_TOAST_ID = 'quick-scan-toast'
+
+  const getIntakeQueue = () => {
+    if (!userId) return null
+    if (intakeQueueRef.current?.userId !== userId) {
+      intakeQueueRef.current = { userId, queue: createIntakeQueue(userId, window.sessionStorage) }
+    }
+    return intakeQueueRef.current.queue
+  }
 
   /**
    * Auto-save product to database
@@ -96,16 +120,17 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         categoryId: metadata.categoryId || null,
       }
 
-      if (!userId) return { success: false }
-      const result = await submitIntake(userId, productData, window.sessionStorage)
+      const queue = getIntakeQueue()
+      if (!queue) return { success: false }
+      const { result } = await queue.submit(productData)
 
       // Invalidate products query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['products'] })
 
       return {
         success: true,
-        action: result.action || 'created',
-        quantityAdded: result.quantityAdded,
+        action: result?.action || 'created',
+        quantityAdded: result?.quantityAdded,
       }
     } catch (error) {
       console.error('Error auto-saving product:', error)
@@ -113,11 +138,108 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const lookupProduct = (cleanBarcode: string) => {
+    const inFlight = lookupsRef.current.get(cleanBarcode)
+    if (inFlight) return inFlight
+    const lookup = (async () => {
+      // ✅ UNIFIED PRODUCT LOOKUP: Check local DB first, then external APIs
+      const response = await fetch(`/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`)
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+      return (await response.json()) as ProductMetadata
+    })()
+    lookupsRef.current.set(cleanBarcode, lookup)
+    lookup.finally(() => lookupsRef.current.delete(cleanBarcode)).catch(() => {})
+    return lookup
+  }
+
+  const showSuccessToast = (metadata: ProductMetadata, barcode: string, cleanBarcode: string, action: 'created' | 'updated') => {
+    // ✅ CUMULATIVE QUANTITY TRACKING: Update ONLY when a scan is shown as counted
+    const sequenceWindowMs = 15000 // 15 seconds window for "same product in sequence" (increased from 5s to prevent premature resets)
+    const saveTimestamp = Date.now()
+    const previous = cumulativeQuantityRef.current
+
+    if (previous && previous.barcode === cleanBarcode && saveTimestamp - previous.timestamp < sequenceWindowMs) {
+      // ✅ SAME PRODUCT IN SEQUENCE: Increment cumulative quantity
+      cumulativeQuantityRef.current = {
+        barcode: cleanBarcode,
+        quantity: previous.quantity + 1,
+        timestamp: saveTimestamp,
+      }
+    } else {
+      // First scan, different product, or sequence timeout (>15s) - reset
+      cumulativeQuantityRef.current = {
+        barcode: cleanBarcode,
+        quantity: 1,
+        timestamp: saveTimestamp,
+      }
+    }
+
+    const cumulativeQuantity = cumulativeQuantityRef.current.quantity
+
+    // Determine badge text based on action
+    const badgeText = action === 'updated' ? 'AŽURIRANO' : 'SKENIRANO'
+    // ✅ Show cumulative quantity for same product in sequence (+1, +2, +3...)
+    const subBadgeText = action === 'updated' 
+      ? `(+${cumulativeQuantity})` 
+      : cumulativeQuantity > 1 
+      ? `(+${cumulativeQuantity})` // Show cumulative even for new products if scanned multiple times
+      : '(NOVI)'
+
+    // ✅ HERO TOAST: The ONLY toast that appears on successful scan
+    toast.custom((id) => (
+      <ProductActionToast
+        variant="scan"
+        product={{
+          name: metadata.name,
+          sku: barcode,
+          imageUrl: metadata.imageUrl,
+        }}
+        customBadge={badgeText}
+        customSubBadge={subBadgeText}
+        onDismiss={() => toast.dismiss(id)}
+      />
+    ), {
+      id: SUCCESS_TOAST_ID,
+      duration: 3000,
+      unstyled: true,
+    })
+  }
+
+  const showSaveFailed = (cleanBarcode: string) => {
+    notify.error('Greška pri čuvanju', {
+      description: 'Unos nije potvrđen. Ponovo skenirajte isti barkod u ovoj kartici da bezbedno proverite i završite unos.',
+      duration: 3000,
+    })
+    // Allow an immediate rescan, which confirms the unconfirmed intake
+    savedMetadataRef.current.delete(cleanBarcode)
+    scanGateRef.current.release(cleanBarcode)
+    cumulativeQuantityRef.current = null
+  }
+
+  const beginScanWork = () => {
+    pendingScansRef.current += 1
+    processingRef.current = true
+    setIsProcessing(true)
+  }
+
+  const endScanWork = () => {
+    // Brief delay keeps the "Obrada..." state visible after feedback
+    setTimeout(() => {
+      pendingScansRef.current -= 1
+      if (pendingScansRef.current === 0) {
+        processingRef.current = false
+        setIsProcessing(false)
+      }
+    }, 500)
+  }
+
   /**
    * Continuous Scanning Mode Handler
-   * - Fetches product data (local DB or external APIs)
-   * - Auto-saves if found
-   * - Shows success/error feedback
+   * - Same-code cooldown (scan-gate) decides instantly; nothing waits on the network
+   * - Repeat reads of a product already saved this session show "+N" immediately and save in the background
+   * - First read of a product: lookup, save, then feedback
    * - Keeps scanner open for next scan
    */
   const handleScanSuccess = async (barcode: string) => {
@@ -130,165 +252,46 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // Reads can still arrive in the frame after a redirect closed the scanner
+    if (!scannerOpenRef.current) return
+
     // Clean barcode for comparison (remove spaces, non-numeric characters)
     const cleanBarcode = barcode.replace(/\D/g, '')
 
-    // ✅ SMART COOLDOWN: Check BEFORE processing (2-second cooldown for faster scanning)
-    const now = Date.now()
-    const cooldownMs = 2000 // 2 seconds cooldown for same barcode (reduced from 3s for faster workflow)
-
-    if (lastScanRef.current) {
-      const { barcode: lastBarcode, timestamp: lastTimestamp } = lastScanRef.current
-      const timeSinceLastScan = now - lastTimestamp
-
-      // Check if it's the SAME barcode AND too soon (within cooldown period)
-      if (cleanBarcode === lastBarcode && timeSinceLastScan < cooldownMs) {
-        // ✅ SILENT MODE: No toast, just silently ignore duplicate scan
-        console.log(`🚫 Duplicate scan prevented: ${cleanBarcode} (scanned ${timeSinceLastScan}ms ago, cooldown: ${cooldownMs}ms)`)
-        return
-      }
-      
-      // Different barcode OR enough time passed - proceed normally
-      if (cleanBarcode !== lastBarcode) {
-        console.log(`✅ Different barcode detected: ${lastBarcode} → ${cleanBarcode} (instant processing)`)
-      } else {
-        console.log(`✅ Cooldown expired for ${cleanBarcode} (${timeSinceLastScan}ms passed)`)
-      }
-    }
-
-    // ✅ Check if same barcode is already being processed
-    if (processingRef.current && lastScanRef.current && lastScanRef.current.barcode === cleanBarcode) {
-      // ✅ SILENT MODE: No toast, just silently ignore
-      console.log('⏸️ Same barcode already processing, ignoring duplicate...')
+    if (!scanGateRef.current.accept(cleanBarcode, Date.now())) {
+      // ✅ SILENT MODE: No toast, just silently ignore duplicate scan
       return
     }
 
-    // Prevent duplicate processing if already handling a DIFFERENT scan
-    if (processingRef.current) {
-      // ✅ SILENT MODE: No toast, just silently ignore
-      console.log('⏸️ Already processing a different scan, ignoring...')
+    beginScanWork()
+
+    const saved = savedMetadataRef.current.get(cleanBarcode)
+    if (saved) {
+      // Today's row exists after the first save, so the server answers 'updated'.
+      showSuccessToast(saved, barcode, cleanBarcode, 'updated')
+      try {
+        const saveResult = await autoSaveProduct(saved, cleanBarcode)
+        if (!saveResult.success) showSaveFailed(cleanBarcode)
+      } finally {
+        endScanWork()
+      }
       return
     }
-
-    // Mark as processing
-    processingRef.current = true
-    setIsProcessing(true)
-
-    // ✅ SILENT MODE: No loading toast - user expects instant feedback
 
     try {
-      // ✅ UNIFIED PRODUCT LOOKUP: Check local DB first, then external APIs
-      const response = await fetch(`/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`)
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const metadata: ProductMetadata = await response.json()
+      const metadata = await lookupProduct(cleanBarcode)
       
       if (metadata && metadata.found) {
         // ✅ PRODUCT FOUND: Auto-save to database
         const saveResult = await autoSaveProduct(metadata, cleanBarcode)
         
         if (saveResult.success) {
-          // ✅ UPDATE LAST SCAN ONLY AFTER SUCCESSFUL SAVE (prevents blocking valid scans)
-          lastScanRef.current = {
-            barcode: cleanBarcode,
-            timestamp: Date.now(),
-          }
-          
-          // ✅ CUMULATIVE QUANTITY TRACKING: Update ONLY after successful save
-          const sequenceWindowMs = 15000 // 15 seconds window for "same product in sequence" (increased from 5s to prevent premature resets)
-          const saveTimestamp = Date.now()
-          
-          
-          if (cumulativeQuantityRef.current) {
-            const { barcode: lastBarcode, quantity: lastQuantity, timestamp: lastTimestamp } = cumulativeQuantityRef.current
-            const timeSinceLastScan = saveTimestamp - lastTimestamp
-            
-            
-            if (cleanBarcode === lastBarcode && timeSinceLastScan < sequenceWindowMs) {
-              // ✅ SAME PRODUCT IN SEQUENCE: Increment cumulative quantity
-              const newQuantity = lastQuantity + 1
-              cumulativeQuantityRef.current = {
-                barcode: cleanBarcode,
-                quantity: newQuantity,
-                timestamp: saveTimestamp,
-              }
-              console.log(`📊 Same product in sequence: ${cleanBarcode} (quantity: ${newQuantity})`)
-              
-            } else if (cleanBarcode !== lastBarcode) {
-              // ✅ DIFFERENT PRODUCT: Reset cumulative quantity
-              cumulativeQuantityRef.current = {
-                barcode: cleanBarcode,
-                quantity: 1,
-                timestamp: saveTimestamp,
-              }
-              console.log(`🔄 Different product detected: ${lastBarcode} → ${cleanBarcode} (reset quantity to 1)`)
-              
-            } else {
-              // Timeout - reset (same barcode but timeSinceLastScan >= sequenceWindowMs)
-              // ⚠️ This happens when user waits too long between scans (>15s)
-              cumulativeQuantityRef.current = {
-                barcode: cleanBarcode,
-                quantity: 1,
-                timestamp: saveTimestamp,
-              }
-              
-            }
-          } else {
-            // First scan - initialize
-            cumulativeQuantityRef.current = {
-              barcode: cleanBarcode,
-              quantity: 1,
-              timestamp: saveTimestamp,
-            }
-            
-          }
-          
-          // ✅ Get cumulative quantity for display
-          const cumulativeQuantity = cumulativeQuantityRef.current?.barcode === cleanBarcode 
-            ? cumulativeQuantityRef.current.quantity 
-            : 1
-          
-          
-          // Determine badge text based on action
-          const badgeText = saveResult.action === 'updated' ? 'AŽURIRANO' : 'SKENIRANO'
-          // ✅ Show cumulative quantity for same product in sequence (+1, +2, +3...)
-          const subBadgeText = saveResult.action === 'updated' 
-            ? `(+${cumulativeQuantity})` 
-            : cumulativeQuantity > 1 
-            ? `(+${cumulativeQuantity})` // Show cumulative even for new products if scanned multiple times
-            : '(NOVI)'
-          
-          // ✅ HERO TOAST: The ONLY toast that appears on successful scan
-          toast.custom((id) => (
-            <ProductActionToast
-              variant="scan"
-              product={{
-                name: metadata.name,
-                sku: barcode,
-                imageUrl: metadata.imageUrl,
-              }}
-              customBadge={badgeText}
-              customSubBadge={subBadgeText}
-              onDismiss={() => toast.dismiss(id)}
-            />
-          ), {
-            id: SUCCESS_TOAST_ID,
-            duration: 3000,
-            unstyled: true,
-          })
+          savedMetadataRef.current.set(cleanBarcode, metadata)
+          showSuccessToast(metadata, barcode, cleanBarcode, saveResult.action ?? 'created')
         } else {
-          notify.error('Greška pri čuvanju', {
-            description: 'Unos nije potvrđen. Ponovo skenirajte isti barkod u ovoj kartici da bezbedno proverite i završite unos.',
-            duration: 3000,
-          })
-          // Reset lastScanRef and cumulative quantity on failure to allow retry
-          lastScanRef.current = null
-          cumulativeQuantityRef.current = null
+          showSaveFailed(cleanBarcode)
         }
-      } else {
+      } else if (scannerOpenRef.current) {
         // ❌ PRODUCT NOT FOUND: Redirect to Inventory Add Product page
         // ✅ Keep error toast visible (user needs to know why redirect happened)
         notify.error('Proizvod nije pronađen', {
@@ -297,20 +300,13 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         })
         
         // Close scanner modal
+        scannerOpenRef.current = false
         setScannerOpen(false)
-        processingRef.current = false
-        setIsProcessing(false)
         
         // ✅ Redirect to Inventory page with barcode as query parameter
         // Using the existing pattern: /inventory?scan=true&sku=...&name=...
         const redirectUrl = `/inventory?scan=true&sku=${encodeURIComponent(cleanBarcode)}`
         router.push(redirectUrl)
-        
-        // ✅ Update lastScanRef to prevent spam scanning unknown products
-        lastScanRef.current = {
-          barcode: cleanBarcode,
-          timestamp: Date.now(),
-        }
       }
     } catch (error) {
       console.error('Error in continuous scan:', error)
@@ -319,15 +315,11 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         description: 'Neuspešna obrada barkoda. Pokušajte ponovo.',
         duration: 3000,
       })
-      // Reset lastScanRef and cumulative quantity on error to allow retry
-      lastScanRef.current = null
+      // Reset cooldown and cumulative quantity on error to allow retry
+      scanGateRef.current.release(cleanBarcode)
       cumulativeQuantityRef.current = null
     } finally {
-      // Reset processing state after a brief delay (allows user to see feedback)
-      setTimeout(() => {
-        processingRef.current = false
-        setIsProcessing(false)
-      }, 500) // ✅ Faster: 500ms delay for quick scanning of different items
+      endScanWork()
     }
   }
 

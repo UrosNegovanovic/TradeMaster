@@ -26,8 +26,15 @@ export function LandingDemo() {
           preload="metadata"
           poster="/landing-demo-poster.jpg"
           controlsList="nodownload"
+          aria-label="Demo TradeMaster, 25 sekundi"
         >
           <source src="/landing-demo.mp4" type="video/mp4" />
+          <track
+            kind="captions"
+            srcLang="sr"
+            label="Opis"
+            src="/landing-demo-captions.vtt"
+          />
           Demo nije mogao da se učita.
         </video>
 

@@ -3,7 +3,7 @@ import { Check, Search } from 'lucide-react'
 import { TradeMasterMark } from '@/components/brand/TradeMasterMark'
 import { cn } from '@/lib/utils'
 
-export const assortmentRows = [
+const assortmentRows = [
   { name: 'Grand kafa 200 g', qty: '128', price: '329,00', tone: 'bg-[#4a2c1a]' },
   { name: 'Next naranča 1 l', qty: '96', price: '149,00', tone: 'bg-[#e29b2e]' },
   { name: 'Barilla Penne 500 g', qty: '74', price: '219,00', tone: 'bg-[#1d4f91]' },
@@ -14,26 +14,26 @@ export function CoffeeBag({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-md bg-[#2b1810] shadow-sm',
+        'relative overflow-hidden rounded-md bg-[#3a2216] shadow-md ring-1 ring-black/10',
         className
       )}
       aria-hidden
     >
-      <div className="absolute inset-x-0 top-0 h-2 bg-[#1a100b]" />
-      <div className="mx-[12%] mt-[22%] rounded-[3px] bg-[#d7b48a] px-1 py-1.5 text-center">
-        <p className="text-[10px] font-black uppercase leading-none tracking-wide text-[#2b1810]">
+      <div className="h-[12%] bg-[#5a3a28]" />
+      <div className="mx-[10%] mt-[10%] rounded-[4px] bg-[#e8c99a] px-1 py-2 text-center">
+        <p className="text-[11px] font-black uppercase leading-none tracking-wider text-[#2b1810]">
           grand
         </p>
-        <p className="mt-0.5 text-[6px] font-semibold uppercase tracking-[0.14em] text-[#6b4e2e]">
+        <p className="mt-1 text-[7px] font-bold uppercase tracking-[0.18em] text-[#8a5a28]">
           gold
         </p>
       </div>
-      <div className="absolute inset-x-[14%] bottom-[14%] space-y-[1.5px] rounded-[2px] bg-white px-1 py-1">
+      <div className="absolute inset-x-[12%] bottom-[10%] space-y-[2px] rounded-[3px] bg-white px-1.5 py-1.5">
         {Array.from({ length: 7 }, (_, i) => (
           <span
             key={i}
-            className="block h-[1.5px] bg-neutral-900"
-            style={{ width: i % 3 === 0 ? '72%' : '100%' }}
+            className="block h-[2px] bg-neutral-900"
+            style={{ width: i % 3 === 0 ? '70%' : '100%' }}
           />
         ))}
       </div>

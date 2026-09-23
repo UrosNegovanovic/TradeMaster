@@ -15,8 +15,11 @@ export default defineConfig({
       'src/lib/invoice-line.test.ts',
       'src/lib/draft-number.test.ts',
       'src/lib/persist-product-image.test.ts',
+      'src/lib/public-catalog.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',
+      'src/app/api/public/catalogs/[id]/route.test.ts',
+      'src/app/api/catalogs/[id]/route.test.ts',
       'src/test/require-test-database.test.ts',
     ],
     exclude: [

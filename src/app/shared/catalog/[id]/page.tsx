@@ -17,7 +17,7 @@ import Image from 'next/image'
 import { ProductImage } from '@/components/shared/ProductImage'
 
 async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: any }> {
-  const response = await fetch(`/api/catalogs/${id}`)
+  const response = await fetch(`/api/public/catalogs/${id}`)
   if (!response.ok) {
     throw new Error('Failed to fetch catalog')
   }

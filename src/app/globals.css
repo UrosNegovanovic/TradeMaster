@@ -4,48 +4,57 @@
 
 @layer base {
   :root {
+    /* Figma: Brand #1a6e5c, Mid #2d9e80, Tint #e8f5f1, Surface #f9fafb */
     --background: 210 20% 98%;
     --foreground: 215 28% 14%;
     --card: 0 0% 100%;
     --card-foreground: 215 28% 14%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 28% 14%;
-    --primary: 173 80% 26%;
+    --primary: 167 62% 27%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 173 16% 94%;
-    --secondary-foreground: 173 35% 18%;
-    --muted: 173 14% 95%;
-    --muted-foreground: 215 14% 38%;
-    --accent: 173 22% 93%;
-    --accent-foreground: 173 40% 18%;
+    --secondary: 162 39% 94%;
+    --secondary-foreground: 167 45% 20%;
+    --muted: 210 16% 96%;
+    --muted-foreground: 215 12% 40%;
+    --accent: 164 40% 93%;
+    --accent-foreground: 167 45% 18%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 210 16% 88%;
     --input: 210 16% 84%;
-    --ring: 173 80% 26%;
+    --ring: 167 62% 27%;
     --radius: 0.5rem;
+    --brand: 167 62% 27%;
+    --brand-mid: 164 56% 40%;
+    --brand-tint: 162 39% 94%;
+    --brand-surface: 210 20% 98%;
   }
 
   .dark {
-    --background: 180 12% 7%;
-    --foreground: 180 12% 96%;
-    --card: 180 10% 11%;
-    --card-foreground: 180 12% 96%;
-    --popover: 180 10% 13%;
-    --popover-foreground: 180 12% 96%;
-    --primary: 173 48% 45%;
-    --primary-foreground: 180 20% 8%;
-    --secondary: 173 18% 16%;
-    --secondary-foreground: 180 12% 96%;
-    --muted: 173 12% 15%;
-    --muted-foreground: 180 8% 70%;
-    --accent: 173 18% 18%;
-    --accent-foreground: 180 12% 96%;
+    --background: 168 12% 7%;
+    --foreground: 162 20% 96%;
+    --card: 168 10% 11%;
+    --card-foreground: 162 20% 96%;
+    --popover: 168 10% 13%;
+    --popover-foreground: 162 20% 96%;
+    --primary: 164 56% 40%;
+    --primary-foreground: 168 20% 8%;
+    --secondary: 167 18% 16%;
+    --secondary-foreground: 162 20% 96%;
+    --muted: 167 12% 15%;
+    --muted-foreground: 162 8% 70%;
+    --accent: 167 18% 18%;
+    --accent-foreground: 162 20% 96%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 180 10% 20%;
-    --input: 180 10% 20%;
-    --ring: 173 48% 45%;
+    --border: 168 10% 20%;
+    --input: 168 10% 20%;
+    --ring: 164 56% 40%;
+    --brand: 164 56% 40%;
+    --brand-mid: 164 56% 48%;
+    --brand-tint: 167 18% 16%;
+    --brand-surface: 168 12% 7%;
   }
 }
 

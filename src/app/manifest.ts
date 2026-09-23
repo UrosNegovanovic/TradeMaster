@@ -1,23 +1,14 @@
 import { MetadataRoute } from 'next'
 
-/**
- * PWA Manifest for TradeMaster
- * This enables "Add to Home Screen" functionality on mobile devices
- * 
- * To fully enable PWA:
- * 1. Add icon files to /public: icon-192.png, icon-512.png, apple-touch-icon.png
- * 2. Deploy with HTTPS (already done on Vercel)
- * 3. Optionally add a service worker for offline support
- */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TradeMaster - Inventory & Catalog Management',
+    name: 'TradeMaster',
     short_name: 'TradeMaster',
-    description: 'Professional B2B inventory management and PDF catalog generation platform for wholesale businesses',
+    description: 'Skeniraj robu, vidi lager, pošalji katalog, izdaj fakturu.',
     start_url: '/',
-    display: 'standalone', // Opens as a standalone app (no browser UI)
-    background_color: '#ffffff',
-    theme_color: '#000000', // Matches your dark theme
+    display: 'standalone',
+    background_color: '#f9fafb',
+    theme_color: '#1a6e5c',
     orientation: 'portrait-primary',
     scope: '/',
     icons: [
@@ -25,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/icon-192.png',
         sizes: '192x192',
         type: 'image/png',
-        purpose: 'maskable', // For Android adaptive icons
+        purpose: 'maskable',
       },
       {
         src: '/icon-512.png',
@@ -37,7 +28,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/icon-192.png',
         sizes: '192x192',
         type: 'image/png',
-        purpose: 'any', // Standard icon
+        purpose: 'any',
       },
       {
         src: '/icon-512.png',
@@ -49,23 +40,23 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['business', 'productivity', 'finance'],
     shortcuts: [
       {
-        name: 'Dashboard',
-        short_name: 'Dashboard',
-        description: 'View your business dashboard',
+        name: 'Početna',
+        short_name: 'Početna',
+        description: 'Pregled lagera i faktura',
         url: '/dashboard',
         icons: [{ src: '/icon-192.png', sizes: '192x192' }],
       },
       {
-        name: 'Scan Product',
-        short_name: 'Scan',
-        description: 'Scan a product barcode',
+        name: 'Skeniraj',
+        short_name: 'Sken',
+        description: 'Skeniraj barkod proizvoda',
         url: '/inventory',
         icons: [{ src: '/icon-192.png', sizes: '192x192' }],
       },
       {
-        name: 'Warehouse',
-        short_name: 'Warehouse',
-        description: 'Manage warehouse stock',
+        name: 'Magacin',
+        short_name: 'Magacin',
+        description: 'Stanje i izlaz robe',
         url: '/warehouse',
         icons: [{ src: '/icon-192.png', sizes: '192x192' }],
       },

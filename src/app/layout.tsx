@@ -5,7 +5,7 @@ import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "sonner"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin", "latin-ext"] })
 
 // Viewport configuration for optimal mobile experience
 export const viewport: Viewport = {
@@ -15,8 +15,8 @@ export const viewport: Viewport = {
   userScalable: true,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#0F766E' },
-    { media: '(prefers-color-scheme: dark)', color: '#0B3D3A' },
+    { media: '(prefers-color-scheme: light)', color: '#1a6e5c' },
+    { media: '(prefers-color-scheme: dark)', color: '#1a6e5c' },
   ],
 }
 
@@ -24,39 +24,29 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-git-main-uros-projects-fe7ff8aa.vercel.app'),
   
-  // Title configuration with template for child pages
   title: {
-    default: "TradeMaster - B2B Inventory & Catalog Management System",
+    default: "TradeMaster — skeniraj, lager, katalog, faktura",
     template: "%s | TradeMaster",
   },
   
-  // Detailed description for search engines
-  description: "Professional B2B inventory management and PDF catalog generation platform. Streamline your wholesale business with smart inventory tracking, barcode scanning, instant catalog creation, and client management tools.",
+  description: "Skeniraj robu, vidi lager, pošalji katalog i izdaj fakturu. Alat za trgovce, veleprodaju i mali magacin.",
   
-  // Keywords for SEO (helps with search engine discovery)
   keywords: [
-    'B2B inventory management',
-    'wholesale catalog',
-    'PDF catalog generator',
-    'inventory tracking',
-    'product management',
-    'wholesale business software',
-    'catalog management system',
-    'merchant tools',
-    'stock management',
-    'business inventory',
-    'barcode scanner',
-    'warehouse management',
-    'invoice generator',
-    'wholesale trade',
+    'B2B magacin',
+    'veleprodaja',
+    'lager',
+    'barkod skener',
+    'katalog PDF',
+    'faktura',
+    'trgovac',
+    'inventory',
+    'TradeMaster',
   ],
   
-  // Author and creator information
-  authors: [{ name: 'TradeMaster Team' }],
+  authors: [{ name: 'TradeMaster' }],
   creator: 'TradeMaster',
   publisher: 'TradeMaster',
   
-  // Application name for PWA / later store wrapper
   applicationName: 'TradeMaster',
   appleWebApp: {
     capable: true,
@@ -64,10 +54,8 @@ export const metadata: Metadata = {
     title: 'TradeMaster',
   },
   
-  // Referrer policy for security
   referrer: 'origin-when-cross-origin',
   
-  // Robots meta tags for search engine crawling
   robots: {
     index: true,
     follow: true,
@@ -81,72 +69,42 @@ export const metadata: Metadata = {
     },
   },
   
-  // OpenGraph metadata (for Facebook, LinkedIn, WhatsApp sharing)
   openGraph: {
     type: 'website',
-    locale: 'en_US',
+    locale: 'sr_RS',
     url: '/',
-    title: 'TradeMaster - B2B Inventory & Catalog Management',
-    description: 'Professional inventory management and PDF catalog generation for wholesale businesses. Track products, manage warehouse, create stunning catalogs.',
+    title: 'TradeMaster — skeniraj, lager, katalog, faktura',
+    description: 'Od kamere u hali do PDF-a za klijenta. Za trgovce, veleprodaju i mali magacin.',
     siteName: 'TradeMaster',
     images: [
       {
-        url: '/og-image.png', // TODO: Create this image (1200x630px)
+        url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'TradeMaster - B2B Inventory Management Platform',
+        alt: 'TradeMaster — skeniraj robu, vidi lager, pošalji katalog, izdaj fakturu',
       },
     ],
   },
   
-  // Twitter Card metadata (for Twitter/X sharing)
   twitter: {
     card: 'summary_large_image',
-    title: 'TradeMaster - B2B Inventory & Catalog Management',
-    description: 'Professional inventory management and PDF catalog generation for wholesale businesses',
-    images: ['/twitter-image.png'], // TODO: Create this image (1200x600px)
-    creator: '@TradeMaster', // TODO: Update with actual Twitter handle
+    title: 'TradeMaster — skeniraj, lager, katalog, faktura',
+    description: 'Od kamere u hali do PDF-a za klijenta.',
+    images: ['/og-image.png'],
   },
   
-  // Icons and favicons
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png', // TODO: Create this (180x180px)
-    other: [
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        url: '/favicon-32x32.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        url: '/favicon-16x16.png',
-      },
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+      { url: '/mark.svg', type: 'image/svg+xml' },
     ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
   
-  // PWA manifest
   manifest: '/manifest.json',
-  
-  // Alternate languages (if you add i18n in the future)
-  // alternates: {
-  //   canonical: '/',
-  //   languages: {
-  //     'en-US': '/en-US',
-  //     'sr-RS': '/sr-RS',
-  //   },
-  // },
-  
-  // Verification tokens for search engines (add these when available)
-  // verification: {
-  //   google: 'google-site-verification-token',
-  //   yandex: 'yandex-verification-token',
-  //   yahoo: 'yahoo-verification-token',
-  // },
 }
 
 export default function RootLayout({
@@ -155,8 +113,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
+    <ClerkProvider appearance={{ variables: { colorPrimary: '#1a6e5c' } }}>
+      <html lang="sr">
         <body className={inter.className}>
           <Providers>{children}</Providers>
           <Toaster

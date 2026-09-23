@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ScanBarcode } from 'lucide-react'
 import { BarcodeScanner } from '@/components/inventory/BarcodeScanner'
@@ -25,8 +25,15 @@ interface QuickScanButtonProps {
   presentation?: 'default' | 'fab' | 'hero'
 }
 
-export function QuickScanButton({ presentation = 'default' }: QuickScanButtonProps) {
+const QuickScanContext = createContext<{
+  openScanner: (trigger: HTMLButtonElement) => void
+  isProcessing: boolean
+} | null>(null)
+
+/** One scanner and one processing/cooldown state for all dashboard entry points. */
+export function QuickScanProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const processingRef = useRef(false) // Prevent duplicate processing
@@ -34,6 +41,34 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
   // ✅ Cumulative quantity tracking for same product in sequence
   const cumulativeQuantityRef = useRef<{ barcode: string; quantity: number; timestamp: number } | null>(null)
   const queryClient = useQueryClient()
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const previousPathRef = useRef(pathname)
+
+  useEffect(() => {
+    if (previousPathRef.current !== pathname) {
+      setScannerOpen(false)
+      lastScanRef.current = null
+      cumulativeQuantityRef.current = null
+      previousPathRef.current = pathname
+    }
+  }, [pathname])
+
+  const closeScanner = () => {
+    setScannerOpen(false)
+    // An in-flight save still owns the processing lock until its finally block.
+    lastScanRef.current = null
+    cumulativeQuantityRef.current = null
+    requestAnimationFrame(() => {
+      const trigger = triggerRef.current
+      if (trigger?.isConnected && trigger.getClientRects().length && !trigger.disabled) {
+        trigger.focus()
+      } else {
+        const visibleTrigger = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-quick-scan-trigger]'))
+          .find((button) => button.getClientRects().length && !button.disabled)
+        visibleTrigger?.focus()
+      }
+    })
+  }
   
   // ✅ Fixed toast ID to prevent stacking (new scans replace old toast)
   const SUCCESS_TOAST_ID = 'quick-scan-toast'
@@ -387,6 +422,33 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
   }
 
   return (
+    <QuickScanContext.Provider value={{
+      openScanner: (trigger) => {
+        if (processingRef.current) return
+        triggerRef.current = trigger
+        setScannerOpen(true)
+      },
+      isProcessing,
+    }}>
+      {children}
+      {scannerOpen && (
+        <BarcodeScanner
+          open={scannerOpen}
+          onClose={closeScanner}
+          onScanSuccess={handleScanSuccess}
+          continuousMode={true}
+        />
+      )}
+    </QuickScanContext.Provider>
+  )
+}
+
+export function QuickScanButton({ presentation = 'default' }: QuickScanButtonProps) {
+  const session = useContext(QuickScanContext)
+  if (!session) throw new Error('QuickScanButton must be inside QuickScanProvider')
+  const { openScanner, isProcessing } = session
+
+  return (
     <>
       {presentation === 'fab' ? (
         <Button
@@ -394,7 +456,8 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
           size="icon"
           className="h-14 w-14 min-h-11 min-w-11 rounded-full shadow-lg ring-4 ring-background"
           aria-label="Skeniraj proizvod"
-          onClick={() => setScannerOpen(true)}
+          data-quick-scan-trigger
+          onClick={(event) => openScanner(event.currentTarget)}
           disabled={isProcessing}
         >
           <ScanBarcode className="h-6 w-6" />
@@ -404,7 +467,8 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
           type="button"
           size="lg"
           className="h-12 w-full min-h-12 text-base"
-          onClick={() => setScannerOpen(true)}
+          data-quick-scan-trigger
+          onClick={(event) => openScanner(event.currentTarget)}
           disabled={isProcessing}
         >
           <ScanBarcode className="mr-2 h-5 w-5" />
@@ -414,7 +478,8 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
         <Button
           variant="outline"
           className="h-11 w-full justify-start text-sm"
-          onClick={() => setScannerOpen(true)}
+          data-quick-scan-trigger
+          onClick={(event) => openScanner(event.currentTarget)}
           disabled={isProcessing}
         >
           <ScanBarcode className="mr-2 h-4 w-4" />
@@ -422,20 +487,6 @@ export function QuickScanButton({ presentation = 'default' }: QuickScanButtonPro
         </Button>
       )}
 
-      <BarcodeScanner
-        open={scannerOpen}
-        onClose={() => {
-          setScannerOpen(false)
-          processingRef.current = false
-          setIsProcessing(false)
-          // Reset cooldown and cumulative quantity when scanner closes
-          logToServer('RESET: Scanner closed', { cumulativeQuantityRef: cumulativeQuantityRef.current }, 'RESET')
-          lastScanRef.current = null
-          cumulativeQuantityRef.current = null
-        }}
-        onScanSuccess={handleScanSuccess}
-        continuousMode={true} // ✅ Enable continuous scanning mode
-      />
     </>
   )
 }

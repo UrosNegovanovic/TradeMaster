@@ -151,9 +151,6 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2 sm:flex-row">
-            <div className="w-full sm:max-w-sm">
-              <QuickScanButton presentation="hero" />
-            </div>
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href="/inventory">
                 <Plus className="mr-2 h-4 w-4" />
@@ -165,19 +162,24 @@ export default async function DashboardPage() {
       ) : null}
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="min-w-0">
+          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
             <CardTitle className="text-lg">Lager</CardTitle>
-            <CardDescription>Zbir količina po redovima proizvoda</CardDescription>
+            <details className="text-xs text-muted-foreground">
+              <summary className="min-h-6 cursor-pointer rounded-sm py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">O stanju lagera</summary>
+              <p className="pt-1">Količine svih unosa se sabiraju, uključujući više unosa istog proizvoda. Prodajna vrednost je zbir količine × prodajne cene.</p>
+            </details>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">Ukupna količina</p>
-              <p className="text-2xl font-bold">{formatPieces(totalQuantity)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Prodajna vrednost lagera</p>
-              <p className="text-2xl font-bold">{formatRsd(stockValue)}</p>
+          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">Ukupna količina</p>
+                <p className="text-xl font-bold tabular-nums [overflow-wrap:anywhere]">{formatPieces(totalQuantity)}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">Prodajna vrednost lagera</p>
+                <p className="text-xl font-bold tabular-nums [overflow-wrap:anywhere]">{formatRsd(stockValue)}</p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
               <Button variant="outline" size="sm" asChild>
@@ -196,17 +198,20 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="min-w-0">
+          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
             <CardTitle className="text-lg">Dodato danas</CardTitle>
-            <CardDescription>Novi redovi proizvoda, ne kompletni prijem</CardDescription>
+            <details className="text-xs text-muted-foreground">
+              <summary className="min-h-6 cursor-pointer rounded-sm py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Šta se računa?</summary>
+              <p className="pt-1">Unosi proizvoda kreirani danas i njihove trenutne količine. Dopune ranijih unosa nisu uključene. Dan se računa prema vremenu servera.</p>
+            </details>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
             {addedTodayRows === 0 ? (
               <p className="text-sm text-muted-foreground">Danas još nije dodat nijedan proizvod.</p>
             ) : (
               <div className="space-y-1">
-                <p className="text-2xl font-bold">{addedTodayRows} unosa</p>
+                <p className="text-xl font-bold tabular-nums [overflow-wrap:anywhere]">{addedTodayRows} unosa</p>
                 <p className="text-sm text-muted-foreground">
                   {formatPieces(addedTodayQuantity)}
                 </p>
@@ -221,18 +226,18 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="min-w-0">
+          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
             <CardTitle className="text-lg">Otvorene fakture</CardTitle>
-            <CardDescription>Potraživanja. Plaćene idu u prihod.</CardDescription>
+            <CardDescription>Nacrti i neplaćene fakture</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
             {openCount === 0 ? (
               <p className="text-sm text-muted-foreground">Nema otvorenih faktura.</p>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <p className="text-2xl font-bold">{formatRsd(openReceivables)}</p>
+                  <p className="text-xl font-bold tabular-nums [overflow-wrap:anywhere]">{formatRsd(openReceivables)}</p>
                   <p className="text-sm text-muted-foreground">{openCount} otvorenih</p>
                 </div>
                 <ul className="space-y-2">
@@ -240,13 +245,13 @@ export default async function DashboardPage() {
                     <li key={invoice.id}>
                       <Link
                         href={`/invoices/${invoice.id}`}
-                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
+                        className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
                       >
-                        <span className="truncate">
+                        <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                           {invoice.invoiceNumber}
                           <span className="ml-2 text-muted-foreground">{invoice.clientName}</span>
                         </span>
-                        <span className="ml-3 shrink-0 font-medium">
+                        <span className="min-w-0 font-medium tabular-nums [overflow-wrap:anywhere]">
                           {formatRsd(Number(invoice.totalAmount))}
                         </span>
                       </Link>

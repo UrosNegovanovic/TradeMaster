@@ -17,7 +17,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     display: 'standalone', // Opens as a standalone app (no browser UI)
     background_color: '#ffffff',
-    theme_color: '#000000', // Matches your dark theme
+    theme_color: '#0F766E',
     orientation: 'portrait-primary',
     scope: '/',
     icons: [
@@ -49,23 +49,23 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['business', 'productivity', 'finance'],
     shortcuts: [
       {
-        name: 'Dashboard',
-        short_name: 'Dashboard',
-        description: 'View your business dashboard',
+        name: 'Početna',
+        short_name: 'Početna',
+        description: 'Pregled poslovanja',
         url: '/dashboard',
         icons: [{ src: '/icon-192.png', sizes: '192x192' }],
       },
       {
-        name: 'Scan Product',
-        short_name: 'Scan',
-        description: 'Scan a product barcode',
+        name: 'Asortiman',
+        short_name: 'Asortiman',
+        description: 'Pregled proizvoda',
         url: '/inventory',
         icons: [{ src: '/icon-192.png', sizes: '192x192' }],
       },
       {
-        name: 'Warehouse',
-        short_name: 'Warehouse',
-        description: 'Manage warehouse stock',
+        name: 'Magacin',
+        short_name: 'Magacin',
+        description: 'Pregled stanja magacina',
         url: '/warehouse',
         icons: [{ src: '/icon-192.png', sizes: '192x192' }],
       },

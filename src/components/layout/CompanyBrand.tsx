@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/types/profile'
 
@@ -36,6 +37,7 @@ type CompanyBrandProps = {
 }
 
 export function CompanyBrand({ className, compact = false, onNavigate }: CompanyBrandProps) {
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null)
   const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: fetchProfile,
@@ -44,9 +46,9 @@ export function CompanyBrand({ className, compact = false, onNavigate }: Company
 
   const companyName = profile?.companyName?.trim() || null
   const rawLogoUrl = profile?.logoUrl
-  const logoUrl = isValidImageUrl(rawLogoUrl) ? rawLogoUrl : null
+  const logoUrl = isValidImageUrl(rawLogoUrl) && rawLogoUrl !== failedLogoUrl ? rawLogoUrl : null
 
-  if (!companyName && !logoUrl) {
+  if (!companyName && !rawLogoUrl) {
     return null
   }
 
@@ -75,8 +77,10 @@ export function CompanyBrand({ className, compact = false, onNavigate }: Company
               src={logoUrl}
               alt=""
               fill
+              unoptimized
               sizes="44px"
               className="object-contain p-1"
+              onError={() => setFailedLogoUrl(rawLogoUrl ?? null)}
             />
           </span>
         ) : (
@@ -87,7 +91,7 @@ export function CompanyBrand({ className, compact = false, onNavigate }: Company
             )}
             aria-hidden
           >
-            {companyInitials(companyName!)}
+            {companyInitials(companyName || 'Firma')}
           </span>
         )}
 
@@ -96,7 +100,7 @@ export function CompanyBrand({ className, compact = false, onNavigate }: Company
             <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Firma
             </span>
-            <span className="block truncate text-sm font-semibold leading-tight text-foreground">
+            <span title={companyName} className="block break-words text-sm font-semibold leading-tight text-foreground [overflow-wrap:anywhere]">
               {companyName}
             </span>
           </span>

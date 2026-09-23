@@ -130,7 +130,7 @@ export const metadata: Metadata = {
   },
   
   // PWA manifest
-  manifest: '/manifest.json',
+  manifest: '/manifest.webmanifest',
   
   // Alternate languages (if you add i18n in the future)
   // alternates: {

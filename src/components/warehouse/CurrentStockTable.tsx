@@ -29,6 +29,8 @@ import {
 
 type StockRow = Product & { totalQuantity: number }
 
+const STOCK_PREVIEW_LIMIT = 10
+
 interface CurrentStockTableProps {
   products: Product[]
 }
@@ -314,7 +316,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
   }, [aggregatedProducts, searchQuery])
 
   const hasActiveFilters = searchQuery.trim().length > 0 || selectedDate !== undefined
-  const displayedProducts = hasActiveFilters ? filteredProducts : filteredProducts.slice(0, 3)
+  const displayedProducts = filteredProducts.slice(0, STOCK_PREVIEW_LIMIT)
   const showAllCount = filteredProducts.length
 
   const clearFilters = () => {
@@ -354,7 +356,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
         <StockProductList products={displayedProducts} />
       )}
 
-      {filteredProducts.length > 3 && (
+      {filteredProducts.length > STOCK_PREVIEW_LIMIT && (
         <div className="flex justify-center pt-2">
           <Button variant="outline" size="sm" onClick={() => setStockOpen(true)} className="gap-2">
             <ChevronDown className="h-4 w-4" />

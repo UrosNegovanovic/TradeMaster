@@ -15,6 +15,7 @@ import {
   lineDiscountAmount,
   lineSubtotal,
   lineTotal,
+  addReservedStock,
   remainingStock,
   stockBySku,
 } from '@/lib/invoice-line'
@@ -91,10 +92,22 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
     return items.reduce((sum, item) => sum + item.total, 0)
   }, [items])
 
-  const stockMap = useMemo(() => stockBySku(products), [products])
   const productsById = useMemo(() => {
     return new Map(products.map((product) => [product.id, product]))
   }, [products])
+  const stockMap = useMemo(() => {
+    const onHand = stockBySku(products)
+    if (!initialData || initialData.status === InvoiceStatus.DRAFT) {
+      return onHand
+    }
+    return addReservedStock(
+      onHand,
+      (initialData.items ?? []).map((item: { productId?: string | null; quantity: number }) => ({
+        sku: item.productId ? productsById.get(item.productId)?.sku ?? null : null,
+        quantity: item.quantity,
+      }))
+    )
+  }, [initialData, products, productsById])
 
   const lineStock = useMemo(() => {
     const lines = items.map((item) => ({
@@ -191,6 +204,13 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
         unitPrice: item.unitPrice,
         discount: item.discount,
       })),
+    }
+
+    if (hasShortage) {
+      setFormError(
+        'Nema dovoljno robe na stanju. Izdavanjem fakture količine se skidaju sa magacina.'
+      )
+      return
     }
 
     const validation = invoiceWriteSchema.safeParse(payload)
@@ -456,8 +476,8 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
               <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
-                  Ima stavki iznad stanja. Faktura se može sačuvati (potraživanje), a manjak
-                  uskladite skidanjem robe u Magacinu — lager se ovde ne skida automatski.
+                  Nema dovoljno robe na stanju. Izdavanjem ili označavanjem kao plaćeno količine
+                  se skidaju sa magacina — faktura se ne može sačuvati dok ima manjka.
                 </p>
               </div>
             ) : null}
@@ -477,7 +497,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
 
       {/* Submit Button */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || hasShortage}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

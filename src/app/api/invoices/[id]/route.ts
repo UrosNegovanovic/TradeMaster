@@ -12,6 +12,7 @@ import {
   parseJsonBody,
 } from '@/lib/invoice-service'
 import { nextPaidAt } from '@/lib/invoice-finance'
+import { syncInvoiceStock } from '@/lib/invoice-stock'
 
 const invoiceInclude = {
   items: {
@@ -134,7 +135,7 @@ export async function PUT(
         where: { invoiceId: id },
       })
 
-      return tx.invoice.update({
+      const updated = await tx.invoice.update({
         where: { id },
         data: {
           invoiceNumber: parsed.invoiceNumber,
@@ -155,6 +156,16 @@ export async function PUT(
         },
         include: invoiceInclude,
       })
+
+      await syncInvoiceStock(tx, {
+        profileId: profile.id,
+        invoiceId: id,
+        invoiceNumber: parsed.invoiceNumber,
+        status: locked[0].status,
+        items,
+      })
+
+      return updated
     })
 
     return NextResponse.json(updatedInvoice)
@@ -197,59 +208,72 @@ export async function PATCH(
     const body = await parseJsonBody(request)
     const parsed = parseInvoicePatchBody(body)
 
-    const existingInvoice = await prisma.invoice.findFirst({
-      where: {
-        id,
-        profileId: profile.id,
-      },
-    })
-
-    if (!existingInvoice) {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      )
-    }
-
     const hasContentChange =
       parsed.invoiceNumber !== undefined ||
       parsed.dueDate !== undefined ||
       parsed.clientName !== undefined ||
       parsed.clientAddress !== undefined
 
-    if (hasContentChange) {
-      assertInvoiceContentEditable(existingInvoice.status)
-    }
+    const updatedInvoice = await prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<
+        Array<{ id: string; status: string; invoiceNumber: string; paidAt: Date | null }>
+      >`
+        SELECT id, status, "invoiceNumber", "paidAt"
+        FROM invoices
+        WHERE id = ${id} AND "profileId" = ${profile.id}
+        FOR UPDATE
+      `
 
-    const paidAt =
-      parsed.status !== undefined
-        ? nextPaidAt(existingInvoice.status, existingInvoice.paidAt, parsed.status)
-        : undefined
+      if (locked.length === 0) {
+        throw new InvoiceClientError('Invoice not found', 404)
+      }
 
-    const updatedInvoice = await prisma.invoice.update({
-      where: { id },
-      data: {
-        ...(parsed.status && { status: parsed.status }),
-        ...(paidAt !== undefined ? { paidAt } : {}),
-        ...(parsed.invoiceNumber && { invoiceNumber: parsed.invoiceNumber }),
-        ...(parsed.dueDate && { dueDate: new Date(parsed.dueDate) }),
-        ...(parsed.clientName && { clientName: parsed.clientName }),
-        ...(parsed.clientAddress !== undefined && { clientAddress: parsed.clientAddress }),
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                sku: true,
+      if (hasContentChange) {
+        assertInvoiceContentEditable(locked[0].status)
+      }
+
+      const paidAt =
+        parsed.status !== undefined
+          ? nextPaidAt(locked[0].status, locked[0].paidAt, parsed.status)
+          : undefined
+
+      const invoice = await tx.invoice.update({
+        where: { id },
+        data: {
+          ...(parsed.status && { status: parsed.status }),
+          ...(paidAt !== undefined ? { paidAt } : {}),
+          ...(parsed.invoiceNumber && { invoiceNumber: parsed.invoiceNumber }),
+          ...(parsed.dueDate && { dueDate: new Date(parsed.dueDate) }),
+          ...(parsed.clientName && { clientName: parsed.clientName }),
+          ...(parsed.clientAddress !== undefined && { clientAddress: parsed.clientAddress }),
+        },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                },
               },
             },
           },
+          profile: true,
         },
-        profile: true,
-      },
+      })
+
+      if (parsed.status !== undefined) {
+        await syncInvoiceStock(tx, {
+          profileId: profile.id,
+          invoiceId: id,
+          invoiceNumber: invoice.invoiceNumber,
+          status: invoice.status,
+          items: invoice.items,
+        })
+      }
+
+      return invoice
     })
 
     return NextResponse.json(updatedInvoice)
@@ -290,30 +314,39 @@ export async function DELETE(
 
     const { id } = await context.params
 
-    const existingInvoice = await prisma.invoice.findFirst({
-      where: {
-        id,
+    await prisma.$transaction(async (tx) => {
+      const existingInvoice = await tx.invoice.findFirst({
+        where: {
+          id,
+          profileId: profile.id,
+        },
+        include: { items: true },
+      })
+
+      if (!existingInvoice) {
+        throw new InvoiceClientError('Invoice not found', 404)
+      }
+
+      await syncInvoiceStock(tx, {
         profileId: profile.id,
-      },
-    })
+        invoiceId: id,
+        invoiceNumber: existingInvoice.invoiceNumber,
+        status: 'DRAFT',
+        items: existingInvoice.items,
+      })
 
-    if (!existingInvoice) {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      )
-    }
-
-    await prisma.invoice.delete({
-      where: { id },
+      await tx.invoice.delete({
+        where: { id },
+      })
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof InvoiceClientError || (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError')) {
+      return invoiceErrorResponse(error)
+    }
+
     console.error('Error deleting invoice:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return invoiceErrorResponse(error)
   }
 }

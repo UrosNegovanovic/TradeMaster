@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { recordIntakeMovement } from '@/lib/invoice-stock'
 import type { ProductFormData } from '@/lib/validations'
 
 export class IntakeConflictError extends Error {}
@@ -49,6 +50,12 @@ export async function saveProductIntake(profileId: string, input: ProductFormDat
           },
           include,
         })
+    await recordIntakeMovement(tx, {
+      profileId,
+      productId: product.id,
+      quantity: input.quantity,
+      key,
+    })
     const payload = existing
       ? { ...product, action: 'updated', batchMode: 'daily', quantityAdded: input.quantity, previousQuantity: product.quantity - input.quantity }
       : { ...product, action: 'created' }

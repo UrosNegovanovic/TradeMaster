@@ -11,6 +11,7 @@ import {
 } from '@/lib/invoice-service'
 import { OPEN_INVOICE_STATUS } from '@/lib/invoice-status'
 import { nextPaidAt } from '@/lib/invoice-finance'
+import { syncInvoiceStock } from '@/lib/invoice-stock'
 
 export async function GET() {
   try {
@@ -123,6 +124,14 @@ export async function POST(request: NextRequest) {
           })
         )
       )
+
+      await syncInvoiceStock(tx, {
+        profileId: profile.id,
+        invoiceId: newInvoice.id,
+        invoiceNumber: parsed.invoiceNumber,
+        status,
+        items,
+      })
 
       return {
         ...newInvoice,

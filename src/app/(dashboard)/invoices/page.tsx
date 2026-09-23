@@ -95,6 +95,9 @@ export default function InvoicesPage() {
     mutationFn: deleteInvoice,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
+      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       notify.success('Faktura je obrisana', {
         description: 'Faktura je uklonjena iz evidencije.',
         duration: 5000,

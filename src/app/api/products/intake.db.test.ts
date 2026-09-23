@@ -73,6 +73,11 @@ describe('product intake against a dedicated test database', () => {
     expect(stored[0].quantity).toBe(2)
     const payloads = await Promise.all(responses.map((response) => response.json()))
     expect(new Set(payloads.map((payload) => payload.id)).size).toBe(1)
+    const movements = await prisma.stockMovement.findMany({
+      where: { productId: stored[0].id, source: 'INTAKE' },
+    })
+    expect(movements).toHaveLength(2)
+    expect(movements.reduce((sum, movement) => sum + movement.quantity, 0)).toBe(2)
   })
 
   it('adds both concurrent scans to an existing daily row without losing quantity', async () => {
@@ -102,6 +107,7 @@ describe('product intake against a dedicated test database', () => {
     const stored = await rows(sku)
     expect(stored).toHaveLength(1)
     expect(stored[0].quantity).toBe(2)
+    expect(await prisma.stockMovement.count({ where: { productId: stored[0].id, source: 'INTAKE' } })).toBe(1)
   })
 
   it('applies simultaneous retries of one operation exactly once', async () => {

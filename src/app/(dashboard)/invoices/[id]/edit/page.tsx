@@ -70,6 +70,9 @@ export default function EditInvoicePage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
+      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
       notify.success('Invoice updated', {
         description: `Invoice #${data.invoiceNumber} has been saved.`,

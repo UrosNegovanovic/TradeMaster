@@ -21,6 +21,12 @@ vi.mock('@/lib/prisma', () => ({
   prisma: mocks,
 }))
 
+const stockMocks = vi.hoisted(() => ({
+  syncInvoiceStock: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/lib/invoice-stock', () => stockMocks)
+
 import { auth } from '@clerk/nextjs/server'
 import { POST } from './route'
 
@@ -44,6 +50,7 @@ function postRequest(body: unknown, raw?: string) {
 describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback proof)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
     prismaTransactionReset()
     vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
     mocks.profile.findUnique.mockResolvedValue(profile)
@@ -177,6 +184,7 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
       select: { id: true },
     })
     expect(mocks.invoiceItem.create).toHaveBeenCalledTimes(3)
+    expect(stockMocks.syncInvoiceStock).toHaveBeenCalledTimes(1)
   })
 
   it('ignores forged client totals and stores server-calculated amounts', async () => {

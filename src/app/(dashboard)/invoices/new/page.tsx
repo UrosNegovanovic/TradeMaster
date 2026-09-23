@@ -48,6 +48,9 @@ export default function NewInvoicePage() {
     mutationFn: createInvoice,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
+      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
       // Professional success toast
       notify.success('Invoice created', {

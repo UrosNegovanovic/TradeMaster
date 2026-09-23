@@ -35,6 +35,8 @@ type StockMovementHistoryProps = {
   isLoading: boolean
 }
 
+const HISTORY_PREVIEW_LIMIT = 10
+
 async function fetchAllStockMovements(): Promise<StockMovement[]> {
   const response = await fetch('/api/stock-movements?all=1')
   if (!response.ok) {
@@ -239,7 +241,10 @@ export function StockMovementHistory({
   )
 
   const hasActiveFilters = searchQuery.trim().length > 0 || selectedDate !== undefined
-  const showAllCount = Math.max(totalCount, overlaySource.length, movements.length)
+  const displayedMovements = previewFiltered.slice(0, HISTORY_PREVIEW_LIMIT)
+  const showAllCount = hasActiveFilters
+    ? overlayFiltered.length
+    : Math.max(totalCount, overlaySource.length, movements.length)
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -289,19 +294,21 @@ export function StockMovementHistory({
               </Button>
             </div>
           ) : (
-            <MovementList movements={previewFiltered} />
+            <MovementList movements={displayedMovements} />
           )}
-          <div className="flex justify-center pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setHistoryOpen(true)}
-              className="gap-2"
-            >
-              <ChevronDown className="h-4 w-4" />
-              Prikaži sve ({showAllCount})
-            </Button>
-          </div>
+          {showAllCount > HISTORY_PREVIEW_LIMIT && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setHistoryOpen(true)}
+                className="gap-2"
+              >
+                <ChevronDown className="h-4 w-4" />
+                Prikaži sve ({showAllCount})
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

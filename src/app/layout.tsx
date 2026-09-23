@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'),
   
   title: {
-    default: "TradeMaster — skeniraj, lager, katalog, faktura",
+    default: "TradeMaster — skeniraj robu, drži lager pod kontrolom",
     template: "%s | TradeMaster",
   },
   
-  description: "Skeniraj robu, vidi lager, pošalji katalog i izdaj fakturu. Alat za trgovce, veleprodaju i mali magacin.",
+  description: "Skeniraj robu. Drži lager pod kontrolom. Unesi proizvode kamerom, prati zalihe i pripremi kataloge i fakture.",
   
   keywords: [
     'B2B magacin',
@@ -73,23 +73,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'sr_RS',
     url: '/',
-    title: 'TradeMaster — skeniraj, lager, katalog, faktura',
-    description: 'Od kamere u hali do PDF-a za klijenta. Za trgovce, veleprodaju i mali magacin.',
+    title: 'TradeMaster — skeniraj robu, drži lager pod kontrolom',
+    description: 'Unesi proizvode kamerom, prati zalihe i pripremi kataloge i fakture. Za trgovce i malu veleprodaju.',
     siteName: 'TradeMaster',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'TradeMaster — skeniraj robu, vidi lager, pošalji katalog, izdaj fakturu',
+        alt: 'TradeMaster — skeniraj robu, drži lager pod kontrolom',
       },
     ],
   },
   
   twitter: {
     card: 'summary_large_image',
-    title: 'TradeMaster — skeniraj, lager, katalog, faktura',
-    description: 'Od kamere u hali do PDF-a za klijenta.',
+    title: 'TradeMaster — skeniraj robu, drži lager pod kontrolom',
+    description: 'Unesi proizvode kamerom, prati zalihe i pripremi kataloge i fakture.',
     images: ['/og-image.png'],
   },
   
@@ -113,7 +113,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   const tree = (
-    <html lang="sr">
+    <html lang="sr" className="scroll-smooth">
       <body className={inter.className}>
         <Providers>{children}</Providers>
         <Toaster

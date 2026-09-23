@@ -53,13 +53,13 @@ export default function SettingsPage() {
     mutationFn: updateProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      notify.success('Profile updated', {
-        description: 'Your company details have been saved.',
+      notify.success('Podaci su sačuvani', {
+        description: 'Podaci o firmi su ažurirani.',
       })
     },
     onError: (error: Error) => {
-      notify.error('Failed to update profile', {
-        description: error.message || 'Please try again.',
+      notify.error('Čuvanje nije uspelo', {
+        description: error.message || 'Pokušajte ponovo.',
       })
     },
   })
@@ -119,19 +119,19 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Company Information</CardTitle>
+          <CardTitle>Podaci o firmi</CardTitle>
           <CardDescription>
-            Update your company details and contact information
+            Naziv, PIB, kontakt i logo koji idu na katalog i fakturu
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name</Label>
+                <Label htmlFor="companyName">Naziv firme</Label>
                 <Input
                   id="companyName"
-                  placeholder="Enter company name"
+                  placeholder="Unesite naziv firme"
                   {...register('companyName')}
                 />
                 {errors.companyName && (
@@ -142,10 +142,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pib">Tax ID (PIB)</Label>
+                <Label htmlFor="pib">PIB</Label>
                 <Input
                   id="pib"
-                  placeholder="Enter tax ID"
+                  placeholder="Unesite PIB"
                   {...register('pib')}
                 />
                 {errors.pib && (
@@ -156,11 +156,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contactEmail">Contact Email</Label>
+                <Label htmlFor="contactEmail">Email</Label>
                 <Input
                   id="contactEmail"
                   type="email"
-                  placeholder="contact@company.com"
+                  placeholder="kontakt@firma.rs"
                   {...register('contactEmail')}
                 />
                 {errors.contactEmail && (
@@ -171,7 +171,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contactPhone">Contact Phone</Label>
+                <Label htmlFor="contactPhone">Telefon</Label>
                 <Input
                   id="contactPhone"
                   type="tel"
@@ -186,10 +186,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Adresa</Label>
                 <Input
                   id="address"
-                  placeholder="Enter company address"
+                  placeholder="Unesite adresu firme"
                   {...register('address')}
                 />
                 {errors.address && (
@@ -204,8 +204,8 @@ export default function SettingsPage() {
                   value={watch('logoUrl')}
                   onChange={(url) => setValue('logoUrl', url ?? null, { shouldValidate: true })}
                   bucket="merchant-logos"
-                  label="Company Logo"
-                  description="Upload your company logo. Maximum file size: 5MB. Supported formats: PNG, JPG, GIF."
+                  label="Logo firme"
+                  description="PNG, JPG ili GIF. Maksimalno 5 MB."
                 />
                 {errors.logoUrl && (
                   <p className="text-sm text-destructive">
@@ -223,13 +223,13 @@ export default function SettingsPage() {
                 onClick={() => reset()}
                 disabled={mutation.isPending}
               >
-                Reset
+                Poništi
               </Button>
               <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending}>
                 {mutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Save Changes
+                Sačuvaj
               </Button>
             </div>
           </form>

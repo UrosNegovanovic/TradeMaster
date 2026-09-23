@@ -113,32 +113,16 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, onPointerDown, onPointerUp, onClick, ...props }, ref) => {
-  // #region agent log
-  const wrappedOnPointerDown = React.useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'command.tsx:CommandItem:onPointerDown',message:'PointerDown event fired',data:{hasHandler:!!onPointerDown,target:e.currentTarget.textContent?.substring(0,50),pointerType:e.pointerType,button:e.button},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,E'})}).catch(()=>{});
-    if (onPointerDown) onPointerDown(e);
-  }, [onPointerDown]);
-
-  const wrappedOnClick = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'command.tsx:CommandItem:onClick',message:'Click event fired',data:{hasHandler:!!onClick,target:e.currentTarget.textContent?.substring(0,50),defaultPrevented:e.defaultPrevented,propagationStopped:e.isPropagationStopped()},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E'})}).catch(()=>{});
-    if (onClick) onClick(e);
-  }, [onClick]);
-  // #endregion
-
-  return (
-    <CommandPrimitive.Item
-      ref={ref}
-      className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none pointer-events-auto aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
-      )}
-      onPointerDown={wrappedOnPointerDown}
-      onClick={wrappedOnClick}
-      {...props}
-    />
-  );
-})
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none pointer-events-auto aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    {...props}
+  />
+))
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 

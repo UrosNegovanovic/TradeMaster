@@ -76,33 +76,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
   // ✅ Fixed toast ID to prevent stacking (new scans replace old toast)
   const SUCCESS_TOAST_ID = 'quick-scan-toast'
 
-  // 🔍 DEBUG: Logging helper function (available throughout component)
-  const logToServer = (message: string, data: any, hypothesisId: string = 'A') => {
-    const logData = {
-      location: 'QuickScanButton.tsx',
-      message,
-      data: { ...data, timestamp: Date.now() },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId
-    }
-    // Try to detect ngrok or use localhost - check for ngrok.io or ngrok-free.app domains
-    let baseUrl = 'http://127.0.0.1:7244'
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname
-      if (hostname.includes('ngrok') || hostname.includes('ngrok-free') || hostname.includes('ngrok.io')) {
-        baseUrl = `${window.location.protocol}//${hostname}`
-      }
-    }
-    fetch(`${baseUrl}/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(logData)
-    }).catch(() => {})
-    console.log(`[LOG] ${message}`, data)
-  }
-
   /**
    * Auto-save product to database
    * Uses default values for missing fields (price = 0, quantity = 1)
@@ -163,19 +136,11 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
     // ✅ SMART COOLDOWN: Check BEFORE processing (2-second cooldown for faster scanning)
     const now = Date.now()
     const cooldownMs = 2000 // 2 seconds cooldown for same barcode (reduced from 3s for faster workflow)
-    
-    // #region agent log
-    console.log('[DEBUG] Smart Cooldown check START', { cleanBarcode, lastScanRef: lastScanRef.current, now, cooldownMs, cumulativeQuantityRef: cumulativeQuantityRef.current });
-    // #endregion
-    
+
     if (lastScanRef.current) {
       const { barcode: lastBarcode, timestamp: lastTimestamp } = lastScanRef.current
       const timeSinceLastScan = now - lastTimestamp
-      
-      // #region agent log
-      console.log('[DEBUG] Smart Cooldown comparison', { cleanBarcode, lastBarcode, timeSinceLastScan, cooldownMs, isSame: cleanBarcode === lastBarcode, isBlocked: cleanBarcode === lastBarcode && timeSinceLastScan < cooldownMs });
-      // #endregion
-      
+
       // Check if it's the SAME barcode AND too soon (within cooldown period)
       if (cleanBarcode === lastBarcode && timeSinceLastScan < cooldownMs) {
         // ✅ SILENT MODE: No toast, just silently ignore duplicate scan
@@ -236,27 +201,11 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
           const sequenceWindowMs = 15000 // 15 seconds window for "same product in sequence" (increased from 5s to prevent premature resets)
           const saveTimestamp = Date.now()
           
-          logToServer('Cumulative quantity check START', { 
-            cleanBarcode, 
-            currentRef: cumulativeQuantityRef.current, 
-            saveTimestamp, 
-            sequenceWindowMs 
-          })
           
           if (cumulativeQuantityRef.current) {
             const { barcode: lastBarcode, quantity: lastQuantity, timestamp: lastTimestamp } = cumulativeQuantityRef.current
             const timeSinceLastScan = saveTimestamp - lastTimestamp
             
-            logToServer('Cumulative quantity comparison', { 
-              cleanBarcode, 
-              lastBarcode, 
-              lastQuantity, 
-              lastTimestamp, 
-              timeSinceLastScan, 
-              sequenceWindowMs, 
-              isSame: cleanBarcode === lastBarcode, 
-              isWithinWindow: timeSinceLastScan < sequenceWindowMs 
-            })
             
             if (cleanBarcode === lastBarcode && timeSinceLastScan < sequenceWindowMs) {
               // ✅ SAME PRODUCT IN SEQUENCE: Increment cumulative quantity
@@ -268,11 +217,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
               }
               console.log(`📊 Same product in sequence: ${cleanBarcode} (quantity: ${newQuantity})`)
               
-              logToServer('Cumulative quantity INCREMENTED', { 
-                cleanBarcode, 
-                newQuantity, 
-                updatedRef: cumulativeQuantityRef.current 
-              })
             } else if (cleanBarcode !== lastBarcode) {
               // ✅ DIFFERENT PRODUCT: Reset cumulative quantity
               cumulativeQuantityRef.current = {
@@ -282,11 +226,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
               }
               console.log(`🔄 Different product detected: ${lastBarcode} → ${cleanBarcode} (reset quantity to 1)`)
               
-              logToServer('Cumulative quantity RESET (different product)', { 
-                cleanBarcode, 
-                lastBarcode, 
-                updatedRef: cumulativeQuantityRef.current 
-              })
             } else {
               // Timeout - reset (same barcode but timeSinceLastScan >= sequenceWindowMs)
               // ⚠️ This happens when user waits too long between scans (>15s)
@@ -296,14 +235,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
                 timestamp: saveTimestamp,
               }
               
-              logToServer('Cumulative quantity RESET (timeout)', { 
-                cleanBarcode, 
-                timeSinceLastScan, 
-                sequenceWindowMs, 
-                lastQuantity,
-                reason: `Timeout: ${Math.round(timeSinceLastScan/1000)}s >= ${Math.round(sequenceWindowMs/1000)}s`,
-                updatedRef: cumulativeQuantityRef.current 
-              })
             }
           } else {
             // First scan - initialize
@@ -313,10 +244,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
               timestamp: saveTimestamp,
             }
             
-            logToServer('Cumulative quantity INITIALIZED', { 
-              cleanBarcode, 
-              initializedRef: cumulativeQuantityRef.current 
-            })
           }
           
           // ✅ Get cumulative quantity for display
@@ -324,12 +251,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
             ? cumulativeQuantityRef.current.quantity 
             : 1
           
-          logToServer('Final cumulative quantity for display', { 
-            cleanBarcode, 
-            cumulativeQuantity, 
-            currentRef: cumulativeQuantityRef.current, 
-            subBadgeText: `(+${cumulativeQuantity})` 
-          })
           
           // Determine badge text based on action
           const badgeText = saveResult.action === 'updated' ? 'AŽURIRANO' : 'SKENIRANO'
@@ -364,7 +285,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
             duration: 3000,
           })
           // Reset lastScanRef and cumulative quantity on failure to allow retry
-          logToServer('RESET: Save failed', { cleanBarcode, reason: 'save_failed' }, 'RESET')
           lastScanRef.current = null
           cumulativeQuantityRef.current = null
         }
@@ -400,7 +320,6 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         duration: 3000,
       })
       // Reset lastScanRef and cumulative quantity on error to allow retry
-      logToServer('RESET: Error occurred', { cleanBarcode, error: String(error) }, 'RESET')
       lastScanRef.current = null
       cumulativeQuantityRef.current = null
     } finally {

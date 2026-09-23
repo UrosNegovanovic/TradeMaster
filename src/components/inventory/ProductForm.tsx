@@ -133,8 +133,8 @@ export function ProductForm({
         unstyled: true,
       })
       
-      notify.success(`Quantity updated to ${newQuantity}`, {
-        description: `Scanned ${barcode} again`,
+      notify.success(`Količina je ${newQuantity}`, {
+        description: `Ponovo skeniran ${barcode}`,
         duration: 2000,
       })
       
@@ -325,7 +325,7 @@ export function ProductForm({
                   variant="outline"
                   size="icon"
                   onClick={() => setScannerOpen(true)}
-                  title="Scan Barcode"
+                  title="Skeniraj barkod"
                   disabled={isFetchingMetadata}
                 >
                   {isFetchingMetadata ? (
@@ -342,7 +342,7 @@ export function ProductForm({
 
             <div className="grid gap-2">
               <Label htmlFor="quantity">
-                Quantity <span className="text-destructive">*</span>
+                Količina <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="quantity"

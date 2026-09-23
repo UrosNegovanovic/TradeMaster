@@ -80,7 +80,7 @@ export function StockOutForm({
         const availableStock = product?.quantity || 0
         
         return {
-          message: `Cannot remove more than available stock (${availableStock}). Current inventory: ${availableStock} units.`,
+          message: `Ne može se skinuti više od stanja (${availableStock} kom).`,
           path: ['quantity'],
         }
       }
@@ -177,17 +177,13 @@ export function StockOutForm({
                     >
                       {filteredProducts.length === 0 ? (
                         <div className="py-6 text-center text-sm text-muted-foreground">
-                          No product found.
+                          Nema proizvoda.
                         </div>
                       ) : (
                         filteredProducts.map((product) => (
                           <div
                             key={product.id}
                             onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-                              e.stopPropagation();
-                              // #region agent log
-                              fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StockOutForm.tsx:NATIVE_onClick',message:'NATIVE dropdown clicked',data:{productId:product.id,productName:product.name,sku:product.sku},timestamp:Date.now(),sessionId:'debug-session',runId:'native-dropdown',hypothesisId:'NATIVE'})}).catch(()=>{});
-                              // #endregion
                               setValue('productId', product.id, { shouldValidate: true })
                               setValue('quantity', 1)
                               setProductSearchOpen(false)
@@ -239,7 +235,7 @@ export function StockOutForm({
                   variant={availableStock === 0 ? 'destructive' : availableStock <= 10 ? 'outline' : 'outline'}
                   className={availableStock === 0 ? '' : availableStock <= 10 ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400' : 'border-green-500 text-green-700 dark:text-green-400'}
                 >
-                  Available Stock: {availableStock} units
+                  Na stanju: {availableStock} kom
                 </Badge>
               )}
             </div>
@@ -266,7 +262,7 @@ export function StockOutForm({
               )}
               {selectedProduct && availableStock > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Maximum removable: <strong>{availableStock}</strong> units
+                  Maksimum za izlaz: <strong>{availableStock}</strong> kom
                 </p>
               )}
               {errors.quantity && (

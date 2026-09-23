@@ -247,9 +247,13 @@ export default async function DashboardPage() {
                         href={`/invoices/${invoice.id}`}
                         className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
                       >
-                        <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-                          {invoice.invoiceNumber}
-                          <span className="ml-2 text-muted-foreground">{invoice.clientName}</span>
+                        <span className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+                          <span className="break-words font-medium [overflow-wrap:anywhere]">
+                            {invoice.invoiceNumber}
+                          </span>
+                          <span className="break-words text-muted-foreground [overflow-wrap:anywhere]">
+                            {invoice.clientName}
+                          </span>
                         </span>
                         <span className="min-w-0 font-medium tabular-nums [overflow-wrap:anywhere]">
                           {formatRsd(Number(invoice.totalAmount))}

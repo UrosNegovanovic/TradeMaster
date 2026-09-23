@@ -277,16 +277,10 @@ async function fetchFromOpenProductsFacts(
 async function fetchFromUPCItemDB(
   cleanBarcode: string
 ): Promise<ProductMetadata | null> {
-  // #region agent log
-  fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:ENTRY',message:'UPCitemdb API call started',data:{barcode:cleanBarcode},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-  // #endregion
   try {
     // UPCitemdb.com API endpoint - truly free (no API key needed for basic usage)
     const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${cleanBarcode}`
     
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:FETCH',message:'Fetching from UPCitemdb',data:{url:url},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-    // #endregion
     
     const response = await fetch(url, {
       headers: {
@@ -295,28 +289,16 @@ async function fetchFromUPCItemDB(
       signal: AbortSignal.timeout(5000), // 5 second timeout
     })
 
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:RESPONSE',message:'UPCitemdb response received',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-    // #endregion
 
     if (!response.ok) {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:NOT_OK',message:'UPCitemdb response not OK',data:{status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-      // #endregion
       return null
     }
 
     const data = await response.json()
 
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:JSON',message:'UPCitemdb JSON parsed',data:{code:data.code,total:data.total,itemsLength:data.items?.length,firstItem:data.items?.[0]},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-    // #endregion
 
     // UPCitemdb response format: { code: "OK", total: 1, items: [...] }
     if (data.code !== 'OK' || !data.items || data.items.length === 0) {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:NO_DATA',message:'UPCitemdb no product found',data:{code:data.code,total:data.total},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-      // #endregion
       return null
     }
 
@@ -326,9 +308,6 @@ async function fetchFromUPCItemDB(
     const name = product.title || product.brand || ''
     
     if (!name) {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:NO_NAME',message:'UPCitemdb product has no name',data:{product:product},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-      // #endregion
       return null
     }
 
@@ -354,9 +333,6 @@ async function fetchFromUPCItemDB(
       ? product.images[0] 
       : null
 
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:SUCCESS',message:'UPCitemdb product found',data:{name:name,description:description,hasImage:!!imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-    // #endregion
 
     return {
       name: name.trim(),
@@ -367,9 +343,6 @@ async function fetchFromUPCItemDB(
       source: 'products', // Mark as 'products' since it's a general database
     }
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchFromUPCItemDB:ERROR',message:'UPCitemdb error/timeout',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-    // #endregion
     // Timeout or network error
     return null
   }
@@ -384,9 +357,6 @@ async function fetchFromUPCItemDB(
 export async function fetchProductMetadata(
   barcode: string
 ): Promise<ProductMetadata | null> {
-  // #region agent log
-  fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchProductMetadata:ENTRY',message:'Server-side API call started',data:{rawBarcode:barcode,barcodeLength:barcode.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-v2',hypothesisId:'CORS_FIX'})}).catch(()=>{});
-  // #endregion
   
   try {
     // Clean barcode (remove spaces, non-numeric characters)
@@ -403,9 +373,6 @@ export async function fetchProductMetadata(
     // Updated to use the unified fetch-by-barcode endpoint
     const apiUrl = `/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`
     
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchProductMetadata:API_CALL',message:'Calling server API route',data:{apiUrl:apiUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-v2',hypothesisId:'CORS_FIX'})}).catch(()=>{});
-    // #endregion
     
     const startTime = Date.now()
     const response = await fetch(apiUrl, {
@@ -415,9 +382,6 @@ export async function fetchProductMetadata(
       },
     })
 
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchProductMetadata:API_RESPONSE',message:'Server API response received',data:{status:response.status,ok:response.ok,duration:Date.now()-startTime},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-v2',hypothesisId:'CORS_FIX'})}).catch(()=>{});
-    // #endregion
 
     if (!response.ok) {
       console.error('API route error:', response.status, response.statusText)
@@ -426,9 +390,6 @@ export async function fetchProductMetadata(
 
     const result: ProductMetadata = await response.json()
     
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchProductMetadata:SUCCESS',message:'Product metadata received',data:{found:result.found,name:result.name,source:result.source,hasImage:!!result.imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-v2',hypothesisId:'CORS_FIX'})}).catch(()=>{});
-    // #endregion
 
     if (result.found) {
       console.log(`✅ Product found! Source: ${result.source}`)
@@ -439,9 +400,6 @@ export async function fetchProductMetadata(
     return result
   } catch (error) {
     console.error('Error fetching product metadata:', error)
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/9a40dcb9-3c6c-4a7c-a402-9175d311199d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'openfoodfacts.ts:fetchProductMetadata:ERROR',message:'Top-level error',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix-v2',hypothesisId:'CORS_FIX'})}).catch(()=>{});
-    // #endregion
     return null
   }
 }

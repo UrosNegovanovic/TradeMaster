@@ -114,12 +114,12 @@ export default function WarehousePage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
-      notify.success('Stock movement registered', {
-        description: `${data.quantity} units removed from ${data.product.name}`,
+      notify.success('Izlaz je zabeležen', {
+        description: `${data.quantity} kom uklonjeno sa ${data.product.name}`,
       })
     },
     onError: (error: Error) => {
-      notify.error('Failed to register stock movement', {
+      notify.error('Izlaz nije sačuvan', {
         description: error.message,
       })
     },
@@ -188,7 +188,7 @@ export default function WarehousePage() {
             <AlertTriangle className="h-4 w-4" />
             <CollapsibleTrigger className="flex w-full items-center justify-between hover:opacity-80 transition-opacity">
               <AlertTitle className="mb-0">
-                ⚠️ Low Stock Alerts ({lowStockProducts.length} {lowStockProducts.length === 1 ? 'product' : 'products'})
+                Nizak lager ({lowStockProducts.length} {lowStockProducts.length === 1 ? 'proizvod' : 'proizvoda'})
               </AlertTitle>
               {lowStockOpen ? (
                 <ChevronDown className="h-5 w-5 transition-transform" />
@@ -199,7 +199,7 @@ export default function WarehousePage() {
             <CollapsibleContent>
               <AlertDescription className="mt-3">
                 <p className="mb-3">
-                  The following products have stock levels at or below the minimum threshold:
+                  Ovi proizvodi su na ili ispod minimalnog stanja:
                 </p>
                 <div className="space-y-2">
                   {lowStockProducts.map((product) => (
@@ -219,10 +219,10 @@ export default function WarehousePage() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold">
-                          {product.quantity} / {product.minStock} units
+                          {product.quantity} / {product.minStock} kom
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {product.quantity === 0 ? 'Out of stock' : 'Low stock'}
+                          {product.quantity === 0 ? 'Nema na stanju' : 'Nizak lager'}
                         </p>
                       </div>
                     </div>

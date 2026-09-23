@@ -112,24 +112,33 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const tree = (
+    <html lang="sr">
+      <body className={inter.className}>
+        <Providers>{children}</Providers>
+        <Toaster
+          position="top-right"
+          offset={16}
+          gap={12}
+          visibleToasts={4}
+          expand={false}
+          toastOptions={{
+            unstyled: true,
+            className: 'w-auto bg-transparent p-0 shadow-none border-0',
+          }}
+        />
+      </body>
+    </html>
+  )
+
+  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  if (!clerkKey) {
+    return tree
+  }
+
   return (
     <ClerkProvider appearance={{ variables: { colorPrimary: '#1a6e5c' } }}>
-      <html lang="sr">
-        <body className={inter.className}>
-          <Providers>{children}</Providers>
-          <Toaster
-            position="top-right"
-            offset={16}
-            gap={12}
-            visibleToasts={4}
-            expand={false}
-            toastOptions={{
-              unstyled: true,
-              className: 'w-auto bg-transparent p-0 shadow-none border-0',
-            }}
-          />
-        </body>
-      </html>
+      {tree}
     </ClerkProvider>
   )
 }

@@ -1,6 +1,6 @@
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-// Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
@@ -9,17 +9,25 @@ const isPublicRoute = createRouteMatcher([
   '/api/public/catalogs/(.*)', // Unlisted catalog JSON for that preview
 ])
 
-export default clerkMiddleware((auth, request) => {
+const withClerk = clerkMiddleware((auth, request) => {
   if (!isPublicRoute(request)) {
-    auth().protect();
+    auth().protect()
   }
-});
+})
+
+export default function middleware(request: NextRequest, event: NextFetchEvent) {
+  if (!process.env.CLERK_SECRET_KEY) {
+    if (isPublicRoute(request)) {
+      return NextResponse.next()
+    }
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+  return withClerk(request, event)
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
     '/(api|trpc)(.*)',
   ],
 }

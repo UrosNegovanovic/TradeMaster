@@ -13,6 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { navigation } from './navigation'
 
 export function MobileNav() {
@@ -33,13 +34,11 @@ export function MobileNav() {
       <SheetContent side="left" className="pr-0">
         <SheetHeader>
           <SheetTitle className="text-left">
-            <Link
-              href="/"
-              className="text-xl font-bold text-primary"
+            <TradeMasterWordmark
+              href="/dashboard"
+              size="sm"
               onClick={() => setOpen(false)}
-            >
-              TradeMaster
-            </Link>
+            />
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col space-y-2 mt-6">

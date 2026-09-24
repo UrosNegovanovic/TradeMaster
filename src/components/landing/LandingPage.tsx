@@ -3,6 +3,7 @@ import { ArrowRight, Camera, FileText, Package, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { LandingDemo } from './LandingDemo'
+import { LandingInstall } from './LandingInstall'
 import { LandingStickyCta } from './LandingStickyCta'
 import { AssortmentLaptop, FeatureShot, PhoneScanner } from './mocks'
 
@@ -170,6 +171,7 @@ export function LandingPage() {
             <p className="mt-3 text-[14px] text-neutral-600">
               Jedan nalog po firmi. Radi u pregledaču.
             </p>
+            <LandingInstall />
           </div>
 
           <div className="min-w-0">

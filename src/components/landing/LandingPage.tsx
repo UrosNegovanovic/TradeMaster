@@ -173,7 +173,7 @@ export function LandingPage() {
           </div>
 
           <div className="min-w-0">
-            <figure className="m-0 mx-auto w-[156px] max-h-[min(228px,30svh)] overflow-hidden lg:hidden">
+            <figure className="m-0 mx-auto w-[156px] lg:hidden">
               <PhoneScanner compact priority />
               <figcaption className="sr-only">
                 Prikaz proizvoda: sken kafe na telefonu. Nije snimak tvog magacina.

@@ -48,7 +48,6 @@ export function LandingDemo() {
               src="/landing-demo-captions.vtt"
               default
             />
-            Demo nije mogao da se učita.
           </video>
 
           {failed ? (

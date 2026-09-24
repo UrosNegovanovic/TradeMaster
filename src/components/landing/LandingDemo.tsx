@@ -75,9 +75,7 @@ export function LandingDemo() {
         id="demo-opis"
         className="mt-3 text-center text-[14px] leading-relaxed text-neutral-600"
       >
-        Pregled ekrana (25 s), pušta se ručno i bez zvuka. Nije snimak skeniranja
-        u hali — pravi kadrovi skena, potvrđenog unosa i kataloga sa slikama još
-        nisu snimljeni.
+        Pregled ekrana (25 s), pušta se ručno i bez zvuka.
       </figcaption>
     </figure>
   )

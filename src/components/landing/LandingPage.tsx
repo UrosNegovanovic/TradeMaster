@@ -72,11 +72,11 @@ const features = [
 const faqs = [
   {
     q: 'Radi li na telefonu i računaru?',
-    a: 'Da. TradeMaster je veb-aplikacija: isti nalog i isti lager u pregledaču na telefonu i računaru.',
+    a: 'Da. Aplikacija na telefonu i na računaru, sa istim nalogom i istim lagerom.',
   },
   {
     q: 'Da li moram da instaliram aplikaciju?',
-    a: 'Ne. Otvoriš je u pregledaču. Nema posebne aplikacije na App Store ili Google Play.',
+    a: 'Ne moraš. Radi i u pregledaču. Za telefon, na landingu tapni „Dodaj na početni ekran“ i koristi je kao aplikaciju.',
   },
   {
     q: 'Šta ako barkod nije pronađen?',

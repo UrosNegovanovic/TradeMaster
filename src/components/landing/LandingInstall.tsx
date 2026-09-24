@@ -1,36 +1,41 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Smartphone } from 'lucide-react'
+import {
+  type BeforeInstallPromptEvent,
+  isIosDevice,
+  isStandaloneDisplay,
+  resolveInstallClick,
+  takeCapturedInstallPrompt,
+} from '@/lib/pwa-install'
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+function readInstalled() {
+  return isStandaloneDisplay({
+    displayModeStandalone: window.matchMedia('(display-mode: standalone)').matches,
+    safariStandalone: (window.navigator as Navigator & { standalone?: boolean }).standalone === true,
+  })
 }
 
-function isStandalone() {
-  if (window.matchMedia('(display-mode: standalone)').matches) return true
-  const safari = window.navigator as Navigator & { standalone?: boolean }
-  return safari.standalone === true
-}
-
-function isIosSafari() {
-  const ua = window.navigator.userAgent
-  const ios = /iPad|iPhone|iPod/.test(ua)
-  const touchMac = ua.includes('Mac') && 'ontouchend' in document
-  return (ios || touchMac) && !(window as Window & { MSStream?: unknown }).MSStream
+function readIos() {
+  return isIosDevice({
+    userAgent: window.navigator.userAgent,
+    touchMac: window.navigator.userAgent.includes('Mac') && 'ontouchend' in document,
+    hasMsStream: Boolean((window as Window & { MSStream?: unknown }).MSStream),
+  })
 }
 
 export function LandingInstall() {
   const [ready, setReady] = useState(false)
   const [installed, setInstalled] = useState(false)
   const [ios, setIos] = useState(false)
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
-  const [help, setHelp] = useState(false)
+  const [sheet, setSheet] = useState<'ios-guide' | 'open-chrome' | null>(null)
+  const deferredRef = useRef<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
-    setInstalled(isStandalone())
-    setIos(isIosSafari())
+    setInstalled(readInstalled())
+    setIos(readIos())
+    deferredRef.current = takeCapturedInstallPrompt()
     setReady(true)
 
     if ('serviceWorker' in navigator) {
@@ -39,12 +44,13 @@ export function LandingInstall() {
 
     function onPrompt(event: Event) {
       event.preventDefault()
-      setDeferred(event as BeforeInstallPromptEvent)
+      deferredRef.current = event as BeforeInstallPromptEvent
     }
 
     function onInstalled() {
       setInstalled(true)
-      setHelp(false)
+      setSheet(null)
+      deferredRef.current = null
     }
 
     window.addEventListener('beforeinstallprompt', onPrompt)
@@ -55,21 +61,77 @@ export function LandingInstall() {
     }
   }, [])
 
-  if (!ready || installed) return null
-
   async function onAdd() {
-    if (deferred) {
-      await deferred.prompt()
-      const { outcome } = await deferred.userChoice
+    if (installed) return
+
+    if (!ios && !deferredRef.current) {
+      await new Promise<void>((resolve) => {
+        const timer = window.setTimeout(finish, 400)
+        function onPrompt(event: Event) {
+          event.preventDefault()
+          deferredRef.current = event as BeforeInstallPromptEvent
+          finish()
+        }
+        function finish() {
+          window.clearTimeout(timer)
+          window.removeEventListener('beforeinstallprompt', onPrompt)
+          resolve()
+        }
+        window.addEventListener('beforeinstallprompt', onPrompt)
+      })
+    }
+
+    const kind = resolveInstallClick({
+      installed,
+      ios,
+      hasPrompt: Boolean(deferredRef.current),
+    })
+
+    if (kind === 'prompt') {
+      const promptEvent = deferredRef.current
+      if (!promptEvent) return
+      await promptEvent.prompt()
+      const { outcome } = await promptEvent.userChoice
       if (outcome === 'accepted') setInstalled(true)
-      setDeferred(null)
+      deferredRef.current = null
+      setSheet(null)
       return
     }
-    setHelp((open) => !open)
+
+    if (kind === 'ios-guide' || kind === 'open-chrome') setSheet(kind)
+  }
+
+  if (!ready) return null
+
+  if (installed) {
+    return (
+      <p className="mt-4 text-[14px] text-neutral-600 lg:hidden">Već je na početnom ekranu.</p>
+    )
   }
 
   return (
     <div className="mt-4 lg:hidden">
+      {sheet === 'ios-guide' ? (
+        <div
+          role="status"
+          className="mb-2 max-w-sm rounded-[12px] border border-neutral-200 bg-brand-surface px-3 py-2 text-[13px] leading-relaxed text-neutral-700"
+        >
+          <p className="font-medium text-neutral-900">Na iPhone</p>
+          <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+            <li>
+              Tapni <span className="font-medium">Podeli</span> (kvadrat sa strelicom)
+            </li>
+            <li>
+              Izaberi <span className="font-medium">Dodaj na početni ekran</span>
+            </li>
+          </ol>
+        </div>
+      ) : null}
+      {sheet === 'open-chrome' ? (
+        <p role="status" className="mb-2 max-w-sm text-[13px] leading-relaxed text-neutral-600">
+          Otvori ovu stranicu u Chrome-u na telefonu.
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={() => void onAdd()}
@@ -78,13 +140,6 @@ export function LandingInstall() {
         <Smartphone className="h-4 w-4 text-brand" aria-hidden />
         Dodaj na početni ekran
       </button>
-      {help ? (
-        <p className="mt-2 max-w-sm rounded-[12px] border border-neutral-200 bg-brand-surface px-3 py-2 text-[13px] leading-relaxed text-neutral-700">
-          {ios
-            ? 'Na iPhone: tapni Podeli (kvadrat sa strelicom), pa „Dodaj na početni ekran“.'
-            : 'U meniju pregledača (⋮) izaberi „Dodaj na početni ekran“ ili „Install app“.'}
-        </p>
-      ) : null}
     </div>
   )
 }

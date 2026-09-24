@@ -225,9 +225,6 @@ export function LandingPage() {
             >
               Pogledaj demo
             </h2>
-            <p className="mx-auto mt-2 max-w-xl text-[15px] leading-relaxed text-neutral-600">
-              Ceo kadar, bez isečka. Pusti kad hoćeš — bez automatskog zvuka.
-            </p>
             <div className="mt-6 text-left">
               <LandingDemo />
             </div>

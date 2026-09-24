@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
+import Script from "next/script"
 import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
 import { Providers } from "./providers"
@@ -115,6 +116,7 @@ export default function RootLayout({
   const tree = (
     <html lang="sr" className="scroll-smooth motion-reduce:scroll-auto">
       <body className={inter.className}>
+        <Script id="tm-pwa-capture" src="/pwa-capture.js" strategy="beforeInteractive" />
         <Providers>{children}</Providers>
         <Toaster
           position="top-right"

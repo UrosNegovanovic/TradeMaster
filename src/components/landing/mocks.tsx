@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 const assortmentRows = [
   { name: 'Grand kafa 200 g', qty: '128', price: '329,00', img: '/landing/thumb-coffee.png' },
-  { name: 'Next naranča 1 l', qty: '96', price: '149,00', img: '/landing/thumb-juice.png' },
+  { name: 'Next narandža 1 l', qty: '96', price: '149,00', img: '/landing/thumb-juice.png' },
   { name: 'Barilla Penne 500 g', qty: '74', price: '219,00', img: '/landing/thumb-pasta.png' },
   { name: 'Rosa voda 1,5 l', qty: '210', price: '62,00', img: '/landing/thumb-water.png' },
 ] as const

@@ -95,7 +95,11 @@ const faqs = [
 function HeroActions({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <Button size="lg" className="h-11 min-h-11 rounded-full px-6 shadow-sm" asChild>
+      <Button
+        size="lg"
+        className="hidden h-11 min-h-11 rounded-full px-6 shadow-sm lg:inline-flex"
+        asChild
+      >
         <Link href="/sign-up">
           Registruj se
           <ArrowRight className="ml-2 h-4 w-4" />
@@ -128,7 +132,8 @@ export function LandingPage() {
 
       <header className="sticky top-0 z-40 border-b border-neutral-100/80 bg-white/90 backdrop-blur">
         <div className={`${shell} flex h-[64px] items-center justify-between gap-3 lg:h-[72px]`}>
-          <TradeMasterWordmark size="md" />
+          <TradeMasterWordmark size="sm" className="lg:hidden" />
+          <TradeMasterWordmark size="md" className="hidden lg:inline-flex" />
           <nav className="flex items-center gap-1 sm:gap-2" aria-label="Glavna">
             <Link href="#kako-radi" className={`hidden lg:inline-flex ${navLink}`}>
               Demo
@@ -139,13 +144,13 @@ export function LandingPage() {
             <Link href="#pitanja" className={`hidden lg:inline-flex ${navLink}`}>
               Pitanja
             </Link>
-            <Button variant="ghost" size="sm" className="min-h-11 text-[15px]" asChild>
+            <Button variant="ghost" size="sm" className="min-h-11 px-2.5 text-[15px] sm:px-3" asChild>
               <Link href="/sign-in">Prijava</Link>
             </Button>
-            <Button size="sm" className="hidden h-10 min-h-11 rounded-full px-4 lg:inline-flex" asChild>
+            <Button size="sm" className="h-10 min-h-11 rounded-full px-3 sm:px-4" asChild>
               <Link href="/sign-up">
                 Registruj se
-                <ArrowRight className="ml-1.5 h-4 w-4" />
+                <ArrowRight className="ml-1.5 hidden h-4 w-4 sm:inline" />
               </Link>
             </Button>
           </nav>
@@ -153,8 +158,8 @@ export function LandingPage() {
       </header>
 
       <main id="sadrzaj" className="relative flex-1">
-        <section className={`${shell} grid items-center gap-6 pb-8 pt-6 sm:gap-8 sm:pb-10 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:pb-12 lg:pt-10`}>
-          <div className="min-w-0">
+        <section className={`${shell} grid items-center gap-5 pb-8 pt-4 sm:gap-8 sm:pb-10 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:pb-12 lg:pt-10`}>
+          <div className="order-2 min-w-0 lg:order-1">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-600">
               Za trgovce i malu veleprodaju
             </p>
@@ -174,22 +179,16 @@ export function LandingPage() {
             <LandingInstall />
           </div>
 
-          <div className="min-w-0">
-            <figure className="m-0 mx-auto w-[156px] lg:hidden">
+          <div className="order-1 min-w-0 lg:order-2">
+            <figure className="m-0 mx-auto w-[132px] lg:hidden">
               <PhoneScanner compact priority />
-              <figcaption className="sr-only">
-                Prikaz proizvoda: sken kafe na telefonu. Nije snimak tvog magacina.
-              </figcaption>
+              <figcaption className="sr-only">Telefon skenira kesu kafe.</figcaption>
             </figure>
             <figure className="relative m-0 hidden lg:block">
               <AssortmentLaptop className="mr-16 xl:mr-20" />
               <div className="absolute -right-2 top-4 w-[188px] xl:right-0 xl:w-[200px]">
                 <PhoneScanner />
               </div>
-              <figcaption className="mt-3 text-[13px] text-neutral-600">
-                Prikaz proizvoda: asortiman na računaru i sken na telefonu. Nije
-                snimak demo-firme.
-              </figcaption>
             </figure>
           </div>
         </section>
@@ -280,8 +279,7 @@ export function LandingPage() {
               Kako izgleda u radu
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-[15px] text-neutral-600">
-              Ilustracije sa istim artiklima (kafa, sok, testenina, voda). Nisu
-              snimci tuđeg naloga.
+              Isti artikli na skenu, lageru i dokumentima: kafa, sok, testenina, voda.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3 sm:gap-5">
               {features.map((item) => (
@@ -290,10 +288,7 @@ export function LandingPage() {
                   className="overflow-hidden rounded-[16px] border border-neutral-200/80 bg-white p-3 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)]"
                 >
                   <FeatureShot src={item.src} alt={item.alt} />
-                  <p className="mt-2 px-1 text-[12px] font-medium uppercase tracking-wide text-neutral-500">
-                    Prikaz proizvoda
-                  </p>
-                  <h3 className="mt-1 px-1 text-[16px] font-semibold text-neutral-900">{item.title}</h3>
+                  <h3 className="mt-3 px-1 text-[16px] font-semibold text-neutral-900">{item.title}</h3>
                   <p className="mt-1 px-1 pb-1 text-[15px] leading-snug text-neutral-600">{item.line}</p>
                 </article>
               ))}
@@ -362,25 +357,25 @@ export function LandingPage() {
       </main>
 
       <footer className="border-t border-neutral-100 pb-24 pt-8 sm:pb-10">
-        <div className={`${shell} flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between`}>
-          <div>
+        <div className={`${shell} flex flex-row items-end justify-between gap-4`}>
+          <div className="min-w-0">
             <TradeMasterWordmark size="sm" href="/" />
-            <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-neutral-600">
+            <p className="mt-2 max-w-[11rem] text-[13px] leading-relaxed text-neutral-600 sm:max-w-sm sm:text-[14px]">
               Sken, lager, katalog i faktura. Jedan nalog po firmi. Radi u
               pregledaču.
             </p>
           </div>
-          <div className="flex flex-col gap-2 text-[14px] text-neutral-600 sm:items-end">
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <div className="flex shrink-0 flex-col items-end gap-1 text-[14px] text-neutral-600">
+            <div className="flex flex-col items-end sm:flex-row sm:flex-wrap sm:gap-x-4">
               <Link
                 href="/sign-in"
-                className="min-h-11 inline-flex items-center underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Prijava
               </Link>
               <Link
                 href="/sign-up"
-                className="min-h-11 inline-flex items-center underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Registruj se
               </Link>

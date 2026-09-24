@@ -78,9 +78,6 @@ export function LandingInstall() {
         <Smartphone className="h-4 w-4 text-brand" aria-hidden />
         Dodaj na početni ekran
       </button>
-      <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-neutral-600">
-        Ista veb-aplikacija kao prečica na telefonu. Nema App Store, Play ni APK.
-      </p>
       {help ? (
         <p className="mt-2 max-w-sm rounded-[12px] border border-neutral-200 bg-brand-surface px-3 py-2 text-[13px] leading-relaxed text-neutral-700">
           {ios

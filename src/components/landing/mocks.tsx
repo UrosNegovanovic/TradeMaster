@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 import Image from 'next/image'
 import { Check, Plus, Search } from 'lucide-react'
 import { TradeMasterMark } from '@/components/brand/TradeMasterMark'
@@ -14,16 +14,18 @@ const assortmentRows = [
 function PhoneChrome({
   children,
   className,
+  ...rest
 }: {
   children: ReactNode
   className?: string
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
         'overflow-hidden rounded-[1.7rem] border-[8px] border-neutral-950 bg-white shadow-[0_22px_44px_-20px_rgba(15,23,42,0.5)]',
         className
       )}
+      {...rest}
     >
       <div className="flex items-center justify-center bg-white pt-1.5">
         <span className="h-3.5 w-[4.25rem] rounded-full bg-neutral-950" />
@@ -36,19 +38,21 @@ function PhoneChrome({
 export function PhoneScanner({
   className,
   compact = false,
+  priority = false,
 }: {
   className?: string
   compact?: boolean
+  priority?: boolean
 }) {
   return (
-    <PhoneChrome className={className}>
+    <PhoneChrome className={className} aria-hidden>
       <div className="px-3 pb-1 pt-2">
         <p className="text-[10px] font-medium text-muted-foreground">Skeniraj barkod</p>
       </div>
       <div
         className={cn(
           'relative mx-3 overflow-hidden rounded-xl bg-[#f3efe8]',
-          compact ? 'aspect-[4/5]' : 'aspect-[3/4]'
+          compact ? 'aspect-[5/6]' : 'aspect-[3/4]'
         )}
       >
         <Image
@@ -56,6 +60,7 @@ export function PhoneScanner({
           alt=""
           fill
           sizes="220px"
+          priority={priority}
           className="object-cover"
         />
         <div className="absolute inset-[14%] rounded-md border border-white/95 shadow-[0_0_0_999px_rgba(0,0,0,0.22)]" />
@@ -88,6 +93,7 @@ const sidebarItems = [
 export function AssortmentLaptop({ className }: { className?: string }) {
   return (
     <div
+      aria-hidden
       className={cn(
         'overflow-hidden rounded-[16px] border border-neutral-200/80 bg-white shadow-[0_28px_64px_-28px_rgba(15,23,42,0.32)]',
         className

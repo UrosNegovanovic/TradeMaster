@@ -244,7 +244,7 @@ export function LandingPage() {
               Kako počinješ
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
-              Nema posebnog čarobnjaka. Ovo je stvarni redosled posle registracije.
+              Imate svog čarobnjaka na telefonu i računaru.
             </p>
             <ol className="mt-8 grid gap-4 sm:grid-cols-3 sm:gap-5">
               {steps.map((step) => (

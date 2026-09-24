@@ -113,7 +113,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   const tree = (
-    <html lang="sr" className="scroll-smooth">
+    <html lang="sr" className="scroll-smooth motion-reduce:scroll-auto">
       <body className={inter.className}>
         <Providers>{children}</Providers>
         <Toaster

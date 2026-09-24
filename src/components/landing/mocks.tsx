@@ -1,68 +1,33 @@
 import type { ReactNode } from 'react'
-import { Check, Search } from 'lucide-react'
+import Image from 'next/image'
+import { Check, Plus, Search } from 'lucide-react'
 import { TradeMasterMark } from '@/components/brand/TradeMasterMark'
 import { cn } from '@/lib/utils'
 
 const assortmentRows = [
-  { name: 'Grand kafa 200 g', qty: '128', price: '329,00', tone: 'bg-[#4a2c1a]' },
-  { name: 'Next naranča 1 l', qty: '96', price: '149,00', tone: 'bg-[#e29b2e]' },
-  { name: 'Barilla Penne 500 g', qty: '74', price: '219,00', tone: 'bg-[#1d4f91]' },
-  { name: 'Rosa voda 1,5 l', qty: '210', price: '62,00', tone: 'bg-[#6aa8c9]' },
+  { name: 'Grand kafa 200 g', qty: '128', price: '329,00', img: '/landing/thumb-coffee.png' },
+  { name: 'Next naranča 1 l', qty: '96', price: '149,00', img: '/landing/thumb-juice.png' },
+  { name: 'Barilla Penne 500 g', qty: '74', price: '219,00', img: '/landing/thumb-pasta.png' },
+  { name: 'Rosa voda 1,5 l', qty: '210', price: '62,00', img: '/landing/thumb-water.png' },
 ] as const
-
-export function CoffeeBag({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        'relative overflow-hidden rounded-md bg-[#3a2216] shadow-md ring-1 ring-black/10',
-        className
-      )}
-      aria-hidden
-    >
-      <div className="h-[12%] bg-[#5a3a28]" />
-      <div className="mx-[10%] mt-[10%] rounded-[4px] bg-[#e8c99a] px-1 py-2 text-center">
-        <p className="text-[11px] font-black uppercase leading-none tracking-wider text-[#2b1810]">
-          grand
-        </p>
-        <p className="mt-1 text-[7px] font-bold uppercase tracking-[0.18em] text-[#8a5a28]">
-          gold
-        </p>
-      </div>
-      <div className="absolute inset-x-[12%] bottom-[10%] space-y-[2px] rounded-[3px] bg-white px-1.5 py-1.5">
-        {Array.from({ length: 7 }, (_, i) => (
-          <span
-            key={i}
-            className="block h-[2px] bg-neutral-900"
-            style={{ width: i % 3 === 0 ? '70%' : '100%' }}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function PhoneChrome({
   children,
   className,
-  title,
 }: {
   children: ReactNode
   className?: string
-  title?: string
 }) {
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-[1.85rem] border-[7px] border-neutral-900 bg-white shadow-[0_18px_40px_-18px_rgba(15,23,42,0.45)]',
+        'overflow-hidden rounded-[1.7rem] border-[8px] border-neutral-950 bg-white shadow-[0_22px_44px_-20px_rgba(15,23,42,0.5)]',
         className
       )}
     >
       <div className="flex items-center justify-center bg-white pt-1.5">
-        <span className="h-3.5 w-16 rounded-full bg-neutral-900" />
+        <span className="h-3.5 w-[4.25rem] rounded-full bg-neutral-950" />
       </div>
-      {title ? (
-        <p className="px-3 pt-2 text-[10px] font-medium text-muted-foreground">{title}</p>
-      ) : null}
       {children}
     </div>
   )
@@ -76,26 +41,36 @@ export function PhoneScanner({
   compact?: boolean
 }) {
   return (
-    <PhoneChrome className={className} title="Skeniraj barkod">
+    <PhoneChrome className={className}>
+      <div className="px-3 pb-1 pt-2">
+        <p className="text-[10px] font-medium text-muted-foreground">Skeniraj barkod</p>
+      </div>
       <div
         className={cn(
-          'relative mx-3 mb-3 mt-2 overflow-hidden rounded-xl bg-[#ece8e2]',
+          'relative mx-3 overflow-hidden rounded-xl bg-[#f3efe8]',
           compact ? 'aspect-[4/5]' : 'aspect-[3/4]'
         )}
       >
-        <CoffeeBag className="absolute left-1/2 top-[18%] h-[52%] w-[42%] -translate-x-1/2" />
-        <div className="absolute inset-[18%] rounded-lg border-2 border-white/90 shadow-[0_0_0_999px_rgba(0,0,0,0.18)]" />
-        <div className="absolute left-[18%] right-[18%] top-1/2 h-px bg-red-500/80" />
+        <Image
+          src="/landing/coffee-bag.png"
+          alt=""
+          fill
+          sizes="220px"
+          className="object-cover"
+        />
+        <div className="absolute inset-[14%] rounded-md border border-white/95 shadow-[0_0_0_999px_rgba(0,0,0,0.22)]" />
+        <span className="absolute left-[14%] top-[14%] h-3 w-3 rounded-tl border-l-2 border-t-2 border-white" />
+        <span className="absolute right-[14%] top-[14%] h-3 w-3 rounded-tr border-r-2 border-t-2 border-white" />
+        <span className="absolute bottom-[14%] left-[14%] h-3 w-3 rounded-bl border-b-2 border-l-2 border-white" />
+        <span className="absolute bottom-[14%] right-[14%] h-3 w-3 rounded-br border-b-2 border-r-2 border-white" />
       </div>
-      <div className="mx-3 mb-4 flex items-start gap-2 rounded-xl bg-white px-2.5 py-2 shadow-sm ring-1 ring-black/5">
+      <div className="mx-3 mb-3 mt-2 flex items-start gap-2 rounded-[12px] bg-white px-2.5 py-2 shadow-sm ring-1 ring-black/5">
         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand text-white">
           <Check className="h-3 w-3" strokeWidth={3} />
         </span>
         <p className="text-[11px] font-medium leading-snug text-foreground">
           Proizvod dodat
-          <span className="block text-[10px] font-normal text-muted-foreground">
-            +1 komad
-          </span>
+          <span className="block text-[10px] font-normal text-muted-foreground">+1 komad</span>
         </p>
       </div>
     </PhoneChrome>
@@ -114,31 +89,35 @@ export function AssortmentLaptop({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.28)]',
+        'overflow-hidden rounded-[16px] border border-neutral-200/80 bg-white shadow-[0_28px_64px_-28px_rgba(15,23,42,0.32)]',
         className
       )}
     >
-      <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2">
+      <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-2.5">
         <span className="h-2 w-2 rounded-full bg-neutral-200" />
         <span className="h-2 w-2 rounded-full bg-neutral-200" />
         <span className="h-2 w-2 rounded-full bg-neutral-200" />
-        <div className="ml-2 flex flex-1 items-center gap-2 rounded-md bg-neutral-50 px-2 py-1 text-[10px] text-muted-foreground">
-          <Search className="h-3 w-3" />
+        <div className="ml-1 flex flex-1 items-center gap-2 rounded-md bg-neutral-50 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+          <Search className="h-3.5 w-3.5" />
           <span>Pronađi proizvod, barkod ili SKU…</span>
         </div>
+        <span className="hidden items-center gap-1 rounded-md bg-brand px-2 py-1 text-[10px] font-medium text-white sm:inline-flex">
+          <Plus className="h-3 w-3" />
+          Novi proizvod
+        </span>
       </div>
-      <div className="flex min-h-[240px]">
-        <aside className="hidden w-[132px] shrink-0 border-r border-neutral-100 bg-neutral-50/80 p-2.5 sm:block">
+      <div className="flex">
+        <aside className="hidden w-[140px] shrink-0 border-r border-neutral-100 bg-[#fafafa] p-3 lg:block">
           <div className="mb-3 flex items-center gap-1.5 px-1">
             <TradeMasterMark className="h-4 w-4 text-brand" decorative />
-            <span className="text-[10px] font-bold text-brand">TradeMaster</span>
+            <span className="text-[11px] font-bold text-brand">TradeMaster</span>
           </div>
           <ul className="space-y-0.5">
             {sidebarItems.map((item) => (
               <li
                 key={item.label}
                 className={cn(
-                  'rounded-md px-2 py-1.5 text-[10px] font-medium',
+                  'rounded-md px-2 py-1.5 text-[11px] font-medium',
                   item.active ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'
                 )}
               >
@@ -147,27 +126,33 @@ export function AssortmentLaptop({ className }: { className?: string }) {
             ))}
           </ul>
         </aside>
-        <div className="min-w-0 flex-1 p-3">
-          <p className="text-sm font-semibold text-foreground">Asortiman</p>
-          <table className="mt-2 w-full text-left text-[10px]">
+        <div className="min-w-0 flex-1 px-4 py-3">
+          <p className="text-[15px] font-semibold text-foreground">Asortiman</p>
+          <table className="mt-2 w-full text-left text-[11px]">
             <thead className="text-muted-foreground">
               <tr className="border-b border-neutral-100">
-                <th className="pb-1.5 font-medium">Proizvod</th>
-                <th className="pb-1.5 font-medium">Količina</th>
-                <th className="pb-1.5 text-right font-medium">Cena po komadu</th>
+                <th className="pb-2 font-medium">Proizvod</th>
+                <th className="pb-2 font-medium">Količina</th>
+                <th className="pb-2 text-right font-medium">Cena (RSD)</th>
               </tr>
             </thead>
             <tbody>
               {assortmentRows.map((row) => (
                 <tr key={row.name} className="border-b border-neutral-50 last:border-0">
-                  <td className="py-1.5">
-                    <span className="inline-flex items-center gap-2">
-                      <span className={cn('h-6 w-6 rounded-md', row.tone)} />
-                      {row.name}
+                  <td className="py-2">
+                    <span className="inline-flex items-center gap-2.5">
+                      <Image
+                        src={row.img}
+                        alt=""
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-[6px] object-contain"
+                      />
+                      <span className="font-medium text-foreground">{row.name}</span>
                     </span>
                   </td>
-                  <td className="py-1.5 tabular-nums">{row.qty}</td>
-                  <td className="py-1.5 text-right tabular-nums">{row.price}</td>
+                  <td className="py-2 tabular-nums text-muted-foreground">{row.qty}</td>
+                  <td className="py-2 text-right tabular-nums text-foreground">{row.price}</td>
                 </tr>
               ))}
             </tbody>
@@ -178,97 +163,18 @@ export function AssortmentLaptop({ className }: { className?: string }) {
   )
 }
 
-export function CatalogStage({ className }: { className?: string }) {
+export function FeatureShot({
+  src,
+  alt,
+  className,
+}: {
+  src: string
+  alt: string
+  className?: string
+}) {
   return (
-    <div
-      className={cn('relative overflow-hidden rounded-2xl bg-[#f3f4f6]', className)}
-      aria-hidden
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_70%_40%,#ffffff_0%,transparent_70%)]" />
-      <div className="relative hidden h-full items-center justify-center p-8 lg:flex">
-        <div className="w-[min(72%,640px)] overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-brand">
-              <TradeMasterMark className="h-3.5 w-3.5 text-brand" decorative />
-              TradeMaster
-            </span>
-            <span className="text-[10px] text-muted-foreground">Katalog proizvoda</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 p-3">
-            {assortmentRows.slice(0, 3).map((row) => (
-              <div key={row.name} className="rounded-lg border border-neutral-100 p-2">
-                <span className={cn('block h-12 w-full rounded-md', row.tone)} />
-                <p className="mt-1.5 truncate text-[10px] font-medium">{row.name}</p>
-                <p className="text-[10px] tabular-nums text-muted-foreground">{row.price} RSD</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="absolute left-[6%] top-[18%] w-[150px]">
-          <PhoneScanner />
-        </div>
-      </div>
-      <div className="relative flex h-full items-end justify-center p-6 lg:hidden">
-        <div className="w-[168px]">
-          <PhoneScanner />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export function StockMini({ className }: { className?: string }) {
-  return (
-    <div className={cn('overflow-hidden rounded-xl border border-neutral-200 bg-white', className)}>
-      <table className="w-full text-left text-[10px]">
-        <thead className="text-muted-foreground">
-          <tr className="border-b border-neutral-100">
-            <th className="px-2 py-1.5 font-medium">Proizvod</th>
-            <th className="px-2 py-1.5 font-medium">Stanje</th>
-            <th className="px-2 py-1.5 text-right font-medium">Cena</th>
-          </tr>
-        </thead>
-        <tbody>
-          {assortmentRows.map((row) => (
-            <tr key={row.name} className="border-b border-neutral-50 last:border-0">
-              <td className="px-2 py-1.5">{row.name}</td>
-              <td className="px-2 py-1.5 tabular-nums">{row.qty}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums">{row.price}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-export function DocsMini({ className }: { className?: string }) {
-  return (
-    <div className={cn('grid grid-cols-2 gap-2', className)}>
-      <div className="rounded-xl border border-neutral-200 bg-white p-2">
-        <p className="mb-1 text-[9px] font-medium text-muted-foreground">Katalog proizvoda</p>
-        <div className="space-y-1.5">
-          {assortmentRows.slice(0, 2).map((row) => (
-            <div key={row.name} className="flex items-center gap-1.5">
-              <span className={cn('h-7 w-7 rounded-md', row.tone)} />
-              <div className="min-w-0">
-                <p className="truncate text-[10px] font-medium">{row.name}</p>
-                <p className="text-[9px] tabular-nums text-muted-foreground">{row.price} RSD</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="rounded-xl border border-neutral-200 bg-white p-2">
-        <p className="text-[9px] font-medium text-muted-foreground">Faktura</p>
-        <div className="mt-2 h-1.5 w-2/3 rounded bg-neutral-200" />
-        <div className="mt-2 space-y-1">
-          <div className="h-1 w-full rounded bg-neutral-100" />
-          <div className="h-1 w-5/6 rounded bg-neutral-100" />
-          <div className="h-1 w-4/6 rounded bg-neutral-100" />
-        </div>
-        <p className="mt-3 text-right text-[10px] font-semibold tabular-nums">1.280,00 RSD</p>
-      </div>
+    <div className={cn('relative h-[158px] overflow-hidden rounded-[12px] bg-[#f7f7f8] sm:h-[168px]', className)}>
+      <Image src={src} alt={alt} fill sizes="(min-width: 640px) 360px, 100vw" className="object-cover object-left" />
     </div>
   )
 }

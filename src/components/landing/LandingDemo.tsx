@@ -1,8 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Play } from 'lucide-react'
-import { CatalogStage } from './mocks'
+import Image from 'next/image'
 
 export function LandingDemo() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -16,15 +15,15 @@ export function LandingDemo() {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.35)]">
-      <div className="relative aspect-[16/10] w-full sm:aspect-video">
+    <div className="overflow-hidden rounded-[16px] bg-[#f4f5f6] shadow-[0_24px_60px_-32px_rgba(15,23,42,0.28)]">
+      <div className="relative aspect-[4/3] w-full sm:aspect-[21/9]">
         <video
           ref={videoRef}
           className="absolute inset-0 h-full w-full bg-neutral-900 object-cover"
           controls={playing}
           playsInline
           preload="metadata"
-          poster="/landing-demo-poster.jpg"
+          poster="/landing/demo-stage.png"
           controlsList="nodownload"
           aria-label="Demo TradeMaster, 25 sekundi"
         >
@@ -39,21 +38,20 @@ export function LandingDemo() {
         </video>
 
         {playing ? null : (
-          <div className="absolute inset-0">
-            <CatalogStage className="h-full w-full" />
-            <button
-              type="button"
-              onClick={startPlayback}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/10 text-white"
-            >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-brand shadow-lg">
-                <Play className="ml-0.5 h-7 w-7 fill-current" />
-              </span>
-              <span className="rounded-full bg-white/95 px-3 py-1 text-sm font-medium text-foreground shadow-sm">
-                Pogledaj demo · 25 s
-              </span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={startPlayback}
+            className="absolute inset-0 z-10"
+          >
+            <Image
+              src="/landing/demo-stage.png"
+              alt=""
+              fill
+              sizes="1200px"
+              className="object-cover object-[18%_center] sm:object-center"
+            />
+            <span className="sr-only">Pogledaj demo, 25 sekundi</span>
+          </button>
         )}
       </div>
     </div>

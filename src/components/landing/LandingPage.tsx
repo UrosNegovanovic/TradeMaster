@@ -114,8 +114,8 @@ export function LandingPage() {
               <PhoneScanner />
             </div>
             <div className="relative hidden lg:block">
-              <AssortmentLaptop className="mr-[5.5rem]" />
-              <div className="absolute -right-1 top-6 w-[196px] xl:right-0 xl:w-[204px]">
+              <AssortmentLaptop className="mr-16 xl:mr-20" />
+              <div className="absolute -right-2 top-4 w-[188px] xl:right-0 xl:w-[200px]">
                 <PhoneScanner />
               </div>
             </div>

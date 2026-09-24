@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { Play } from 'lucide-react'
 
 export function LandingDemo() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -51,14 +50,7 @@ export function LandingDemo() {
               sizes="1200px"
               className="object-cover object-[18%_center] sm:object-center"
             />
-            <span className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-lg sm:h-16 sm:w-16">
-                <Play className="ml-0.5 h-6 w-6 fill-current sm:h-7 sm:w-7" />
-              </span>
-              <span className="rounded-full bg-white px-3 py-1 text-sm font-medium text-foreground shadow-sm">
-                Pogledaj demo · 25 s
-              </span>
-            </span>
+            <span className="sr-only">Pogledaj demo, 25 sekundi</span>
           </button>
         )}
       </div>

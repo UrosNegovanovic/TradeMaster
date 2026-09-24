@@ -98,7 +98,7 @@ export function LandingInstall() {
       return
     }
 
-    setSheet(kind)
+    if (kind === 'ios-guide' || kind === 'open-chrome') setSheet(kind)
   }
 
   if (!ready) return null
@@ -111,18 +111,10 @@ export function LandingInstall() {
 
   return (
     <div className="mt-4 lg:hidden">
-      <button
-        type="button"
-        onClick={() => void onAdd()}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-[15px] font-medium text-neutral-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        <Smartphone className="h-4 w-4 text-brand" aria-hidden />
-        Dodaj na početni ekran
-      </button>
       {sheet === 'ios-guide' ? (
         <div
           role="status"
-          className="mt-2 max-w-sm rounded-[12px] border border-neutral-200 bg-brand-surface px-3 py-2 text-[13px] leading-relaxed text-neutral-700"
+          className="mb-2 max-w-sm rounded-[12px] border border-neutral-200 bg-brand-surface px-3 py-2 text-[13px] leading-relaxed text-neutral-700"
         >
           <p className="font-medium text-neutral-900">Na iPhone</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-4">
@@ -136,10 +128,18 @@ export function LandingInstall() {
         </div>
       ) : null}
       {sheet === 'open-chrome' ? (
-        <p role="status" className="mt-2 max-w-sm text-[13px] leading-relaxed text-neutral-600">
+        <p role="status" className="mb-2 max-w-sm text-[13px] leading-relaxed text-neutral-600">
           Otvori ovu stranicu u Chrome-u na telefonu.
         </p>
       ) : null}
+      <button
+        type="button"
+        onClick={() => void onAdd()}
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-[15px] font-medium text-neutral-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        <Smartphone className="h-4 w-4 text-brand" aria-hidden />
+        Dodaj na početni ekran
+      </button>
     </div>
   )
 }

@@ -76,68 +76,70 @@ export function LandingPage() {
       </header>
 
       <main className="relative flex-1">
-        <section className={`${shell} grid items-center gap-8 pb-10 pt-8 sm:gap-10 sm:pb-12 sm:pt-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 lg:pb-14 lg:pt-12`}>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
-              Za trgovce i malu veleprodaju
-            </p>
-            <h1 className="mt-3 text-[2.35rem] font-bold leading-[1.05] tracking-tight text-neutral-950 sm:text-[3.15rem] lg:text-[3.5rem] lg:leading-[1.04]">
-              Skeniraj robu.
-              <br />
-              Drži lager pod kontrolom.
-            </h1>
-            <p className="mt-4 max-w-[26rem] text-[15px] leading-relaxed text-neutral-500 sm:text-base">
-              Unesi proizvode kamerom telefona, prati zalihe i pripremi kataloge i
-              fakture — iz jednog radnog prostora.
-            </p>
-            <div className="mt-6 hidden flex-wrap items-center gap-3 sm:flex">
-              <Button size="lg" className="h-11 rounded-full px-6 shadow-sm" asChild>
-                <Link href="/sign-up">
-                  Registruj se
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="ghost" className="h-11 rounded-full px-4 text-neutral-700" asChild>
-                <Link href="#kako-radi">
-                  <Play className="mr-2 h-4 w-4" />
-                  Pogledaj kako radi
-                </Link>
-              </Button>
+        <div className="flex flex-col lg:min-h-[calc(100svh-72px)]">
+          <section className={`${shell} grid items-center gap-8 pb-10 pt-8 sm:gap-10 sm:pb-12 sm:pt-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:flex-1 lg:gap-8 lg:pb-14 lg:pt-12`}>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
+                Za trgovce i malu veleprodaju
+              </p>
+              <h1 className="mt-3 text-[2.35rem] font-bold leading-[1.05] tracking-tight text-neutral-950 sm:text-[3.15rem] lg:text-[3.5rem] lg:leading-[1.04]">
+                Skeniraj robu.
+                <br />
+                Drži lager pod kontrolom.
+              </h1>
+              <p className="mt-4 max-w-[26rem] text-[15px] leading-relaxed text-neutral-500 sm:text-base">
+                Unesi proizvode kamerom telefona, prati zalihe i pripremi kataloge i
+                fakture — iz jednog radnog prostora.
+              </p>
+              <div className="mt-6 hidden flex-wrap items-center gap-3 sm:flex">
+                <Button size="lg" className="h-11 rounded-full px-6 shadow-sm" asChild>
+                  <Link href="/sign-up">
+                    Registruj se
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="ghost" className="h-11 rounded-full px-4 text-neutral-700" asChild>
+                  <Link href="#kako-radi">
+                    <Play className="mr-2 h-4 w-4" />
+                    Pogledaj kako radi
+                  </Link>
+                </Button>
+              </div>
+              <p className="mt-4 hidden text-[13px] text-neutral-400 sm:block">
+                Telefon i računar. Jedan pregled poslovanja.
+              </p>
             </div>
-            <p className="mt-4 hidden text-[13px] text-neutral-400 sm:block">
-              Telefon i računar. Jedan pregled poslovanja.
-            </p>
-          </div>
 
-          <div className="min-w-0">
-            <div className="mx-auto w-[210px] lg:hidden">
-              <PhoneScanner />
-            </div>
-            <div className="relative hidden lg:block">
-              <AssortmentLaptop className="mr-16 xl:mr-20" />
-              <div className="absolute -right-2 top-4 w-[188px] xl:right-0 xl:w-[200px]">
+            <div className="min-w-0">
+              <div className="mx-auto w-[210px] lg:hidden">
                 <PhoneScanner />
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-y border-neutral-100">
-          <div className={`${shell} grid gap-8 py-10 sm:grid-cols-3 sm:gap-10 sm:py-12`}>
-            {benefits.map((item) => {
-              const Icon = item.icon
-              return (
-                <div key={item.title} className="min-w-0">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 text-brand">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <h2 className="mt-3 text-[15px] font-semibold text-neutral-900">{item.title}</h2>
-                  <p className="mt-1 text-[14px] leading-snug text-neutral-500">{item.line}</p>
+              <div className="relative hidden lg:block">
+                <AssortmentLaptop className="mr-16 xl:mr-20" />
+                <div className="absolute -right-2 top-4 w-[188px] xl:right-0 xl:w-[200px]">
+                  <PhoneScanner />
                 </div>
-              )
-            })}
-          </div>
-        </section>
+              </div>
+            </div>
+          </section>
+
+          <section className="border-y border-neutral-100">
+            <div className={`${shell} grid gap-8 py-10 sm:grid-cols-3 sm:gap-10 sm:py-12`}>
+              {benefits.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.title} className="min-w-0">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 text-brand">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h2 className="mt-3 text-[15px] font-semibold text-neutral-900">{item.title}</h2>
+                    <p className="mt-1 text-[14px] leading-snug text-neutral-500">{item.line}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        </div>
 
         <section
           id="kako-radi"

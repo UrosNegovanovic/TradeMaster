@@ -353,32 +353,36 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-neutral-100 pb-24 pt-8 sm:pb-10">
-        <div className={`${shell} flex flex-row items-end justify-between gap-4`}>
-          <div className="min-w-0">
-            <TradeMasterWordmark size="sm" href="/" />
-            <p className="mt-2 max-w-[11rem] text-[13px] leading-relaxed text-neutral-600 sm:max-w-sm sm:text-[14px]">
-              Sken, lager, katalog i faktura. Jedan nalog po firmi. Radi u
-              pregledaču.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1 text-[14px] text-neutral-600">
-            <div className="flex flex-col items-end sm:flex-row sm:flex-wrap sm:gap-x-4">
+      <footer className="border-t border-neutral-100 pb-24 pt-8 sm:pb-10 sm:pt-10">
+        <div className={shell}>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
+            <div className="min-w-0 max-w-md">
+              <TradeMasterWordmark size="sm" href="/" />
+              <p className="mt-3 text-[14px] leading-relaxed text-neutral-600">
+                Sken, lager, katalog i faktura. Jedan nalog po firmi.
+              </p>
+            </div>
+            <nav
+              aria-label="Nalog"
+              className="flex flex-wrap items-center gap-x-6 text-[15px] text-neutral-700"
+            >
               <Link
                 href="/sign-in"
-                className="inline-flex min-h-11 items-center underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center rounded-md hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Prijava
               </Link>
               <Link
                 href="/sign-up"
-                className="inline-flex min-h-11 items-center underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center rounded-md hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Registruj se
               </Link>
-            </div>
-            <p>© {new Date().getFullYear()} TradeMaster</p>
+            </nav>
           </div>
+          <p className="mt-8 border-t border-neutral-100 pt-5 text-[13px] text-neutral-500">
+            © {new Date().getFullYear()} TradeMaster
+          </p>
         </div>
       </footer>
 

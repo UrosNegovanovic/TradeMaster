@@ -129,8 +129,8 @@ export function LandingPage() {
                 const Icon = item.icon
                 return (
                   <div key={item.title} className="min-w-0">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 text-brand">
-                      <Icon className="h-5 w-5" />
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-0 bg-brand text-white">
+                      <Icon className="h-5 w-5" strokeWidth={2} />
                     </span>
                     <h2 className="mt-3 text-[15px] font-semibold text-neutral-900">{item.title}</h2>
                     <p className="mt-1 text-[14px] leading-snug text-neutral-500">{item.line}</p>

@@ -47,7 +47,7 @@ export function LandingDemo() {
               src="/landing/demo-stage.png"
               alt=""
               fill
-              sizes="1200px"
+              sizes="1800px"
               className="object-cover object-[18%_center] sm:object-center"
             />
             <span className="sr-only">Pogledaj demo, 25 sekundi</span>

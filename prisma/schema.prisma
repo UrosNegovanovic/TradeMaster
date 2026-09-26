@@ -153,7 +153,7 @@ model CatalogItem {
 // Invoice model
 model Invoice {
   id            String        @id @default(cuid())
-  invoiceNumber String // e.g., "2024-001"
+  invoiceNumber String // e.g., "01/2024" (NN/YYYY, continues an existing per-year sequence — see src/lib/invoice-number.ts)
   createdAt     DateTime      @default(now())
   dueDate       DateTime
   clientName    String

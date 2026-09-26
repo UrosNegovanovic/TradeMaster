@@ -203,8 +203,8 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
     )
 
     expect(response.status).toBe(201)
-    expect(mocks.invoice.create.mock.calls[0][0].data.invoiceNumber).toBe('2026-001')
-    expect(mocks.invoice.create.mock.calls[0][0].data.invoiceNumber).not.toBe('2026-003')
+    expect(mocks.invoice.create.mock.calls[0][0].data.invoiceNumber).toBe('01/2026')
+    expect(mocks.invoice.create.mock.calls[0][0].data.invoiceNumber).not.toBe('03/2026')
     expect(mocks.$executeRaw).toHaveBeenCalledTimes(1)
     expect(mocks.product.findMany).toHaveBeenCalledWith({
       where: { id: { in: ['product-a'] }, profileId: profile.id },

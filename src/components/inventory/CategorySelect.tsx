@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog'
 import { Plus, Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { sr } from '@/lib/ui-copy'
 
 interface CategorySelectProps {
   value: string | null
@@ -32,7 +33,7 @@ interface CategorySelectProps {
 async function fetchCategories(): Promise<Category[]> {
   const response = await fetch('/api/categories')
   if (!response.ok) {
-    throw new Error('Failed to fetch categories')
+    throw new Error('Kategorije nisu učitane')
   }
   return response.json()
 }
@@ -48,7 +49,7 @@ async function createCategory(data: { name: string; description?: string }): Pro
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.error || 'Failed to create category')
+    throw new Error(error.error || sr.category.createFailed)
   }
 
   return response.json()
@@ -75,12 +76,12 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
       setIsDialogOpen(false)
       setNewCategoryName('')
       setNewCategoryDescription('')
-      notify.success('Category created', {
-        description: `"${newCategory.name}" has been added.`,
+      notify.success(sr.category.created, {
+        description: `Dodata je kategorija „${newCategory.name}“`,
       })
     },
     onError: (error: Error) => {
-      notify.error('Failed to create category', {
+      notify.error(sr.category.createFailed, {
         description: error.message,
       })
     },
@@ -88,7 +89,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
 
   const handleCreateCategory = () => {
     if (!newCategoryName.trim()) {
-      notify.error('Category name is required')
+      notify.error(sr.category.nameRequired)
       return
     }
 
@@ -100,7 +101,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
 
   return (
     <div className="grid gap-2">
-      <Label htmlFor="category">Category</Label>
+      <Label htmlFor="category">{sr.category.label}</Label>
       <div className="flex gap-2">
         <Select
           value={value || 'none'}
@@ -108,10 +109,10 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
           disabled={isLoading}
         >
           <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Select a category" />
+            <SelectValue placeholder={sr.category.select} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Uncategorized</SelectItem>
+            <SelectItem value="none">{sr.category.uncategorized}</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -124,7 +125,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
           variant="outline"
           size="icon"
           onClick={() => setIsDialogOpen(true)}
-          title="Add new category"
+          title={sr.category.add}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -134,19 +135,19 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
+            <DialogTitle>{sr.category.createTitle}</DialogTitle>
             <DialogDescription>
-              Add a new category to organize your products.
+              {sr.category.createDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="category-name">
-                Category Name <span className="text-destructive">*</span>
+                {sr.category.name} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="category-name"
-                placeholder="e.g., Chocolates, Coffee, Shampoos"
+                placeholder={sr.category.namePlaceholder}
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => {
@@ -158,10 +159,10 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="category-description">Description (optional)</Label>
+              <Label htmlFor="category-description">{sr.category.description}</Label>
               <Input
                 id="category-description"
-                placeholder="Brief description of this category"
+                placeholder={sr.category.descriptionPlaceholder}
                 value={newCategoryDescription}
                 onChange={(e) => setNewCategoryDescription(e.target.value)}
               />
@@ -178,7 +179,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
               }}
               disabled={createMutation.isPending}
             >
-              Cancel
+              {sr.common.cancel}
             </Button>
             <Button
               type="button"
@@ -188,7 +189,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
               {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create Category
+              {sr.category.create}
             </Button>
           </DialogFooter>
         </DialogContent>

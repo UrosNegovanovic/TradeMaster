@@ -132,13 +132,13 @@ export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
 // Product validations
 export const productSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  sku: z.string().min(1, 'SKU is required').max(100),
+  name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
+  sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
   price: z.number().positive('Cena mora biti veća od 0'),
   quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([
-      z.string().url('Invalid URL'),
+      z.string().url('Adresa slike nije ispravna'),
       z.literal(''),
       z.null(),
     ])

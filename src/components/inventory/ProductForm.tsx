@@ -24,6 +24,7 @@ import { CategorySelect } from './CategorySelect'
 import { fetchProductMetadata, isValidBarcode } from '@/lib/openfoodfacts'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
+import { sr } from '@/lib/ui-copy'
 
 interface ProductFormProps {
   open: boolean
@@ -98,8 +99,8 @@ export function ProductForm({
   const handleScanSuccess = async (barcode: string) => {
     // Validate barcode format
     if (!isValidBarcode(barcode)) {
-      notify.error('Invalid barcode', {
-        description: 'The scanned barcode is too short or invalid. Please try again.',
+      notify.error(sr.product.invalidBarcode, {
+        description: sr.product.invalidBarcodeDescription,
       })
       return
     }
@@ -122,7 +123,7 @@ export function ProductForm({
         <ProductActionToast
           variant="scan"
           product={{
-            name: currentName || 'Current Product',
+            name: currentName || sr.product.unknown,
             sku: barcode,
             imageUrl: currentImageUrl,
           }}
@@ -241,7 +242,7 @@ export function ProductForm({
           <ProductActionToast
             variant="scan"
             product={{
-              name: 'Unknown Product',
+              name: sr.product.unknown,
               sku: barcode,
             }}
             onDismiss={() => toast.dismiss(id)}
@@ -251,8 +252,8 @@ export function ProductForm({
           unstyled: true,
         })
         
-        notify.info('Product not found', {
-          description: 'Searched 4 databases (food, beauty, household, global). SKU saved - enter details manually.',
+        notify.info(sr.product.notFound, {
+          description: sr.product.notFoundDescription,
           duration: 5000,
         })
       }
@@ -264,7 +265,7 @@ export function ProductForm({
         <ProductActionToast
           variant="scan"
           product={{
-            name: 'Unknown Product',
+            name: sr.product.unknown,
             sku: barcode,
           }}
           onDismiss={() => toast.dismiss(id)}
@@ -274,8 +275,8 @@ export function ProductForm({
         unstyled: true,
       })
       
-      notify.error('Failed to fetch product info', {
-        description: 'Please enter product details manually.',
+      notify.error(sr.product.lookupFailed, {
+        description: sr.product.lookupFailedDescription,
       })
     } finally {
       setIsFetchingMetadata(false)
@@ -286,22 +287,22 @@ export function ProductForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90dvh] w-[calc(100%-1rem)] flex-col p-0 sm:max-w-[600px]">
         <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
-          <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+          <DialogTitle>{product ? sr.product.editTitle : sr.product.addTitle}</DialogTitle>
           <DialogDescription>
             {product
-              ? 'Update the product information below.'
-              : 'Add a new product to your inventory. All fields marked with * are required.'}
+              ? sr.product.editDescription
+              : sr.product.addDescription}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 min-h-0">
           <div className="grid gap-4 py-4 px-6 overflow-y-auto flex-1">
             <div className="grid gap-2">
               <Label htmlFor="name">
-                Product Name <span className="text-destructive">*</span>
+                {sr.product.name} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
-                placeholder="Enter product name"
+                placeholder={sr.product.namePlaceholder}
                 {...register('name')}
               />
               {errors.name && (
@@ -316,7 +317,7 @@ export function ProductForm({
               <div className="flex gap-2">
                 <Input
                   id="sku"
-                  placeholder="Enter SKU or scan barcode"
+                  placeholder={sr.product.skuPlaceholder}
                   className="flex-1"
                   {...register('sku')}
                 />
@@ -356,7 +357,7 @@ export function ProductForm({
                 <p className="text-sm text-destructive">{errors.quantity.message}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                💡 Tip: Scan the same barcode multiple times to auto-increment
+                💡 {sr.product.quantityTip}
               </p>
             </div>
 
@@ -377,10 +378,10 @@ export function ProductForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{sr.product.description}</Label>
               <Input
                 id="description"
-                placeholder="Enter product description (optional)"
+                placeholder={sr.product.descriptionPlaceholder}
                 {...register('description')}
               />
               {errors.description && (
@@ -400,8 +401,8 @@ export function ProductForm({
                 value={watch('imageUrl')}
                 onChange={(url) => setValue('imageUrl', url || '')}
                 bucket="product-images"
-                label="Product Image"
-                description="Upload a product image. Maximum file size: 5MB"
+                label={sr.product.image}
+                description={sr.product.imageDescription}
               />
               {errors.imageUrl && (
                 <p className="text-sm text-destructive">{errors.imageUrl.message}</p>
@@ -415,11 +416,11 @@ export function ProductForm({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              {sr.common.cancel}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {product ? 'Update Product' : 'Create Product'}
+              {product ? sr.product.update : sr.product.create}
             </Button>
           </DialogFooter>
         </form>

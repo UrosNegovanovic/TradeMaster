@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { sr } from '@/lib/ui-copy'
 
 // EAN-13 Checksum Validation (Luhn Algorithm) - PRESERVED
 function validateEAN13Checksum(barcode: string): boolean {
@@ -176,7 +177,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       }
     } catch (err) {
       console.error('Failed to toggle torch:', err)
-      notify.error('Could not toggle flashlight')
+      notify.error(sr.camera.flashlightFailed)
     }
   }
 
@@ -357,7 +358,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       
       const cameraList: CameraDevice[] = devices.map(device => ({
         id: device.id,
-        label: device.label || `Camera ${devices.indexOf(device) + 1}`
+        label: device.label || sr.camera.cameraFallback(devices.indexOf(device) + 1)
       }))
       
       setCameras(cameraList)
@@ -560,7 +561,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               playBeep().catch(err => {
                 console.warn('Beep playback failed:', err)
               })
-              notify.success('Barcode confirmed', {
+              notify.success(sr.camera.confirmed, {
                 description: decodedText,
               })
               
@@ -578,8 +579,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               confirmationRef.current = { barcode: decodedText, timestamp: now }
               // ✅ Visual feedback: Detecting (yellow)
               setScanStatus('detecting')
-              notify.info('Hold steady', {
-                description: 'Confirming scan...',
+              notify.info(sr.camera.holdSteady, {
+                description: sr.camera.confirming,
                 duration: 1800,
               })
             }
@@ -589,8 +590,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
             confirmationRef.current = { barcode: decodedText, timestamp: now }
             // ✅ Visual feedback: Detecting (yellow)
             setScanStatus('detecting')
-            notify.info('Hold steady', {
-              description: 'Confirming scan...',
+            notify.info(sr.camera.holdSteady, {
+              description: sr.camera.confirming,
               duration: 1800,
             })
           }
@@ -657,7 +658,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
     } catch (err: any) {
       console.error('❌ Scanner start failed:', err)
       setIsLoading(false)
-      setError(`Failed to start scanner: ${err.message || 'Unknown error'}`)
+      setError(`${sr.camera.startFailed}: ${err.message || sr.camera.unknownError}`)
     }
   }
 
@@ -787,8 +788,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               <div className="absolute inset-0 flex items-center justify-center z-20 bg-black">
                 <div className="text-center space-y-4">
                   <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                  <p className="text-white text-lg font-medium">Starting Camera...</p>
-                  <p className="text-gray-400 text-sm">Initializing HD scanner with AI detection...</p>
+                  <p className="text-white text-lg font-medium">{sr.camera.starting}</p>
+                  <p className="text-gray-400 text-sm">{sr.camera.initializing}</p>
                 </div>
               </div>
             )}
@@ -800,7 +801,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                   <div className="text-red-500 text-lg font-medium">{error}</div>
                   <Button onClick={handleRetry} variant="default">
                     <RotateCcw className="h-4 w-4 mr-2" />
-                    Try Again
+                    {sr.camera.retry}
                   </Button>
                 </div>
               </div>
@@ -816,7 +817,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                     size="icon"
                     onClick={toggleTorch}
                     className="h-12 w-12 rounded-full shadow-lg"
-                    title="Toggle Flashlight"
+                    title={sr.camera.flashlight}
                   >
                     {torchEnabled ? (
                       <FlashlightOff className="h-5 w-5" />
@@ -832,7 +833,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                   size="icon"
                   onClick={() => setSoundEnabled(!soundEnabled)}
                   className="h-12 w-12 rounded-full shadow-lg bg-background"
-                  title="Toggle Beep Sound"
+                  title={sr.camera.sound}
                 >
                   <Volume2 className={`h-5 w-5 ${soundEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                 </Button>
@@ -844,7 +845,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               <div className="absolute top-4 left-4 z-30 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg min-w-[200px]">
                 <div className="flex items-center gap-2 mb-2">
                   <ZoomIn className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Zoom: {zoomLevel.toFixed(1)}x</span>
+                  <span className="text-sm font-medium">{sr.camera.zoom}: {zoomLevel.toFixed(1)}x</span>
                 </div>
                 <Slider
                   value={[zoomLevel]}
@@ -855,7 +856,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Adjust for difficult/blurry codes
+                  {sr.camera.zoomHelp}
                 </p>
               </div>
             )}

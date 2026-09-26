@@ -8,6 +8,7 @@ import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase-client'
 import { notify } from '@/lib/notify'
 import Image from 'next/image'
+import { sr } from '@/lib/ui-copy'
 
 interface ImageUploadProps {
   value?: string | null
@@ -22,7 +23,7 @@ export function ImageUpload({
   value,
   onChange,
   bucket,
-  label = 'Image',
+  label = sr.image.label,
   description,
   className,
 }: ImageUploadProps) {
@@ -43,23 +44,23 @@ export function ImageUpload({
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      notify.error('Invalid file', {
-        description: 'Please select an image file.',
+      notify.error(sr.image.invalidFile, {
+        description: sr.image.selectImage,
       })
       return
     }
 
     if (file.type === 'image/heic' || file.type === 'image/heif') {
-      notify.error('Unsupported format', {
-        description: 'HEIC is not supported. Use JPG, PNG, WEBP or GIF.',
+      notify.error(sr.image.unsupportedFormat, {
+        description: sr.image.unsupportedFormatDescription,
       })
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      notify.error('File too large', {
-        description: 'Image size must be less than 5MB.',
+      notify.error(sr.image.tooLarge, {
+        description: sr.image.tooLargeDescription,
       })
       return
     }
@@ -106,12 +107,12 @@ export function ImageUpload({
         onChange(urlData.publicUrl)
         setPreview(urlData.publicUrl)
       } else {
-        throw new Error('Failed to get public URL')
+        throw new Error('Javna adresa slike nije dostupna')
       }
     } catch (error) {
       console.error('Error uploading file:', error)
-      notify.error('Upload failed', {
-        description: error instanceof Error ? error.message : 'Failed to upload image.',
+      notify.error(sr.image.uploadFailed, {
+        description: error instanceof Error ? error.message : sr.image.uploadFailed,
       })
       setPreview(null)
     } finally {
@@ -150,7 +151,7 @@ export function ImageUpload({
               // Use regular img for data URLs (FileReader preview)
               <img
                 src={preview}
-                alt="Preview"
+                alt={sr.image.preview}
                 className="w-full h-full object-contain"
                 onError={() => {
                   setPreview(null)
@@ -160,7 +161,7 @@ export function ImageUpload({
               // Use Next.js Image for http/https URLs
               <Image
                 src={preview}
-                alt="Preview"
+                alt={sr.image.preview}
                 fill
                 className="object-contain"
                 onError={() => {
@@ -201,18 +202,18 @@ export function ImageUpload({
             {uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
+                {sr.image.uploading}
               </>
             ) : (
               <>
                 <Upload className="mr-2 h-4 w-4" />
-                {preview ? 'Change Image' : 'Upload Image'}
+                {preview ? sr.image.change : sr.image.upload}
               </>
             )}
           </Button>
           {preview && !uploading && (
             <span className="text-sm text-muted-foreground">
-              Image uploaded successfully
+              {sr.image.success}
             </span>
           )}
         </div>
@@ -223,7 +224,7 @@ export function ImageUpload({
             <div className="text-center">
               <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                No image selected
+                {sr.image.empty}
               </p>
             </div>
           </div>

@@ -178,7 +178,7 @@ export async function assertOwnedProducts(
 ) {
   const productIds = uniqueProductIds(items)
   if (productIds.length === 0) {
-    return
+    return new Map<string, Decimal | null>()
   }
 
   const owned = await db.product.findMany({
@@ -186,7 +186,7 @@ export async function assertOwnedProducts(
       id: { in: productIds },
       profileId,
     },
-    select: { id: true },
+    select: { id: true, costPrice: true },
   })
 
   if (owned.length !== productIds.length) {
@@ -195,4 +195,11 @@ export async function assertOwnedProducts(
       400
     )
   }
+
+  return new Map(
+    owned.map((product) => [
+      product.id,
+      product.costPrice === null ? null : new Decimal(product.costPrice),
+    ])
+  )
 }

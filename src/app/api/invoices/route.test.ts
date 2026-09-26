@@ -40,6 +40,7 @@ const profile = {
 
 const ownedProduct = {
   id: 'product-a',
+  costPrice: '6.25',
 }
 
 function postRequest(body: unknown, raw?: string) {
@@ -207,9 +208,12 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
     expect(mocks.$executeRaw).toHaveBeenCalledTimes(1)
     expect(mocks.product.findMany).toHaveBeenCalledWith({
       where: { id: { in: ['product-a'] }, profileId: profile.id },
-      select: { id: true },
+      select: { id: true, costPrice: true },
     })
     expect(mocks.invoiceItem.create).toHaveBeenCalledTimes(3)
+    expect(mocks.invoiceItem.create.mock.calls[0][0].data.unitCost.toString()).toBe('6.25')
+    expect(mocks.invoiceItem.create.mock.calls[1][0].data.unitCost.toString()).toBe('6.25')
+    expect(mocks.invoiceItem.create.mock.calls[2][0].data.unitCost).toBeNull()
     expect(stockMocks.syncInvoiceStock).toHaveBeenCalledTimes(1)
   })
 

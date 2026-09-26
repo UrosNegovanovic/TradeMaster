@@ -22,6 +22,17 @@ export type FinanceInvoiceInput = {
   totalAmount: number | string | { toString(): string }
   createdAt: Date | string
   paidAt?: Date | string | null
+  items?: Array<{
+    quantity: number
+    unitCost: number | string | { toString(): string } | null
+  }>
+}
+
+export type FinanceInvoiceResult = FinanceInvoiceInput & {
+  costTotal: number | null
+  profit: number | null
+  marginPercent: number | null
+  hasCompleteCost: boolean
 }
 
 export type FinanceMonth = {
@@ -30,7 +41,7 @@ export type FinanceMonth = {
   start: Date
   total: number
   count: number
-  invoices: FinanceInvoiceInput[]
+  invoices: FinanceInvoiceResult[]
 }
 
 export type FinanceSnapshot = {
@@ -39,8 +50,16 @@ export type FinanceSnapshot = {
   monthRevenue: number
   yearRevenue: number
   allTimePaid: number
+  monthCost: number | null
+  monthProfit: number | null
+  monthMarginPercent: number | null
+  monthMissingCostCount: number
+  yearCost: number | null
+  yearProfit: number | null
+  yearMarginPercent: number | null
+  yearMissingCostCount: number
   months: FinanceMonth[]
-  thisMonthInvoices: FinanceInvoiceInput[]
+  thisMonthInvoices: FinanceInvoiceResult[]
 }
 
 export function toInvoiceAmount(value: number | string | { toString(): string }): number {
@@ -60,6 +79,51 @@ export function sumInvoiceAmounts(
   invoices: Array<{ totalAmount: number | string | { toString(): string } }>
 ): number {
   return invoices.reduce((total, invoice) => total + toInvoiceAmount(invoice.totalAmount), 0)
+}
+
+function roundCurrency(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
+export function invoiceProfit(invoice: FinanceInvoiceInput): FinanceInvoiceResult {
+  const items = invoice.items ?? []
+  const hasCompleteCost =
+    items.length > 0 &&
+    items.every((item) => {
+      if (item.unitCost === null) return false
+      const unitCost = toInvoiceAmount(item.unitCost)
+      return Number.isFinite(item.quantity) && item.quantity > 0 && unitCost >= 0
+    })
+
+  if (!hasCompleteCost) {
+    return { ...invoice, costTotal: null, profit: null, marginPercent: null, hasCompleteCost: false }
+  }
+
+  const revenue = toInvoiceAmount(invoice.totalAmount)
+  const costTotal = roundCurrency(
+    items.reduce((total, item) => total + item.quantity * toInvoiceAmount(item.unitCost!), 0)
+  )
+  const profit = roundCurrency(revenue - costTotal)
+  const marginPercent = revenue > 0 ? roundCurrency((profit / revenue) * 100) : null
+
+  return { ...invoice, costTotal, profit, marginPercent, hasCompleteCost: true }
+}
+
+function profitPeriod(invoices: FinanceInvoiceResult[]) {
+  const missingCostCount = invoices.filter((invoice) => !invoice.hasCompleteCost).length
+  if (missingCostCount > 0) {
+    return { cost: null, profit: null, marginPercent: null, missingCostCount }
+  }
+
+  const revenue = sumInvoiceAmounts(invoices)
+  const cost = roundCurrency(invoices.reduce((total, invoice) => total + (invoice.costTotal ?? 0), 0))
+  const profit = roundCurrency(revenue - cost)
+  return {
+    cost,
+    profit,
+    marginPercent: revenue > 0 ? roundCurrency((profit / revenue) * 100) : null,
+    missingCostCount: 0,
+  }
 }
 
 export function paymentDate(invoice: FinanceInvoiceInput): Date | null {
@@ -113,7 +177,9 @@ export function buildFinanceSnapshot(
   now = new Date()
 ): FinanceSnapshot {
   const open = invoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status))
-  const paid = invoices.filter((invoice) => isPaidInvoiceStatus(invoice.status))
+  const paid = invoices
+    .filter((invoice) => isPaidInvoiceStatus(invoice.status))
+    .map(invoiceProfit)
   const monthStart = startOfLocalMonth(now)
   const nextMonth = addLocalMonths(monthStart, 1)
   const yearStart = startOfLocalYear(now)
@@ -138,18 +204,29 @@ export function buildFinanceSnapshot(
   }
 
   const thisMonth = months[0]
+  const thisMonthProfit = profitPeriod(thisMonth?.invoices ?? [])
+  const yearInvoices = paid.filter((invoice) => {
+    const paidOn = paymentDate(invoice)
+    return Boolean(paidOn && paidOn >= yearStart && paidOn < nextMonth)
+  })
+  const yearProfit = profitPeriod(yearInvoices)
 
   return {
     receivables: sumInvoiceAmounts(open),
     openCount: open.length,
     monthRevenue: thisMonth?.total ?? 0,
     yearRevenue: sumInvoiceAmounts(
-      paid.filter((invoice) => {
-        const paidOn = paymentDate(invoice)
-        return Boolean(paidOn && paidOn >= yearStart && paidOn < nextMonth)
-      })
+      yearInvoices
     ),
     allTimePaid: sumInvoiceAmounts(paid),
+    monthCost: thisMonthProfit.cost,
+    monthProfit: thisMonthProfit.profit,
+    monthMarginPercent: thisMonthProfit.marginPercent,
+    monthMissingCostCount: thisMonthProfit.missingCostCount,
+    yearCost: yearProfit.cost,
+    yearProfit: yearProfit.profit,
+    yearMarginPercent: yearProfit.marginPercent,
+    yearMissingCostCount: yearProfit.missingCostCount,
     months,
     thisMonthInvoices: [...(thisMonth?.invoices ?? [])].sort((left, right) => {
       const leftDate = paymentDate(left)?.getTime() ?? 0

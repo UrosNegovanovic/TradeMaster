@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => {
     product: { findMany: vi.fn() },
     invoice: { findFirst: vi.fn(), update: vi.fn() },
     invoiceItem: { deleteMany: vi.fn(), create: vi.fn() },
+    $executeRaw: vi.fn(),
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   }
@@ -80,8 +81,9 @@ describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
     mocks.profile.findUnique.mockResolvedValue(profile)
     mocks.invoice.findFirst.mockResolvedValue(unpaidInvoice)
     mocks.$queryRaw.mockResolvedValue([{ id: unpaidInvoice.id, status: 'UNPAID' }])
-    mocks.product.findMany.mockResolvedValue([{ id: 'product-a' }])
+    mocks.product.findMany.mockResolvedValue([{ id: 'product-a', costPrice: '6.25' }])
     mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, items: [] })
+    mocks.$executeRaw.mockResolvedValue(1)
   })
 
   it('does not write status even when a valid UI DRAFT payload is sent', async () => {
@@ -93,6 +95,7 @@ describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
     expect(response.status).toBe(200)
     expect(mocks.invoice.update.mock.calls[0][0].data.status).toBeUndefined()
     expect(mocks.invoice.update.mock.calls[0][0].data.totalAmount.toString()).toBe('8')
+    expect(mocks.invoice.update.mock.calls[0][0].data.items.create[0].unitCost.toString()).toBe('6.25')
   })
 
   it('rejects an invalid status on PUT without writing', async () => {
@@ -154,6 +157,25 @@ describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
     expect(response.status).toBe(200)
     expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('PAID')
     expect(mocks.invoice.update.mock.calls[0][0].data.paidAt).toBeInstanceOf(Date)
+  })
+
+  it('refreshes cost snapshots when a draft invoice is issued', async () => {
+    mocks.$queryRaw.mockResolvedValue([
+      { id: 'inv-draft', status: 'DRAFT', invoiceNumber: '2026-011', paidAt: null },
+    ])
+    mocks.invoice.update.mockResolvedValue({
+      ...unpaidInvoice,
+      id: 'inv-draft',
+      invoiceNumber: '2026-011',
+      items: [],
+    })
+
+    const response = await PATCH(request('PATCH', { status: 'UNPAID' }), {
+      params: Promise.resolve({ id: 'inv-draft' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.$executeRaw).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the original paidAt if the invoice is already paid', async () => {

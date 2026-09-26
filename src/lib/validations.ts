@@ -138,6 +138,13 @@ export const productSchema = z.object({
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
   price: z.number().positive('Cena mora biti veća od 0'),
+  costPrice: z
+    .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
+    .min(0, 'Nabavna cena ne može biti negativna')
+    .max(99999999.99, 'Nabavna cena je van podržanog opsega')
+    .refine((value) => Number.isInteger(value * 100), 'Nabavna cena može imati najviše 2 decimale')
+    .nullable()
+    .optional(),
   quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([

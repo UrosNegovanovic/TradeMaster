@@ -67,6 +67,7 @@ model Product {
   name        String
   sku         String
   price       Decimal  @default(0) @db.Decimal(10, 2) // Base price (defaults to 0 for quick intake)
+  costPrice   Decimal? @db.Decimal(10, 2) // Current purchase cost; nullable until the merchant records it
   imageUrl    String? // URL to product image (stored in Supabase Storage)
   description String?
   quantity    Int      @default(0) // Current stock quantity
@@ -189,6 +190,7 @@ model InvoiceItem {
   id          String  @id @default(cuid())
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
+  unitCost    Decimal? @db.Decimal(10, 2) // Purchase-cost snapshot used for historical profit
   discount    Decimal @db.Decimal(5, 2) @default(0) // Discount percentage (e.g., 15.50 for 15.5%)
   total       Decimal @db.Decimal(10, 2) // quantity * unitPrice * (1 - discount/100)
   productName String // Snapshot of product name (even if product is deleted)

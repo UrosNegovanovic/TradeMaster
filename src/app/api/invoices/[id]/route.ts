@@ -129,7 +129,7 @@ export async function PUT(
 
       assertInvoiceContentEditable(locked[0].status)
 
-      await assertOwnedProducts(profile.id, items, tx)
+      const productCosts = await assertOwnedProducts(profile.id, items, tx)
 
       await tx.invoiceItem.deleteMany({
         where: { invoiceId: id },
@@ -149,6 +149,7 @@ export async function PUT(
               productName: item.productName,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
+              unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
               discount: item.discount,
               total: item.total,
             })),
@@ -236,6 +237,19 @@ export async function PATCH(
         parsed.status !== undefined
           ? nextPaidAt(locked[0].status, locked[0].paidAt, parsed.status)
           : undefined
+
+      // A draft can sit while purchase prices change. Refresh the snapshots at issuance,
+      // then keep them stable for the lifetime of the issued invoice.
+      if (locked[0].status === 'DRAFT' && parsed.status && parsed.status !== 'DRAFT') {
+        await tx.$executeRaw`
+          UPDATE invoice_items AS item
+          SET "unitCost" = product."costPrice"
+          FROM products AS product
+          WHERE item."invoiceId" = ${id}
+            AND item."productId" = product.id
+            AND product."profileId" = ${profile.id}
+        `
+      }
 
       const invoice = await tx.invoice.update({
         where: { id },

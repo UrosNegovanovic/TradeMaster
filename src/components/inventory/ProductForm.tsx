@@ -60,6 +60,11 @@ export function ProductForm({
       name: initialData?.name ?? product?.name ?? '',
       sku: initialData?.sku ?? product?.sku ?? '',
       price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+      costPrice:
+        initialData?.costPrice ??
+        (product?.costPrice !== null && product?.costPrice !== undefined
+          ? Number(product.costPrice)
+          : null),
       quantity: initialData?.quantity ?? product?.quantity ?? 1,
       description: initialData?.description ?? product?.description ?? '',
       imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
@@ -79,6 +84,11 @@ export function ProductForm({
         name: initialData?.name ?? product?.name ?? '',
         sku: initialData?.sku ?? product?.sku ?? '',
         price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+        costPrice:
+          initialData?.costPrice ??
+          (product?.costPrice !== null && product?.costPrice !== undefined
+            ? Number(product.costPrice)
+            : null),
         quantity: initialData?.quantity ?? product?.quantity ?? 1,
         description: initialData?.description ?? product?.description ?? '',
         imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
@@ -161,6 +171,11 @@ export function ProductForm({
           
           setValue('name', existingProduct.name, { shouldValidate: true })
           setValue('price', Number(existingProduct.price), { shouldValidate: true })
+          setValue(
+            'costPrice',
+            existingProduct.costPrice === null ? null : Number(existingProduct.costPrice),
+            { shouldValidate: true }
+          )
           setValue('quantity', 1, { shouldValidate: true }) // Reset to 1 for new scan
           
           if (existingProduct.imageUrl) {
@@ -305,6 +320,7 @@ export function ProductForm({
                 placeholder={sr.product.namePlaceholder}
                 {...register('name')}
               />
+              <p className="text-xs text-muted-foreground">{sr.product.nameEditableHint}</p>
               {errors.name && (
                 <p className="text-sm text-destructive">{errors.name.message}</p>
               )}
@@ -374,6 +390,26 @@ export function ProductForm({
               />
               {errors.price && (
                 <p className="text-sm text-destructive">{errors.price.message}</p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="costPrice">{sr.product.costPrice} (opciono)</Label>
+              <Input
+                id="costPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                {...register('costPrice', {
+                  setValueAs: (value) => (value === '' ? null : Number(value)),
+                })}
+              />
+              <p className="text-xs text-muted-foreground">
+                {sr.product.costPriceDescription}
+              </p>
+              {errors.costPrice && (
+                <p className="text-sm text-destructive">{errors.costPrice.message}</p>
               )}
             </div>
 

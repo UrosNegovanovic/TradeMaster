@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, FileText, Wallet } from 'lucide-react'
+import { AlertTriangle, ArrowRight, FileText, Wallet } from 'lucide-react'
 import { buildFinanceSnapshot, formatRsd, type FinanceInvoiceInput } from '@/lib/invoice-finance'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { sr } from '@/lib/ui-copy'
 
 export default async function FinancePage() {
   const { userId } = await auth()
@@ -33,6 +34,12 @@ export default async function FinancePage() {
       totalAmount: true,
       createdAt: true,
       paidAt: true,
+      items: {
+        select: {
+          quantity: true,
+          unitCost: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -47,6 +54,10 @@ export default async function FinancePage() {
         totalAmount: invoice.totalAmount.toString(),
         createdAt: invoice.createdAt,
         paidAt: invoice.paidAt,
+        items: invoice.items.map((item) => ({
+          quantity: item.quantity,
+          unitCost: item.unitCost?.toString() ?? null,
+        })),
       })
     )
   )
@@ -80,7 +91,7 @@ export default async function FinancePage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Potraživanja</CardTitle>
@@ -97,6 +108,34 @@ export default async function FinancePage() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Profit ovog meseca</CardTitle>
+                <CardDescription>Prihod umanjen za evidentiranu nabavnu vrednost</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {snapshot.monthProfit === null ? (
+                  <>
+                    <p className="flex items-center gap-2 font-semibold text-amber-700">
+                      <AlertTriangle className="h-4 w-4" />
+                      {sr.finance.missingCost}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {sr.finance.missingCostDescription(snapshot.monthMissingCostCount)}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">{formatRsd(snapshot.monthProfit)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Trošak {formatRsd(snapshot.monthCost ?? 0)} · Marža{' '}
+                      {snapshot.monthMarginPercent?.toFixed(2) ?? '0,00'}%
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -121,6 +160,34 @@ export default async function FinancePage() {
 
             <Card>
               <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Profit ove godine</CardTitle>
+                <CardDescription>Profit na naplaćenim fakturama od 1. januara</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {snapshot.yearProfit === null ? (
+                  <>
+                    <p className="flex items-center gap-2 font-semibold text-amber-700">
+                      <AlertTriangle className="h-4 w-4" />
+                      {sr.finance.missingCost}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {sr.finance.missingCostDescription(snapshot.yearMissingCostCount)}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold">{formatRsd(snapshot.yearProfit)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Trošak {formatRsd(snapshot.yearCost ?? 0)} · Marža{' '}
+                      {snapshot.yearMarginPercent?.toFixed(2) ?? '0,00'}%
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Prihod ove godine</CardTitle>
                 <CardDescription>Zbir naplate od 1. januara</CardDescription>
               </CardHeader>
@@ -137,7 +204,7 @@ export default async function FinancePage() {
             <CardHeader>
               <CardTitle>Prihod po mesecu</CardTitle>
               <CardDescription>
-                Knjiži se mesec u koj je faktura plaćena, ne mesec izdavanja.
+                Knjiži se mesec u kom je faktura plaćena, ne mesec izdavanja.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -189,8 +256,19 @@ export default async function FinancePage() {
                           {invoice.invoiceNumber}
                           <span className="ml-2 text-muted-foreground">{invoice.clientName}</span>
                         </span>
-                        <span className="ml-3 shrink-0 font-medium">
-                          {formatRsd(Number(invoice.totalAmount))}
+                        <span className="ml-3 shrink-0 text-right">
+                          <span className="block font-medium">
+                            {formatRsd(Number(invoice.totalAmount))}
+                          </span>
+                          {invoice.hasCompleteCost ? (
+                            <span className="block text-xs text-muted-foreground">
+                              Profit {formatRsd(invoice.profit ?? 0)} · {invoice.marginPercent?.toFixed(2)}%
+                            </span>
+                          ) : (
+                            <span className="block text-xs text-amber-700">
+                              {sr.finance.missingCost}
+                            </span>
+                          )}
                         </span>
                       </Link>
                     </li>

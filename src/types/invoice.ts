@@ -10,6 +10,7 @@ export type InvoiceItem = {
   id: string
   quantity: number
   unitPrice: Decimal
+  unitCost: Decimal | null
   discount: Decimal
   total: Decimal
   productName: string

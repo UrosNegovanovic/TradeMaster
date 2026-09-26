@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const paidAt = nextPaidAt('UNPAID', null, status)
 
     const invoice = await prisma.$transaction(async (tx) => {
-      await assertOwnedProducts(profile.id, items, tx)
+      const productCosts = await assertOwnedProducts(profile.id, items, tx)
       const invoiceNumber = await reserveNextInvoiceNumber(tx, profile.id)
 
       const newInvoice = await tx.invoice.create({
@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
             data: {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
+              unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
               discount: item.discount,
               total: item.total,
               productName: item.productName,

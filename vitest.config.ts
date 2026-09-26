@@ -29,6 +29,7 @@ export default defineConfig({
       'src/lib/product-validation.test.ts',
       'src/lib/camera-access.test.ts',
       'src/lib/invoice-number.test.ts',
+      'src/lib/invoice-archive.test.ts',
       'src/lib/pwa-install.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',

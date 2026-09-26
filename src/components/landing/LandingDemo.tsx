@@ -37,8 +37,7 @@ export function LandingDemo() {
             controlsList="nodownload"
             onError={() => setFailed(true)}
             onPlay={() => setPlaying(true)}
-            aria-label="Pregled ekrana TradeMaster, 25 sekundi"
-            aria-describedby="demo-opis"
+            aria-label="Pregled ekrana TradeMaster, 19 sekundi"
           >
             <source src="/landing-demo.mp4" type="video/mp4" />
             <track
@@ -65,18 +64,12 @@ export function LandingDemo() {
                 <Play className="ml-0.5 h-6 w-6" fill="currentColor" />
               </span>
               <span className="rounded-full bg-white/95 px-3 py-1 text-[13px] font-medium text-neutral-900">
-                Pogledaj pregled · 25 s
+                Pogledaj pregled · 19 s
               </span>
             </button>
           )}
         </div>
       </div>
-      <figcaption
-        id="demo-opis"
-        className="mt-3 text-center text-[14px] leading-relaxed text-neutral-600"
-      >
-        Pregled ekrana (25 s), pušta se ručno i bez zvuka.
-      </figcaption>
     </figure>
   )
 }

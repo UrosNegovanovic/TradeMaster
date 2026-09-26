@@ -83,5 +83,6 @@ export const sr = {
     confirming: 'Potvrđivanje skeniranja…',
     startFailed: 'Skener nije moguće pokrenuti',
     unknownError: 'nepoznata greška',
+    manualEntry: 'Unesi barkod ručno',
   },
 } as const

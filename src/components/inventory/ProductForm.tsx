@@ -430,6 +430,7 @@ export function ProductForm({
       <BarcodeScanner
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
+        onManualEntry={() => setScannerOpen(false)}
         onScanSuccess={handleScanSuccess}
       />
     </Dialog>

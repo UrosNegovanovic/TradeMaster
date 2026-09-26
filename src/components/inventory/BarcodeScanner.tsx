@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider'
 import { Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { sr } from '@/lib/ui-copy'
+import { cameraAccessMessage, getCamerasWithTimeout } from '@/lib/camera-access'
 
 // EAN-13 Checksum Validation (Luhn Algorithm) - PRESERVED
 function validateEAN13Checksum(barcode: string): boolean {
@@ -51,6 +52,7 @@ interface BarcodeScannerProps {
   onClose: () => void
   onScanSuccess: (barcode: string) => void
   continuousMode?: boolean // If true, scanner stays open after successful scan
+  onManualEntry?: () => void
 }
 
 interface CameraDevice {
@@ -58,7 +60,7 @@ interface CameraDevice {
   label: string
 }
 
-export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = false }: BarcodeScannerProps) {
+export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = false, onManualEntry }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const videoTrackRef = useRef<MediaStreamTrack | null>(null)
   const lastScanRef = useRef<number>(0)
@@ -350,7 +352,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       document.body.style.width = '100%'
       document.documentElement.style.overflow = 'hidden'
       
-      const devices = await Html5Qrcode.getCameras()
+      const devices = await getCamerasWithTimeout(() => Html5Qrcode.getCameras(), 7_000)
       
       if (!devices || devices.length === 0) {
         throw new Error('No cameras found on this device')
@@ -383,13 +385,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       console.error('❌ Camera initialization failed:', err)
       setIsLoading(false)
       
-      if (err.name === 'NotAllowedError' || err.message?.includes('permission')) {
-        setError('Nema dozvole za kameru. Dozvolite pristup u pregledaču.')
-      } else if (err.name === 'NotFoundError' || err.message?.includes('No cameras')) {
-        setError('Kamera nije pronađena na ovom uređaju.')
-      } else {
-        setError(`Kamera nije dostupna: ${err.message || 'nepoznata greška'}`)
-      }
+      setError(cameraAccessMessage(err))
     }
   }
 
@@ -799,10 +795,21 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               <div className="absolute inset-0 flex items-center justify-center p-4 z-20 bg-black">
                 <div className="text-center space-y-4">
                   <div className="text-red-500 text-lg font-medium">{error}</div>
-                  <Button onClick={handleRetry} variant="default">
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    {sr.camera.retry}
-                  </Button>
+                  <div className="flex flex-col justify-center gap-2 sm:flex-row">
+                    <Button onClick={handleRetry} variant="default">
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      {sr.camera.retry}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        stopScanning()
+                        ;(onManualEntry ?? onCloseRef.current)()
+                      }}
+                      variant="outline"
+                    >
+                      {sr.camera.manualEntry}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

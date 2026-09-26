@@ -99,13 +99,15 @@ model Product {
 
 // Catalog (collection of products with client-specific discount)
 model Catalog {
-  id         String   @id @default(cuid())
-  name       String // Catalog name/identifier
-  clientName String? // Client name (optional)
-  discount   Decimal  @db.Decimal(5, 2) // Discount percentage (e.g., 15.50 for 15.5%)
-  notes      String? // Additional notes
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String // Catalog name/identifier
+  clientName   String? // Client name (optional)
+  discount     Decimal  @db.Decimal(5, 2) // Discount percentage (e.g., 15.50 for 15.5%)
+  notes        String? // Additional notes
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  shareToken   String?  @unique
+  shareEnabled Boolean  @default(false)
 
   // Foreign keys
   profileId String

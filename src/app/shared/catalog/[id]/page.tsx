@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { CatalogWithItems } from '@/types/catalog'
+import type { PublicCatalog } from '@/types/public-catalog'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Select,
@@ -16,8 +16,13 @@ import { Loader2, Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import { ProductImage } from '@/components/shared/ProductImage'
 
-async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: any }> {
-  const response = await fetch(`/api/public/catalogs/${id}`)
+async function fetchCatalog(id: string): Promise<PublicCatalog> {
+  // Keep already-issued catalog-id links working while all newly issued links use
+  // a revocable, unguessable token.
+  const endpoint = /^[a-f0-9]{64}$/.test(id)
+    ? `/api/shared/catalog/${id}`
+    : `/api/public/catalogs/${id}`
+  const response = await fetch(endpoint, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error('Failed to fetch catalog')
   }

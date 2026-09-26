@@ -22,5 +22,6 @@ describe('shouldProtectHtmlRoute', () => {
     expect(shouldProtectHtmlRoute(request('/'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/sign-in'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/api/public/catalogs/abc'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/api/shared/catalog/token'))).toBe(false)
   })
 })

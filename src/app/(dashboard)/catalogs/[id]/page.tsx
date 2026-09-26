@@ -13,12 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Edit, Download, ArrowLeft, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Edit, Download, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProductImage } from '@/components/shared/ProductImage'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { BlobProvider } from '@react-pdf/renderer'
 import { CatalogPDF } from '@/components/catalogs/CatalogPDF'
+import { CatalogSharing } from '@/components/catalogs/CatalogSharing'
 
 async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: Profile }> {
   const response = await fetch(`/api/catalogs/${id}`)
@@ -149,12 +150,6 @@ export default function CatalogDetailsPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
-            <Link href={`/shared/catalog/${catalog.id}`} target="_blank">
-              <Eye className="mr-2 h-4 w-4" />
-              Pregled
-            </Link>
-          </Button>
-          <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
             <Link href={`/catalogs/${catalog.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               Izmeni
@@ -215,6 +210,8 @@ export default function CatalogDetailsPage() {
           )}
         </div>
       </div>
+
+      <CatalogSharing catalogId={catalog.id} />
 
       {/* Catalog Info */}
       <div className="grid gap-6 md:grid-cols-3 mb-6">

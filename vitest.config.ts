@@ -29,6 +29,7 @@ export default defineConfig({
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',
       'src/app/api/public/catalogs/[id]/route.test.ts',
+      'src/app/api/shared/catalog/[token]/route.test.ts',
       'src/app/api/catalogs/[id]/route.test.ts',
       'src/test/require-test-database.test.ts',
     ],

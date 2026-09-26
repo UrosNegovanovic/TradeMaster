@@ -259,7 +259,7 @@ function StockProductList({ products }: { products: StockRow[] }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {product.category?.name ?? <span className="text-muted-foreground">—</span>}
+                    {product.category?.name ?? <span className="text-muted-foreground">Bez kategorije</span>}
                   </TableCell>
                   <TableCell>{renderStockBadge(product.totalQuantity, product.minStock)}</TableCell>
                   <TableCell className="text-right font-medium">

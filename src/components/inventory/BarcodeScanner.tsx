@@ -352,6 +352,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       document.body.style.width = '100%'
       document.documentElement.style.overflow = 'hidden'
       
+      // This timeout guards only stalled camera enumeration/permission prompts.
+      // Once access succeeds, barcode scanning has no seven-second time limit.
       const devices = await getCamerasWithTimeout(() => Html5Qrcode.getCameras(), 7_000)
       
       if (!devices || devices.length === 0) {

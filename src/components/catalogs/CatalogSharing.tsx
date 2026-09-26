@@ -3,6 +3,18 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
+import { getSafeCatalogSharePath } from '@/lib/public-catalog'
+
+type ShareState = { url: string | null }
+
+function parseShareState(value: unknown): ShareState {
+  if (!value || typeof value !== 'object') throw new Error('Odgovor za deljenje nije ispravan.')
+  const rawUrl = (value as { url?: unknown }).url
+  if (rawUrl === null) return { url: null }
+  const url = getSafeCatalogSharePath(rawUrl)
+  if (!url) throw new Error('Odgovor za deljenje nije ispravan.')
+  return { url }
+}
 
 export function CatalogSharing({ catalogId }: { catalogId: string }) {
   const queryClient = useQueryClient()
@@ -10,12 +22,12 @@ export function CatalogSharing({ catalogId }: { catalogId: string }) {
   const [message, setMessage] = useState('')
   const endpoint = `/api/catalogs/${catalogId}/share`
   const queryKey = ['catalog-sharing', catalogId]
-  const { data, isLoading, error } = useQuery<{ url: string | null }>({
+  const { data, isLoading, error } = useQuery<ShareState>({
     queryKey,
     queryFn: async () => {
       const response = await fetch(endpoint, { cache: 'no-store' })
       if (!response.ok) throw new Error('Deljenje nije dostupno.')
-      return response.json()
+      return parseShareState(await response.json())
     },
   })
 
@@ -25,7 +37,7 @@ export function CatalogSharing({ catalogId }: { catalogId: string }) {
     try {
       const response = await fetch(endpoint, { method })
       if (!response.ok) throw new Error('Promena deljenja nije uspela. Pokušajte ponovo.')
-      queryClient.setQueryData(queryKey, await response.json())
+      queryClient.setQueryData(queryKey, parseShareState(await response.json()))
       setMessage(method === 'DELETE' ? 'Link je opozvan.' : 'Novi link je spreman. Prethodni link više ne važi.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Deljenje nije dostupno.')

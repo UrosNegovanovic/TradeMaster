@@ -155,7 +155,7 @@ export function ProductList({
                   </TableCell>
                   <TableCell>
                     {product.category?.name ?? (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">Bez kategorije</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right font-semibold">

@@ -7,6 +7,7 @@ import { Product } from '@/types/product'
 import { CatalogFormData } from '@/lib/validations'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { sr } from '@/lib/ui-copy'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -50,16 +51,16 @@ export default function NewCatalogPage() {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
       
       // Professional success toast
-      notify.success('Catalog generated', {
-        description: `Your professional PDF catalog "${data.title || 'Untitled'}" is ready.`,
+      notify.success(sr.catalog.created, {
+        description: sr.catalog.createdDescription(data.name),
         duration: 5000,
       })
       
       router.push('/catalogs')
     },
     onError: (error: Error) => {
-      notify.error('Failed to create catalog', {
-        description: error.message || 'An unexpected error occurred',
+      notify.error(sr.catalog.createFailed, {
+        description: error.message || sr.catalog.unexpectedError,
         duration: 5000,
       })
     },
@@ -81,17 +82,17 @@ export default function NewCatalogPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold lg:text-3xl">New Catalog</h1>
+          <h1 className="text-2xl font-bold lg:text-3xl">{sr.catalog.newTitle}</h1>
           <p className="text-muted-foreground mt-2">
-            Create a new product catalog
+            {sr.catalog.newDescription}
           </p>
         </div>
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
-            You need to add products to your inventory first.
+            {sr.catalog.emptyDescription}
           </p>
           <a href="/inventory" className="text-primary hover:underline">
-            Go to Inventory
+            {sr.catalog.goToInventory}
           </a>
         </div>
       </div>
@@ -101,9 +102,9 @@ export default function NewCatalogPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold lg:text-3xl">New Catalog</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">{sr.catalog.newTitle}</h1>
         <p className="text-muted-foreground mt-2">
-          Create a new product catalog with selected products and discounts
+          {sr.catalog.newDescription}
         </p>
       </div>
 

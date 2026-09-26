@@ -361,16 +361,15 @@ export function ProductForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="price">
-                Price (Optional - can be added later)
-              </Label>
+              <Label htmlFor="price">Cena</Label>
               <Input
                 id="price"
                 type="number"
                 step="0.01"
-                min="0"
-                placeholder="0.00 (leave empty for quick intake)"
-                {...register('price', { valueAsNumber: true, setValueAs: v => v === '' ? 0 : v })}
+                min="0.01"
+                placeholder="0,00"
+                required
+                {...register('price', { valueAsNumber: true })}
               />
               {errors.price && (
                 <p className="text-sm text-destructive">{errors.price.message}</p>

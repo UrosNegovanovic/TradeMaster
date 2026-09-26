@@ -145,6 +145,15 @@ export default function InventoryPage() {
     queryFn: fetchProducts,
   })
 
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    if (!editId || products.length === 0) return
+    const productToEdit = products.find((product) => product.id === editId)
+    if (!productToEdit) return
+    setEditingProduct(productToEdit)
+    setIsFormOpen(true)
+  }, [products, searchParams])
+
   // Filter products based on search query, category, and date
   const filteredProducts = useMemo(() => {
     let filtered = products

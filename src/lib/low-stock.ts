@@ -7,6 +7,7 @@ export type LowStockSourceProduct = {
   quantity: number
   minStock: number
   imageUrl: string | null
+  price: number | string | { toString(): string }
   createdAt: Date | string
 }
 
@@ -17,6 +18,7 @@ export type LowStockProduct = {
   quantity: number
   minStock: number
   imageUrl: string | null
+  missingPrice: boolean
 }
 
 /**
@@ -53,6 +55,7 @@ export function aggregateLowStock(products: LowStockSourceProduct[]): LowStockPr
       quantity: product.totalQuantity,
       minStock: product.minStock,
       imageUrl: product.imageUrl,
+      missingPrice: Number(product.price) <= 0,
     }))
     .sort((a, b) => {
       if (a.quantity !== b.quantity) {
@@ -72,6 +75,7 @@ export async function fetchLowStockProducts(profileId: string): Promise<LowStock
       quantity: true,
       minStock: true,
       imageUrl: true,
+      price: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' },

@@ -26,6 +26,7 @@ export default defineConfig({
       'src/lib/draft-number.test.ts',
       'src/lib/persist-product-image.test.ts',
       'src/lib/public-catalog.test.ts',
+      'src/lib/product-validation.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',
       'src/app/api/public/catalogs/[id]/route.test.ts',

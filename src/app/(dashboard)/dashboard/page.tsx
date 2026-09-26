@@ -62,6 +62,7 @@ async function getDashboardData(profileId: string) {
     openInvoices,
     overdueCount,
     productCount,
+    missingPriceCount,
     lowStock,
     todayMovementGroups,
     todayMovements,
@@ -110,6 +111,9 @@ async function getDashboardData(profileId: string) {
     }),
     prisma.product.count({
       where: { profileId },
+    }),
+    prisma.product.count({
+      where: { profileId, price: { lte: 0 } },
     }),
     fetchLowStockProducts(profileId),
     prisma.stockMovement.groupBy({
@@ -161,6 +165,7 @@ async function getDashboardData(profileId: string) {
     openInvoices,
     overdueCount,
     productCount,
+    missingPriceCount,
     lowStock,
     todayTotals,
     todayIntakes: previewTodayIntakes(todayMovements),
@@ -194,6 +199,7 @@ export default async function DashboardPage() {
     openInvoices,
     overdueCount,
     productCount,
+    missingPriceCount,
     lowStock,
     todayTotals,
     todayIntakes,
@@ -255,6 +261,11 @@ export default async function DashboardPage() {
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Prodajna vrednost lagera</p>
                 <p className="text-xl font-bold tabular-nums [overflow-wrap:anywhere]">{formatRsd(stockValue)}</p>
+                {missingPriceCount > 0 ? (
+                  <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                    Nepotpuno: {missingPriceCount} {missingPriceCount === 1 ? 'artikal nema cenu' : 'artikala nema cenu'}
+                  </p>
+                ) : null}
               </div>
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
@@ -397,6 +408,11 @@ export default async function DashboardPage() {
                         {product.name}
                       </p>
                       <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                      {product.missingPrice ? (
+                        <Link href={`/inventory?edit=${product.id}`} className="text-xs font-medium text-amber-700 underline dark:text-amber-400">
+                          Nedostaje cena · Dodaj cenu
+                        </Link>
+                      ) : null}
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold tabular-nums">

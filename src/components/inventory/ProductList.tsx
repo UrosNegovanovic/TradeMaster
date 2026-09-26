@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ProductImage } from '@/components/shared/ProductImage'
+import { Badge } from '@/components/ui/badge'
 
 interface ProductListProps {
   products: Product[]
@@ -80,7 +81,14 @@ export function ProductList({
                 {product.sku}
               </code>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                <span className="font-medium">{formatPrice(Number(product.price))}</span>
+                {Number(product.price) > 0 ? (
+                  <span className="font-medium">{formatPrice(Number(product.price))}</span>
+                ) : (
+                  <Button variant="outline" size="sm" className="h-8 gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
+                    <Badge variant="outline" className="border-0 p-0 text-inherit">Nedostaje cena</Badge>
+                    Dodaj cenu
+                  </Button>
+                )}
                 <span className="text-muted-foreground">
                   {product.category?.name ?? 'Bez kategorije'}
                 </span>
@@ -152,7 +160,13 @@ export function ProductList({
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatPrice(Number(product.price))}
+                    {Number(product.price) > 0 ? (
+                      formatPrice(Number(product.price))
+                    ) : (
+                      <Button variant="outline" size="sm" className="gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
+                        Nedostaje cena · Dodaj
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell
                     className="text-sm text-muted-foreground"

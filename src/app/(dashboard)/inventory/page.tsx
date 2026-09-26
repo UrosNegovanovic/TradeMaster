@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
@@ -111,6 +111,16 @@ export default function InventoryPage() {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
+  // Removes the `edit` query param once it has been consumed, so a later
+  // `products` refetch (e.g. after any save) doesn't re-trigger the edit modal.
+  const clearEditParam = useCallback(() => {
+    if (!searchParams.get('edit')) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('edit')
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }, [pathname, router, searchParams])
+
   // Handle Quick Scan from Dashboard - automatically open form with pre-filled data
   useEffect(() => {
     const fromScan = searchParams.get('scan')
@@ -153,7 +163,10 @@ export default function InventoryPage() {
     if (!productToEdit) return
     setEditingProduct(productToEdit)
     setIsFormOpen(true)
-  }, [products, searchParams])
+    // Consume the param immediately so subsequent `products` invalidations
+    // (e.g. from saving ANY product) don't re-open this modal in a loop.
+    clearEditParam()
+  }, [products, searchParams, clearEditParam])
 
   // Filter products based on search query, category, and date
   const filteredProducts = useMemo(() => {
@@ -202,6 +215,7 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setScannedData(null)
+      clearEditParam()
       
       // Check if this was an update (stock increment) or a new product creation
       if (response.action === 'updated') {
@@ -257,6 +271,7 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setEditingProduct(null)
+      clearEditParam()
       notify.success('Proizvod je ažuriran', {
         description: 'Izmene u asortimanu su sačuvane.',
       })
@@ -441,6 +456,7 @@ export default function InventoryPage() {
           if (!open) {
             setEditingProduct(null)
             setScannedData(null)
+            clearEditParam()
           }
         }}
         onSubmit={handleSubmit}

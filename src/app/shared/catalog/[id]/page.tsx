@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { CatalogWithItems } from '@/types/catalog'
+import type { PublicCatalog } from '@/types/public-catalog'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Select,
@@ -15,9 +15,15 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import { ProductImage } from '@/components/shared/ProductImage'
+import { getSafeEmailHref, getSafePhoneHref } from '@/lib/public-catalog'
 
-async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: any }> {
-  const response = await fetch(`/api/public/catalogs/${id}`)
+async function fetchCatalog(id: string): Promise<PublicCatalog> {
+  // Keep already-issued catalog-id links working while all newly issued links use
+  // a revocable, unguessable token.
+  const endpoint = /^[a-f0-9]{64}$/.test(id)
+    ? `/api/shared/catalog/${id}`
+    : `/api/public/catalogs/${id}`
+  const response = await fetch(endpoint, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error('Failed to fetch catalog')
   }
@@ -89,6 +95,8 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
   }
 
   const profile = catalog.profile
+  const emailHref = getSafeEmailHref(profile?.contactEmail)
+  const phoneHref = getSafePhoneHref(profile?.contactPhone)
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,12 +121,12 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
                 </div>
               )}
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                  {profile?.companyName || 'Company Catalog'}
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                  {profile?.companyName || 'Katalog proizvoda'}
                 </h1>
                 {catalog.clientName && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Catalog for: <span className="font-semibold text-foreground">{catalog.clientName}</span>
+                    Katalog za: <span className="font-semibold text-foreground">{catalog.clientName}</span>
                   </p>
                 )}
               </div>
@@ -126,22 +134,22 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
 
             {/* Right: Contact Information */}
             <div className="flex flex-col gap-2 text-sm">
-              {profile?.contactEmail && (
+              {profile?.contactEmail && emailHref && (
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-muted-foreground">Email:</span>
                   <a
-                    href={`mailto:${profile.contactEmail}`}
+                    href={emailHref}
                     className="text-primary hover:underline font-medium"
                   >
                     {profile.contactEmail}
                   </a>
                 </div>
               )}
-              {profile?.contactPhone && (
+              {profile?.contactPhone && phoneHref && (
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-muted-foreground">Phone:</span>
+                  <span className="font-medium text-muted-foreground">Telefon:</span>
                   <a
-                    href={`tel:${profile.contactPhone}`}
+                    href={phoneHref}
                     className="text-primary hover:underline font-medium"
                   >
                     {profile.contactPhone}
@@ -150,7 +158,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
               )}
               {profile?.address && (
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-muted-foreground">Address:</span>
+                  <span className="font-medium text-muted-foreground">Adresa:</span>
                   <span className="text-foreground">{profile.address}</span>
                 </div>
               )}

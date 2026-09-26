@@ -10,6 +10,7 @@ export type InvoiceItem = {
   id: string
   quantity: number
   unitPrice: Decimal
+  unitCost: Decimal | null
   discount: Decimal
   total: Decimal
   productName: string
@@ -50,7 +51,7 @@ export type InvoiceWithItems = Invoice & {
 }
 
 export type InvoiceCreateInput = {
-  invoiceNumber: string
+  invoiceNumber?: string
   dueDate: string | Date
   clientName: string
   clientAddress?: string

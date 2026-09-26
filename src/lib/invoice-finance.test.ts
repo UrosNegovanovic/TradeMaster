@@ -15,6 +15,7 @@ function invoice(partial: {
   totalAmount: number
   createdAt?: Date
   paidAt?: Date | null
+  items?: Array<{ quantity: number; unitCost: number | string | null }>
 }) {
   return {
     id: partial.id,
@@ -24,6 +25,7 @@ function invoice(partial: {
     totalAmount: partial.totalAmount,
     createdAt: partial.createdAt ?? new Date(2026, 7, 1),
     paidAt: partial.paidAt,
+    items: partial.items ?? [],
   }
 }
 
@@ -92,5 +94,60 @@ describe('invoice-finance', () => {
     expect(sumInvoiceAmounts([{ totalAmount: '12.5' }, { totalAmount: 7.5 }])).toBe(20)
     expect(formatRsd(1000)).toContain('1.000')
     expect(buildFinanceSnapshot([], now).months[0].label).toBe('septembar 2026.')
+  })
+
+  it('calculates paid invoice profit and margin from snapshotted unit costs', () => {
+    const snapshot = buildFinanceSnapshot(
+      [
+        invoice({
+          id: 'costed',
+          status: 'PAID',
+          totalAmount: 200,
+          paidAt: now,
+          items: [
+            { quantity: 2, unitCost: 50 },
+            { quantity: 1, unitCost: '20' },
+          ],
+        }),
+      ],
+      now
+    )
+
+    expect(snapshot.monthCost).toBe(120)
+    expect(snapshot.monthProfit).toBe(80)
+    expect(snapshot.monthMarginPercent).toBe(40)
+    expect(snapshot.monthMissingCostCount).toBe(0)
+    expect(snapshot.thisMonthInvoices[0]).toMatchObject({
+      costTotal: 120,
+      profit: 80,
+      marginPercent: 40,
+      hasCompleteCost: true,
+    })
+  })
+
+  it('does not present partial profit as a complete result when a paid invoice lacks cost', () => {
+    const snapshot = buildFinanceSnapshot(
+      [
+        invoice({
+          id: 'missing-cost',
+          status: 'PAID',
+          totalAmount: 100,
+          paidAt: now,
+          items: [{ quantity: 1, unitCost: null }],
+        }),
+      ],
+      now
+    )
+
+    expect(snapshot.monthCost).toBeNull()
+    expect(snapshot.monthProfit).toBeNull()
+    expect(snapshot.monthMarginPercent).toBeNull()
+    expect(snapshot.monthMissingCostCount).toBe(1)
+    expect(snapshot.thisMonthInvoices[0]).toMatchObject({
+      costTotal: null,
+      profit: null,
+      marginPercent: null,
+      hasCompleteCost: false,
+    })
   })
 })

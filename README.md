@@ -99,6 +99,11 @@ TradeMaster/
 - `npm run db:studio` - Open Prisma Studio
 - `npm run db:seed` - Seed the database
 
+## Known pre-PRD limitations
+
+- Lokalni razvoj i produkcija trenutno koriste isti Supabase projekat. Pre šireg timskog testiranja potrebno je uvesti odvojenu staging bazu.
+- Profit koristi poslednju nabavnu cenu proizvoda kao snapshot pri izdavanju fakture. FIFO i trošak po pojedinačnoj nabavnoj turi ostaju za narednu fazu.
+
 ## License
 
 Private - All rights reserved

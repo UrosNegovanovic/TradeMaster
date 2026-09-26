@@ -8,6 +8,7 @@ function product(
     sku: string
     quantity: number
     minStock: number
+    price: number
     createdAt: Date
   }>
 ) {
@@ -17,6 +18,7 @@ function product(
     sku: partial.sku ?? '5999885747054',
     quantity: partial.quantity ?? 0,
     minStock: partial.minStock ?? 2,
+    price: partial.price ?? 100,
     imageUrl: null,
     createdAt: partial.createdAt ?? new Date('2026-09-23T10:00:00'),
   }
@@ -37,6 +39,7 @@ describe('aggregateLowStock', () => {
         quantity: 2,
         minStock: 3,
         imageUrl: null,
+        missingPrice: false,
       },
     ])
   })
@@ -58,5 +61,14 @@ describe('aggregateLowStock', () => {
     ])
 
     expect(rows.map((row) => row.name)).toEqual(['Ananas', 'Banana', 'Cedevita'])
+  })
+
+  it('marks a low-stock SKU whose latest row has no price', () => {
+    const rows = aggregateLowStock([
+      product({ id: 'old', quantity: 1, price: 100, createdAt: new Date('2026-09-22T10:00:00') }),
+      product({ id: 'new', quantity: 0, price: 0, createdAt: new Date('2026-09-23T10:00:00') }),
+    ])
+
+    expect(rows[0]).toMatchObject({ id: 'new', missingPrice: true })
   })
 })

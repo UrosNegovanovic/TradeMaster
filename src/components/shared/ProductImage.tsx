@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Image as ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { sr } from '@/lib/ui-copy'
 
 export function isValidImageUrl(url: string | null | undefined): boolean {
   if (!url || url.trim() === '') return false
@@ -56,7 +57,8 @@ export function ProductImage({
           className
         )}
         style={boxStyle}
-        aria-hidden
+        role="img"
+        aria-label={sr.image.productPlaceholder(alt)}
       >
         <ImageIcon className="h-5 w-5 text-muted-foreground" />
       </div>

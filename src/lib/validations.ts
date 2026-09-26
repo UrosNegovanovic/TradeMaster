@@ -109,6 +109,8 @@ export const invoiceWriteSchema = z.object({
   items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
 })
 
+export const invoiceCreateSchema = invoiceWriteSchema.omit({ invoiceNumber: true })
+
 export const invoicePatchSchema = z
   .object({
     status: invoiceStatusSchema.optional(),
@@ -128,17 +130,25 @@ export const invoicePatchSchema = z
   )
 
 export type InvoiceWriteInput = z.infer<typeof invoiceWriteSchema>
+export type InvoiceCreateWriteInput = z.infer<typeof invoiceCreateSchema>
 export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
 // Product validations
 export const productSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  sku: z.string().min(1, 'SKU is required').max(100),
-  price: z.number().min(0, 'Price cannot be negative').default(0), // ✅ Allow 0 for quick warehouse intake!
+  name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
+  sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
+  price: z.number().positive('Cena mora biti veća od 0'),
+  costPrice: z
+    .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
+    .min(0, 'Nabavna cena ne može biti negativna')
+    .max(99999999.99, 'Nabavna cena je van podržanog opsega')
+    .refine((value) => Number.isInteger(value * 100), 'Nabavna cena može imati najviše 2 decimale')
+    .nullable()
+    .optional(),
   quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([
-      z.string().url('Invalid URL'),
+      z.string().url('Adresa slike nije ispravna'),
       z.literal(''),
       z.null(),
     ])
@@ -172,7 +182,7 @@ export const profileSchema = z.object({
     .or(z.literal('')),
   contactPhone: z.string().max(50).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
-  pib: z.string().max(50).optional().nullable(),
+  pib: z.string().trim().regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara'),
   logoUrl: z
     .union([
       z.string().url('Invalid URL'),

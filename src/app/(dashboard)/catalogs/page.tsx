@@ -9,11 +9,12 @@ import { useRouter } from 'next/navigation'
 import { Catalog } from '@/types/catalog'
 import { notify } from '@/lib/notify'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { sr } from '@/lib/ui-copy'
 
 async function fetchCatalogs() {
   const response = await fetch('/api/catalogs')
   if (!response.ok) {
-    throw new Error('Failed to fetch catalogs')
+    throw new Error('Katalozi nisu učitani')
   }
   return response.json()
 }
@@ -25,7 +26,7 @@ async function deleteCatalog(id: string) {
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.error || 'Failed to delete catalog')
+    throw new Error(error.error || sr.catalog.deleteFailed)
   }
 
   return response.json()
@@ -46,19 +47,19 @@ export default function CatalogsPage() {
     mutationFn: deleteCatalog,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
-      notify.success('Catalog deleted', {
-        description: 'The catalog has been removed from your records.',
+      notify.success(sr.catalog.deleted, {
+        description: sr.catalog.deletedDescription,
       })
     },
     onError: (error: Error) => {
-      notify.error('Failed to delete catalog', {
-        description: error.message || 'Please try again.',
+      notify.error(sr.catalog.deleteFailed, {
+        description: error.message || sr.catalog.tryAgain,
       })
     },
   })
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this catalog?')) {
+    if (confirm(sr.catalog.confirmDelete)) {
       deleteMutation.mutate(id)
     }
   }
@@ -124,14 +125,14 @@ export default function CatalogsPage() {
                   </span>
                 </CardTitle>
                 {catalog.clientName && (
-                  <CardDescription>Client: {catalog.clientName}</CardDescription>
+                  <CardDescription>{sr.catalog.client}: {catalog.clientName}</CardDescription>
                 )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      {catalog.items?.length || 0} products
+                      {sr.catalog.productCount(catalog.items?.length || 0)}
                     </p>
                     {catalog.notes && (
                       <p className="text-sm text-muted-foreground mt-2 line-clamp-2">

@@ -37,6 +37,7 @@ export async function saveProductIntake(profileId: string, input: ProductFormDat
           data: {
             quantity: { increment: input.quantity },
             ...(input.price > 0 ? { price: input.price } : {}),
+            ...(input.costPrice !== undefined ? { costPrice: input.costPrice } : {}),
             ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
             ...(!existing.imageUrl && imageUrl ? { imageUrl } : {}),
           },
@@ -45,6 +46,7 @@ export async function saveProductIntake(profileId: string, input: ProductFormDat
       : await tx.product.create({
           data: {
             profileId, name: input.name, sku: input.sku, price: input.price,
+            costPrice: input.costPrice ?? null,
             quantity: input.quantity, description: input.description || null,
             imageUrl, categoryId: input.categoryId ?? null,
           },

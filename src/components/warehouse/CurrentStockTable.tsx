@@ -18,6 +18,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ProductImage } from '@/components/shared/ProductImage'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Table,
   TableBody,
@@ -82,6 +84,7 @@ function StockFilters({
   resultCount,
   sourceCount,
   totalValue,
+  missingPriceCount,
 }: {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
@@ -94,6 +97,7 @@ function StockFilters({
   resultCount: number
   sourceCount: number
   totalValue?: number
+  missingPriceCount?: number
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -142,9 +146,14 @@ function StockFilters({
           </div>
         </div>
         {totalValue !== undefined && (
-          <div className="whitespace-nowrap text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground sm:text-right">
             <span className="font-semibold text-foreground">Ukupna vrednost:</span>{' '}
             {formatPrice(totalValue)}
+            {missingPriceCount ? (
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                Bez {missingPriceCount} {missingPriceCount === 1 ? 'artikla kome' : 'artikala kojima'} nedostaje cena
+              </p>
+            ) : null}
           </div>
         )}
       </div>
@@ -206,11 +215,17 @@ function StockProductList({ products }: { products: StockRow[] }) {
               </code>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {renderStockBadge(product.totalQuantity, product.minStock)}
-                <span className="text-sm text-muted-foreground">{formatPrice(Number(product.price))}</span>
+                {Number(product.price) > 0 ? (
+                  <span className="text-sm text-muted-foreground">{formatPrice(Number(product.price))}</span>
+                ) : (
+                  <Button asChild variant="outline" size="sm" className="h-8 border-amber-500 text-amber-700">
+                    <Link href={`/inventory?edit=${product.id}`}>Nedostaje cena · Dodaj</Link>
+                  </Button>
+                )}
               </div>
             </div>
             <div className="shrink-0 text-right text-sm font-semibold">
-              {formatPrice(Number(product.price) * product.totalQuantity)}
+              {Number(product.price) > 0 ? formatPrice(Number(product.price) * product.totalQuantity) : 'Nije izračunato'}
             </div>
           </li>
         ))}
@@ -244,12 +259,18 @@ function StockProductList({ products }: { products: StockRow[] }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {product.category?.name ?? <span className="text-muted-foreground">—</span>}
+                    {product.category?.name ?? <span className="text-muted-foreground">Bez kategorije</span>}
                   </TableCell>
                   <TableCell>{renderStockBadge(product.totalQuantity, product.minStock)}</TableCell>
-                  <TableCell className="text-right font-medium">{formatPrice(Number(product.price))}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {Number(product.price) > 0 ? formatPrice(Number(product.price)) : (
+                      <Button asChild variant="outline" size="sm" className="border-amber-500 text-amber-700">
+                        <Link href={`/inventory?edit=${product.id}`}>Nedostaje cena · Dodaj</Link>
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {formatPrice(Number(product.price) * product.totalQuantity)}
+                    {Number(product.price) > 0 ? formatPrice(Number(product.price) * product.totalQuantity) : 'Nije izračunato'}
                   </TableCell>
                 </TableRow>
               ))}
@@ -262,7 +283,8 @@ function StockProductList({ products }: { products: StockRow[] }) {
 }
 
 export function CurrentStockTable({ products }: CurrentStockTableProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchParams = useSearchParams()
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('sku') ?? '')
   const [stockOpen, setStockOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -327,6 +349,10 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
   const totalValue = useMemo(() => {
     return products.reduce((sum, product) => sum + Number(product.price) * product.quantity, 0)
   }, [products])
+  const missingPriceCount = useMemo(
+    () => aggregatedProducts.filter((product) => Number(product.price) <= 0).length,
+    [aggregatedProducts]
+  )
 
   const filterProps = {
     searchQuery,
@@ -343,7 +369,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
 
   return (
     <div className="space-y-4">
-      <StockFilters {...filterProps} totalValue={totalValue} />
+      <StockFilters {...filterProps} totalValue={totalValue} missingPriceCount={missingPriceCount} />
 
       {filteredProducts.length === 0 ? (
         <StockEmptyState
@@ -372,7 +398,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
             <DialogDescription>Pregled proizvoda i količina ({showAllCount})</DialogDescription>
           </DialogHeader>
           <div className="shrink-0 px-6 pb-3">
-            <StockFilters {...filterProps} totalValue={totalValue} />
+            <StockFilters {...filterProps} totalValue={totalValue} missingPriceCount={missingPriceCount} />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
             {filteredProducts.length === 0 ? (

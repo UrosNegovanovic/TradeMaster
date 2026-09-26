@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
+import Link from 'next/link'
 import { formatLocalYmd, isSameLocalDay, parseLocalYmd } from '@/lib/local-date'
 import {
   Dialog,
@@ -110,6 +111,16 @@ export default function InventoryPage() {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
+  // Removes the `edit` query param once it has been consumed, so a later
+  // `products` refetch (e.g. after any save) doesn't re-trigger the edit modal.
+  const clearEditParam = useCallback(() => {
+    if (!searchParams.get('edit')) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('edit')
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }, [pathname, router, searchParams])
+
   // Handle Quick Scan from Dashboard - automatically open form with pre-filled data
   useEffect(() => {
     const fromScan = searchParams.get('scan')
@@ -144,6 +155,18 @@ export default function InventoryPage() {
     queryKey: ['products'],
     queryFn: fetchProducts,
   })
+
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    if (!editId || products.length === 0) return
+    const productToEdit = products.find((product) => product.id === editId)
+    if (!productToEdit) return
+    setEditingProduct(productToEdit)
+    setIsFormOpen(true)
+    // Consume the param immediately so subsequent `products` invalidations
+    // (e.g. from saving ANY product) don't re-open this modal in a loop.
+    clearEditParam()
+  }, [products, searchParams, clearEditParam])
 
   // Filter products based on search query, category, and date
   const filteredProducts = useMemo(() => {
@@ -192,6 +215,7 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setScannedData(null)
+      clearEditParam()
       
       // Check if this was an update (stock increment) or a new product creation
       if (response.action === 'updated') {
@@ -247,6 +271,7 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
       setEditingProduct(null)
+      clearEditParam()
       notify.success('Proizvod je ažuriran', {
         description: 'Izmene u asortimanu su sačuvane.',
       })
@@ -329,7 +354,7 @@ export default function InventoryPage() {
     <div className="space-y-4 lg:space-y-6">
       <PageHeader
         title="Asortiman"
-        description="Svi proizvodi, sa opcionim filterom po datumu"
+        description="Istorija unosa po datumu — svaki red je jedan unos, a ne zbirno trenutno stanje."
         action={
           <Button className="w-full sm:w-auto" onClick={() => setIsFormOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -337,6 +362,13 @@ export default function InventoryPage() {
           </Button>
         }
       />
+
+      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>Za agregiranu količinu svih dnevnih unosa istog SKU-a otvorite Magacin.</p>
+        <Button asChild variant="outline" size="sm" className="shrink-0">
+          <Link href="/warehouse">Otvori Magacin</Link>
+        </Button>
+      </div>
 
       {/* Search and Filters */}
       <div className="space-y-3">
@@ -424,6 +456,7 @@ export default function InventoryPage() {
           if (!open) {
             setEditingProduct(null)
             setScannedData(null)
+            clearEditParam()
           }
         }}
         onSubmit={handleSubmit}

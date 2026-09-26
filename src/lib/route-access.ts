@@ -7,6 +7,7 @@ export const isPublicRoute = createRouteMatcher([
   '/',
   '/shared/catalog/(.*)', // Public catalog preview
   '/api/public/catalogs/(.*)', // Unlisted catalog JSON for that preview
+  '/api/shared/catalog/(.*)', // Revocable token-based catalog JSON
   '/robots.txt',
   '/sitemap.xml',
 ])

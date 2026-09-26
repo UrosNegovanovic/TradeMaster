@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ProductImage } from '@/components/shared/ProductImage'
+import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 
 interface ProductListProps {
   products: Product[]
@@ -80,11 +82,21 @@ export function ProductList({
                 {product.sku}
               </code>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                <span className="font-medium">{formatPrice(Number(product.price))}</span>
+                {Number(product.price) > 0 ? (
+                  <span className="font-medium">{formatPrice(Number(product.price))}</span>
+                ) : (
+                  <Button variant="outline" size="sm" className="h-8 gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
+                    <Badge variant="outline" className="border-0 p-0 text-inherit">Nedostaje cena</Badge>
+                    Dodaj cenu
+                  </Button>
+                )}
                 <span className="text-muted-foreground">
                   {product.category?.name ?? 'Bez kategorije'}
                 </span>
               </div>
+              <Link href={`/warehouse?sku=${encodeURIComponent(product.sku)}`} className="mt-1.5 inline-block text-xs font-medium text-primary underline-offset-4 hover:underline">
+                Zbirno stanje u Magacinu
+              </Link>
             </div>
             <div className="flex shrink-0 flex-col items-end justify-between">
               <span className="inline-flex min-w-[2.25rem] items-center justify-center rounded-md bg-primary/10 px-2 py-1 text-sm font-semibold text-primary">
@@ -143,7 +155,7 @@ export function ProductList({
                   </TableCell>
                   <TableCell>
                     {product.category?.name ?? (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">Bez kategorije</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
@@ -152,7 +164,13 @@ export function ProductList({
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatPrice(Number(product.price))}
+                    {Number(product.price) > 0 ? (
+                      formatPrice(Number(product.price))
+                    ) : (
+                      <Button variant="outline" size="sm" className="gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
+                        Nedostaje cena · Dodaj
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell
                     className="text-sm text-muted-foreground"
@@ -162,6 +180,9 @@ export function ProductList({
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/warehouse?sku=${encodeURIComponent(product.sku)}`}>Magacin</Link>
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => onEdit(product)}>
                         <Pencil className="h-4 w-4" />
                         <span className="sr-only">Izmeni</span>

@@ -93,6 +93,7 @@ export async function PUT(
         name: validatedData.name,
         sku: validatedData.sku,
         price: validatedData.price,
+        costPrice: validatedData.costPrice ?? null,
         quantity: validatedData.quantity ?? 1,
         description: validatedData.description === '' ? null : validatedData.description ?? null,
         imageUrl,

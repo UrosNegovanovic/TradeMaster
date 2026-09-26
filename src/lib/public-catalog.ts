@@ -53,6 +53,25 @@ type CatalogRecord = {
   }>
 }
 
+const SHARE_PATH_PATTERN = /^\/shared\/catalog\/[a-f0-9]{64}$/
+const EMAIL_PATTERN = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/
+const PHONE_PATTERN = /^\+?[0-9 ()-]{3,30}$/
+
+export function getSafeCatalogSharePath(value: unknown): string | null {
+  return typeof value === 'string' && SHARE_PATH_PATTERN.test(value) ? value : null
+}
+
+export function getSafeEmailHref(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 254 || !EMAIL_PATTERN.test(value)) return null
+  return `mailto:${value}`
+}
+
+export function getSafePhoneHref(value: unknown): string | null {
+  if (typeof value !== 'string' || !PHONE_PATTERN.test(value)) return null
+  const normalized = value.replace(/[^+0-9]/g, '')
+  return normalized.length >= 3 ? `tel:${normalized}` : null
+}
+
 export function toPublicCatalog(catalog: CatalogRecord): PublicCatalog {
   return {
     id: catalog.id,

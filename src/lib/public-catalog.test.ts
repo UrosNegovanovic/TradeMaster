@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { toPublicCatalog } from './public-catalog'
+import {
+  getSafeCatalogSharePath,
+  getSafeEmailHref,
+  getSafePhoneHref,
+  toPublicCatalog,
+} from './public-catalog'
+
+describe('public catalog links', () => {
+  it('accepts only an internal catalog share path with a 64-character token', () => {
+    const token = 'a'.repeat(64)
+
+    expect(getSafeCatalogSharePath(`/shared/catalog/${token}`)).toBe(`/shared/catalog/${token}`)
+    expect(getSafeCatalogSharePath('javascript:alert(1)')).toBeNull()
+    expect(getSafeCatalogSharePath('//example.com/shared/catalog/' + token)).toBeNull()
+    expect(getSafeCatalogSharePath('/shared/catalog/short')).toBeNull()
+  })
+
+  it('builds contact links only from allow-listed email and phone characters', () => {
+    expect(getSafeEmailHref('prodaja@example.com')).toBe('mailto:prodaja@example.com')
+    expect(getSafeEmailHref('javascript:alert(1)')).toBeNull()
+    expect(getSafePhoneHref('+381 (11) 123-456')).toBe('tel:+38111123456')
+    expect(getSafePhoneHref('javascript:alert(1)')).toBeNull()
+  })
+})
 
 describe('toPublicCatalog', () => {
   it('keeps offer fields and drops extra tenant/inventory properties', () => {

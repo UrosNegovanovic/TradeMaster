@@ -11,6 +11,8 @@ import { ProductPicker } from './ProductPicker'
 import { Product } from '@/types/product'
 import { Loader2 } from 'lucide-react'
 import React from 'react'
+import { sr } from '@/lib/ui-copy'
+import { formatRsd } from '@/lib/invoice-finance'
 
 interface CatalogFormProps {
   products: Product[]
@@ -106,19 +108,19 @@ export function CatalogForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Catalog Information</CardTitle>
+          <CardTitle>{sr.catalog.information}</CardTitle>
           <CardDescription>
-            Enter the basic information for your catalog
+            {sr.catalog.informationDescription}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">
-              Catalog Name <span className="text-destructive">*</span>
+              {sr.catalog.name} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="name"
-              placeholder="Enter catalog name"
+              placeholder={sr.catalog.namePlaceholder}
               {...register('name')}
             />
             {errors.name && (
@@ -128,10 +130,10 @@ export function CatalogForm({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name</Label>
+              <Label htmlFor="clientName">{sr.catalog.clientName}</Label>
               <Input
                 id="clientName"
-                placeholder="Enter client name (optional)"
+                placeholder={sr.catalog.clientNamePlaceholder}
                 {...register('clientName')}
               />
               {errors.clientName && (
@@ -143,7 +145,7 @@ export function CatalogForm({
 
             <div className="space-y-2">
               <Label htmlFor="discount">
-                Discount (%) <span className="text-destructive">*</span>
+                {sr.catalog.discount} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="discount"
@@ -163,10 +165,10 @@ export function CatalogForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{sr.catalog.notes}</Label>
             <Input
               id="notes"
-              placeholder="Additional notes (optional)"
+              placeholder={sr.catalog.notesPlaceholder}
               {...register('notes')}
             />
             {errors.notes && (
@@ -178,9 +180,9 @@ export function CatalogForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Select Products</CardTitle>
+          <CardTitle>{sr.catalog.selectProducts}</CardTitle>
           <CardDescription>
-            Choose products to include in this catalog. At least one product is required.
+            {sr.catalog.selectProductsDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -200,9 +202,9 @@ export function CatalogForm({
       {selectedProductIds.length > 0 && discount > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Price Preview</CardTitle>
+            <CardTitle>{sr.catalog.pricePreview}</CardTitle>
             <CardDescription>
-              Preview of prices with {discount}% discount applied
+              {sr.catalog.pricePreviewDescription(discount)}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -225,10 +227,10 @@ export function CatalogForm({
                     </div>
                     <div className="text-right">
                       <p className="text-sm line-through text-muted-foreground">
-                        ${originalPrice.toFixed(2)}
+                        {formatRsd(originalPrice)}
                       </p>
                       <p className="text-sm font-semibold text-primary">
-                        ${discountedPrice.toFixed(2)}
+                        {formatRsd(discountedPrice)}
                       </p>
                     </div>
                   </div>
@@ -242,7 +244,7 @@ export function CatalogForm({
       <div className="flex justify-end gap-4">
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {initialData ? 'Update Catalog' : 'Create Catalog'}
+          {initialData ? sr.catalog.update : sr.catalog.create}
         </Button>
       </div>
     </form>

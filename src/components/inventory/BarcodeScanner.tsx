@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { sr } from '@/lib/ui-copy'
+import { cameraAccessMessage, getCamerasWithTimeout } from '@/lib/camera-access'
 
 // EAN-13 Checksum Validation (Luhn Algorithm) - PRESERVED
 function validateEAN13Checksum(barcode: string): boolean {
@@ -50,6 +52,7 @@ interface BarcodeScannerProps {
   onClose: () => void
   onScanSuccess: (barcode: string) => void
   continuousMode?: boolean // If true, scanner stays open after successful scan
+  onManualEntry?: () => void
 }
 
 interface CameraDevice {
@@ -57,7 +60,7 @@ interface CameraDevice {
   label: string
 }
 
-export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = false }: BarcodeScannerProps) {
+export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = false, onManualEntry }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const videoTrackRef = useRef<MediaStreamTrack | null>(null)
   const lastScanRef = useRef<number>(0)
@@ -176,7 +179,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       }
     } catch (err) {
       console.error('Failed to toggle torch:', err)
-      notify.error('Could not toggle flashlight')
+      notify.error(sr.camera.flashlightFailed)
     }
   }
 
@@ -349,7 +352,9 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       document.body.style.width = '100%'
       document.documentElement.style.overflow = 'hidden'
       
-      const devices = await Html5Qrcode.getCameras()
+      // This timeout guards only stalled camera enumeration/permission prompts.
+      // Once access succeeds, barcode scanning has no seven-second time limit.
+      const devices = await getCamerasWithTimeout(() => Html5Qrcode.getCameras(), 7_000)
       
       if (!devices || devices.length === 0) {
         throw new Error('No cameras found on this device')
@@ -357,7 +362,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       
       const cameraList: CameraDevice[] = devices.map(device => ({
         id: device.id,
-        label: device.label || `Camera ${devices.indexOf(device) + 1}`
+        label: device.label || sr.camera.cameraFallback(devices.indexOf(device) + 1)
       }))
       
       setCameras(cameraList)
@@ -382,13 +387,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
       console.error('❌ Camera initialization failed:', err)
       setIsLoading(false)
       
-      if (err.name === 'NotAllowedError' || err.message?.includes('permission')) {
-        setError('Nema dozvole za kameru. Dozvolite pristup u pregledaču.')
-      } else if (err.name === 'NotFoundError' || err.message?.includes('No cameras')) {
-        setError('Kamera nije pronađena na ovom uređaju.')
-      } else {
-        setError(`Kamera nije dostupna: ${err.message || 'nepoznata greška'}`)
-      }
+      setError(cameraAccessMessage(err))
     }
   }
 
@@ -560,7 +559,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               playBeep().catch(err => {
                 console.warn('Beep playback failed:', err)
               })
-              notify.success('Barcode confirmed', {
+              notify.success(sr.camera.confirmed, {
                 description: decodedText,
               })
               
@@ -578,8 +577,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               confirmationRef.current = { barcode: decodedText, timestamp: now }
               // ✅ Visual feedback: Detecting (yellow)
               setScanStatus('detecting')
-              notify.info('Hold steady', {
-                description: 'Confirming scan...',
+              notify.info(sr.camera.holdSteady, {
+                description: sr.camera.confirming,
                 duration: 1800,
               })
             }
@@ -589,8 +588,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
             confirmationRef.current = { barcode: decodedText, timestamp: now }
             // ✅ Visual feedback: Detecting (yellow)
             setScanStatus('detecting')
-            notify.info('Hold steady', {
-              description: 'Confirming scan...',
+            notify.info(sr.camera.holdSteady, {
+              description: sr.camera.confirming,
               duration: 1800,
             })
           }
@@ -657,7 +656,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
     } catch (err: any) {
       console.error('❌ Scanner start failed:', err)
       setIsLoading(false)
-      setError(`Failed to start scanner: ${err.message || 'Unknown error'}`)
+      setError(`${sr.camera.startFailed}: ${err.message || sr.camera.unknownError}`)
     }
   }
 
@@ -787,8 +786,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               <div className="absolute inset-0 flex items-center justify-center z-20 bg-black">
                 <div className="text-center space-y-4">
                   <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                  <p className="text-white text-lg font-medium">Starting Camera...</p>
-                  <p className="text-gray-400 text-sm">Initializing HD scanner with AI detection...</p>
+                  <p className="text-white text-lg font-medium">{sr.camera.starting}</p>
+                  <p className="text-gray-400 text-sm">{sr.camera.initializing}</p>
                 </div>
               </div>
             )}
@@ -798,10 +797,21 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               <div className="absolute inset-0 flex items-center justify-center p-4 z-20 bg-black">
                 <div className="text-center space-y-4">
                   <div className="text-red-500 text-lg font-medium">{error}</div>
-                  <Button onClick={handleRetry} variant="default">
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Try Again
-                  </Button>
+                  <div className="flex flex-col justify-center gap-2 sm:flex-row">
+                    <Button onClick={handleRetry} variant="default">
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      {sr.camera.retry}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        stopScanning()
+                        ;(onManualEntry ?? onCloseRef.current)()
+                      }}
+                      variant="outline"
+                    >
+                      {sr.camera.manualEntry}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -816,7 +826,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                     size="icon"
                     onClick={toggleTorch}
                     className="h-12 w-12 rounded-full shadow-lg"
-                    title="Toggle Flashlight"
+                    title={sr.camera.flashlight}
                   >
                     {torchEnabled ? (
                       <FlashlightOff className="h-5 w-5" />
@@ -832,7 +842,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                   size="icon"
                   onClick={() => setSoundEnabled(!soundEnabled)}
                   className="h-12 w-12 rounded-full shadow-lg bg-background"
-                  title="Toggle Beep Sound"
+                  title={sr.camera.sound}
                 >
                   <Volume2 className={`h-5 w-5 ${soundEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                 </Button>
@@ -844,7 +854,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
               <div className="absolute top-4 left-4 z-30 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg min-w-[200px]">
                 <div className="flex items-center gap-2 mb-2">
                   <ZoomIn className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Zoom: {zoomLevel.toFixed(1)}x</span>
+                  <span className="text-sm font-medium">{sr.camera.zoom}: {zoomLevel.toFixed(1)}x</span>
                 </div>
                 <Slider
                   value={[zoomLevel]}
@@ -855,7 +865,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Adjust for difficult/blurry codes
+                  {sr.camera.zoomHelp}
                 </p>
               </div>
             )}

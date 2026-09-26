@@ -15,7 +15,9 @@ import {
 } from '@/lib/invoice-totals'
 import {
   invoicePatchSchema,
+  invoiceCreateSchema,
   invoiceWriteSchema,
+  type InvoiceCreateWriteInput,
   type InvoiceWriteInput,
 } from '@/lib/validations'
 
@@ -81,6 +83,10 @@ export async function parseJsonBody(request: Request): Promise<unknown> {
 
 export function parseInvoiceWriteBody(body: unknown): InvoiceWriteInput {
   return invoiceWriteSchema.parse(body)
+}
+
+export function parseInvoiceCreateBody(body: unknown): InvoiceCreateWriteInput {
+  return invoiceCreateSchema.parse(body)
 }
 
 export function parseInvoicePatchBody(body: unknown) {
@@ -172,7 +178,7 @@ export async function assertOwnedProducts(
 ) {
   const productIds = uniqueProductIds(items)
   if (productIds.length === 0) {
-    return
+    return new Map<string, Decimal | null>()
   }
 
   const owned = await db.product.findMany({
@@ -180,7 +186,7 @@ export async function assertOwnedProducts(
       id: { in: productIds },
       profileId,
     },
-    select: { id: true },
+    select: { id: true, costPrice: true },
   })
 
   if (owned.length !== productIds.length) {
@@ -189,4 +195,11 @@ export async function assertOwnedProducts(
       400
     )
   }
+
+  return new Map(
+    owned.map((product) => [
+      product.id,
+      product.costPrice === null ? null : new Decimal(product.costPrice),
+    ])
+  )
 }

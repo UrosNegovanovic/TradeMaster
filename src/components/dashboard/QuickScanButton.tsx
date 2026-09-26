@@ -337,6 +337,10 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         <BarcodeScanner
           open={scannerOpen}
           onClose={closeScanner}
+          onManualEntry={() => {
+            closeScanner()
+            router.push('/inventory?scan=true')
+          }}
           onScanSuccess={handleScanSuccess}
           continuousMode={true}
         />

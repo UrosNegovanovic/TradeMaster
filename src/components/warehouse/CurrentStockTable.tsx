@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ProductImage } from '@/components/shared/ProductImage'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Table,
   TableBody,
@@ -282,7 +283,8 @@ function StockProductList({ products }: { products: StockRow[] }) {
 }
 
 export function CurrentStockTable({ products }: CurrentStockTableProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchParams = useSearchParams()
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('sku') ?? '')
   const [stockOpen, setStockOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)

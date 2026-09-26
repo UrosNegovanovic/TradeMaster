@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
+import Link from 'next/link'
 import { formatLocalYmd, isSameLocalDay, parseLocalYmd } from '@/lib/local-date'
 import {
   Dialog,
@@ -338,7 +339,7 @@ export default function InventoryPage() {
     <div className="space-y-4 lg:space-y-6">
       <PageHeader
         title="Asortiman"
-        description="Svi proizvodi, sa opcionim filterom po datumu"
+        description="Istorija unosa po datumu — svaki red je jedan unos, a ne zbirno trenutno stanje."
         action={
           <Button className="w-full sm:w-auto" onClick={() => setIsFormOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -346,6 +347,13 @@ export default function InventoryPage() {
           </Button>
         }
       />
+
+      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>Za agregiranu količinu svih dnevnih unosa istog SKU-a otvorite Magacin.</p>
+        <Button asChild variant="outline" size="sm" className="shrink-0">
+          <Link href="/warehouse">Otvori Magacin</Link>
+        </Button>
+      </div>
 
       {/* Search and Filters */}
       <div className="space-y-3">

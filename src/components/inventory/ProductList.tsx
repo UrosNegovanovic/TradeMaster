@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
 import { ProductImage } from '@/components/shared/ProductImage'
 import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 
 interface ProductListProps {
   products: Product[]
@@ -93,6 +94,9 @@ export function ProductList({
                   {product.category?.name ?? 'Bez kategorije'}
                 </span>
               </div>
+              <Link href={`/warehouse?sku=${encodeURIComponent(product.sku)}`} className="mt-1.5 inline-block text-xs font-medium text-primary underline-offset-4 hover:underline">
+                Zbirno stanje u Magacinu
+              </Link>
             </div>
             <div className="flex shrink-0 flex-col items-end justify-between">
               <span className="inline-flex min-w-[2.25rem] items-center justify-center rounded-md bg-primary/10 px-2 py-1 text-sm font-semibold text-primary">
@@ -176,6 +180,9 @@ export function ProductList({
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/warehouse?sku=${encodeURIComponent(product.sku)}`}>Magacin</Link>
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => onEdit(product)}>
                         <Pencil className="h-4 w-4" />
                         <span className="sr-only">Izmeni</span>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
-import { invoiceWriteSchema } from '@/lib/validations'
+import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
 import {
   clampDiscountPercent,
@@ -192,7 +192,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
     setFormError(null)
 
     const payload = {
-      invoiceNumber: invoiceNumber.trim(),
+      ...(initialData ? { invoiceNumber: invoiceNumber.trim() } : {}),
       dueDate,
       clientName: clientName.trim(),
       clientAddress: clientAddress.trim() || undefined,
@@ -212,15 +212,21 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       return
     }
 
-    const validation = invoiceWriteSchema.safeParse(payload)
+    const validation = initialData
+      ? invoiceWriteSchema.safeParse(payload)
+      : invoiceCreateSchema.safeParse(payload)
     if (!validation.success) {
       const firstIssue = validation.error.errors[0]
       setFormError(firstIssue?.message || 'Please correct the invalid invoice items')
       return
     }
 
+    const validatedInvoiceNumber =
+      'invoiceNumber' in validation.data && typeof validation.data.invoiceNumber === 'string'
+        ? validation.data.invoiceNumber
+        : undefined
     const formData: InvoiceCreateInput = {
-      invoiceNumber: validation.data.invoiceNumber,
+      ...(validatedInvoiceNumber ? { invoiceNumber: validatedInvoiceNumber } : {}),
       dueDate: validation.data.dueDate,
       clientName: validation.data.clientName,
       clientAddress: validation.data.clientAddress || undefined,
@@ -249,15 +255,11 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="invoiceNumber">
-                Invoice Number <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="invoiceNumber">Broj fakture</Label>
               <Input
                 id="invoiceNumber"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="e.g., 2024-001"
-                required
+                value={initialData ? invoiceNumber : 'Dodeljuje se automatski pri čuvanju'}
+                readOnly
               />
             </div>
             <div className="space-y-2">

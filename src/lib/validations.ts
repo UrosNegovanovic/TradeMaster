@@ -109,6 +109,8 @@ export const invoiceWriteSchema = z.object({
   items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
 })
 
+export const invoiceCreateSchema = invoiceWriteSchema.omit({ invoiceNumber: true })
+
 export const invoicePatchSchema = z
   .object({
     status: invoiceStatusSchema.optional(),
@@ -128,6 +130,7 @@ export const invoicePatchSchema = z
   )
 
 export type InvoiceWriteInput = z.infer<typeof invoiceWriteSchema>
+export type InvoiceCreateWriteInput = z.infer<typeof invoiceCreateSchema>
 export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
 // Product validations
@@ -172,7 +175,7 @@ export const profileSchema = z.object({
     .or(z.literal('')),
   contactPhone: z.string().max(50).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
-  pib: z.string().max(50).optional().nullable(),
+  pib: z.string().trim().regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara'),
   logoUrl: z
     .union([
       z.string().url('Invalid URL'),

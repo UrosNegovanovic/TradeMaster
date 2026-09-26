@@ -59,10 +59,10 @@ function deleteRequest(id: string) {
 describe('invoice handlers against a real test database', () => {
   beforeAll(async () => {
     const profileA = await prisma.profile.create({
-      data: { clerkUserId: users.a.clerkUserId, companyName: `${testPrefix} A` },
+      data: { clerkUserId: users.a.clerkUserId, companyName: `${testPrefix} A`, pib: '123456789' },
     })
     const profileB = await prisma.profile.create({
-      data: { clerkUserId: users.b.clerkUserId, companyName: `${testPrefix} B` },
+      data: { clerkUserId: users.b.clerkUserId, companyName: `${testPrefix} B`, pib: '987654321' },
     })
     users.a.profileId = profileA.id
     users.b.profileId = profileB.id
@@ -165,6 +165,39 @@ describe('invoice handlers against a real test database', () => {
     expect(stored?.status).toBe('UNPAID')
   })
 
+  it('assigns distinct sequential numbers to concurrent invoice creations', async () => {
+    const year = new Date().getFullYear()
+    const payload = {
+      dueDate: `${year}-12-01`,
+      clientName: 'Concurrent buyer',
+      status: 'DRAFT' as const,
+      items: [
+        {
+          productId: users.a.productId,
+          productName: 'Coffee',
+          quantity: 1,
+          unitPrice: 10,
+          discount: 0,
+        },
+      ],
+    }
+
+    const [first, second] = await Promise.all([
+      POST(postRequest(payload)),
+      POST(postRequest(payload)),
+    ])
+
+    expect(first.status).toBe(201)
+    expect(second.status).toBe(201)
+    const created = await Promise.all([first.json(), second.json()])
+    const numbers = created.map((invoice) => invoice.invoiceNumber).sort()
+    expect(new Set(numbers).size).toBe(2)
+
+    const sequences = numbers.map((number) => Number(number.split('-')[1]))
+    expect(numbers.every((number) => number.startsWith(`${year}-`))).toBe(true)
+    expect(sequences[1] - sequences[0]).toBe(1)
+  })
+
   it('isolates owners through the application handlers', async () => {
     const response = await POST(
       postRequest({
@@ -214,6 +247,7 @@ describe('invoice handlers against a real test database', () => {
     const originalItems = await prisma.invoiceItem.findMany({
       where: { invoiceId: invoice.id },
     })
+    const originalInvoiceNumber = invoice.invoiceNumber
 
     const originalTransaction = prisma.$transaction.bind(prisma)
     prisma.$transaction = (async (fn: (tx: any) => Promise<unknown>) =>
@@ -253,7 +287,7 @@ describe('invoice handlers against a real test database', () => {
         include: { items: true },
       })
 
-      expect(untouched?.invoiceNumber).toBe(`${testPrefix}-003`)
+      expect(untouched?.invoiceNumber).toBe(originalInvoiceNumber)
       expect(untouched?.clientName).toBe('Acme')
       expect(untouched?.status).toBe('UNPAID')
       expect(untouched?.items).toHaveLength(1)
@@ -448,7 +482,7 @@ describe('invoice handlers against a real test database', () => {
     expect(firstMovements[0]).toMatchObject({
       type: 'OUT',
       quantity: 3,
-      reason: `Faktura ${testPrefix}-stock-001`,
+      reason: `Faktura ${invoice.invoiceNumber}`,
       source: 'INVOICE',
       sourceKey: invoiceSourceKey(invoice.id, users.a.productId),
     })

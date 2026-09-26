@@ -6,12 +6,13 @@ import {
   assertOwnedProducts,
   computeInvoiceAmounts,
   invoiceErrorResponse,
-  parseInvoiceWriteBody,
+  parseInvoiceCreateBody,
   parseJsonBody,
 } from '@/lib/invoice-service'
 import { OPEN_INVOICE_STATUS } from '@/lib/invoice-status'
 import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
+import { reserveNextInvoiceNumber } from '@/lib/invoice-number'
 
 export async function GET() {
   try {
@@ -87,18 +88,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!profile.pib || !/^\d{9}$/.test(profile.pib)) {
+      return NextResponse.json(
+        { error: 'Unesite važeći PIB firme od 9 cifara pre izdavanja fakture.' },
+        { status: 400 }
+      )
+    }
+
     const body = await parseJsonBody(request)
-    const parsed = parseInvoiceWriteBody(body)
+    const parsed = parseInvoiceCreateBody(body)
     const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
     const status = parsed.status ?? OPEN_INVOICE_STATUS
     const paidAt = nextPaidAt('UNPAID', null, status)
 
     const invoice = await prisma.$transaction(async (tx) => {
       await assertOwnedProducts(profile.id, items, tx)
+      const invoiceNumber = await reserveNextInvoiceNumber(tx, profile.id)
 
       const newInvoice = await tx.invoice.create({
         data: {
-          invoiceNumber: parsed.invoiceNumber,
+          invoiceNumber,
           dueDate: new Date(parsed.dueDate),
           clientName: parsed.clientName,
           clientAddress: parsed.clientAddress || null,
@@ -128,7 +137,7 @@ export async function POST(request: NextRequest) {
       await syncInvoiceStock(tx, {
         profileId: profile.id,
         invoiceId: newInvoice.id,
-        invoiceNumber: parsed.invoiceNumber,
+        invoiceNumber,
         status,
         items,
       })

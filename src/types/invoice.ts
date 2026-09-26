@@ -50,7 +50,7 @@ export type InvoiceWithItems = Invoice & {
 }
 
 export type InvoiceCreateInput = {
-  invoiceNumber: string
+  invoiceNumber?: string
   dueDate: string | Date
   clientName: string
   clientAddress?: string

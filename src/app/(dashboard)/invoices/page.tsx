@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, FileText, Trash2, Download, Loader2, Edit } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Plus, FileText, Trash2, Download, Loader2, Edit, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { Invoice, InvoiceStatus } from '@/types/invoice'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +15,9 @@ import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions
 import { cn } from '@/lib/utils'
 import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
+import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
 
 async function fetchInvoices() {
@@ -51,6 +54,108 @@ function getStatusBadge(status: InvoiceStatus | string) {
 
 function parseInvoiceView(value: string | null): 'open' | 'paid' {
   return value === 'paid' ? 'paid' : 'open'
+}
+
+interface InvoiceCardProps {
+  invoice: Invoice
+  onDelete: (id: string) => void
+  isDeleting: boolean
+}
+
+function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
+  return (
+    <Card className={cn(invoice.status === InvoiceStatus.PAID && 'opacity-95')}>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg leading-snug break-words">{invoice.invoiceNumber}</CardTitle>
+            <CardDescription className="mt-2 block break-words">
+              {invoice.clientName}
+            </CardDescription>
+          </div>
+          {getStatusBadge(invoice.status)}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Ukupno</span>
+            <span className="font-semibold">
+              {formatRsd(Number(invoice.totalAmount))}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Rok</span>
+            <span>{formatDate(invoice.dueDate)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Kreirano</span>
+            <span>{formatDate(invoice.createdAt)}</span>
+          </div>
+          <InvoiceStatusActions
+            invoiceId={invoice.id}
+            status={invoice.status}
+            className="w-full"
+          />
+          <div className="flex flex-wrap gap-2 border-t pt-2">
+            <Button variant="outline" size="sm" className="min-h-11 flex-1" asChild>
+              <Link href={`/invoices/${invoice.id}`}>
+                <Download className="mr-2 h-4 w-4" />
+                PDF
+              </Link>
+            </Button>
+            {!isPaidInvoiceStatus(invoice.status) && (
+              <Button variant="outline" size="sm" className="min-h-11" asChild>
+                <Link href={`/invoices/${invoice.id}/edit`}>
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Izmeni</span>
+                </Link>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11"
+              onClick={() => onDelete(invoice.id)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Obriši</span>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+interface MonthArchiveSectionProps {
+  group: ReturnType<typeof groupInvoicesByMonth>[number]
+  onDelete: (id: string) => void
+  isDeleting: boolean
+}
+
+function MonthArchiveSection({ group, onDelete, isDeleting }: MonthArchiveSectionProps) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-accent">
+        <span className="font-medium">{group.label}</span>
+        <span className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span>
+            {group.invoices.length} {group.invoices.length === 1 ? 'faktura' : 'faktura'} · {formatRsd(group.total)}
+          </span>
+          <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
+        </span>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {group.invoices.map((invoice) => (
+          <InvoiceCard key={invoice.id} invoice={invoice} onDelete={onDelete} isDeleting={isDeleting} />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  )
 }
 
 export default function InvoicesPage() {
@@ -111,8 +216,15 @@ export default function InvoicesPage() {
     },
   })
 
-  const handleDelete = (id: string) => {
-    if (confirm('Obrisati ovu fakturu?')) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDialog({
+      title: 'Obrisati ovu fakturu?',
+      description: 'Ova radnja se ne može opozvati.',
+      confirmLabel: 'Obriši',
+      cancelLabel: 'Otkaži',
+      variant: 'destructive',
+    })
+    if (confirmed) {
       deleteMutation.mutate(id)
     }
   }
@@ -137,6 +249,17 @@ export default function InvoicesPage() {
       visibleInvoices: view === 'paid' ? paid : open,
     }
   }, [invoices, view])
+
+  // Plaćene fakture samo rastu tokom vremena, pa ih grupišemo po mesecu: tekući
+  // mesec se prikazuje odmah, a stariji meseci idu u arhivu koja se otvara na klik.
+  const { currentMonthGroup, archivedMonthGroups } = useMemo(() => {
+    const groups = groupInvoicesByMonth(paidInvoices)
+    const thisMonth = currentMonthKey()
+    return {
+      currentMonthGroup: groups.find((group) => group.key === thisMonth) ?? null,
+      archivedMonthGroups: groups.filter((group) => group.key !== thisMonth),
+    }
+  }, [paidInvoices])
 
   const finance = useMemo(() => buildFinanceSnapshot(invoices), [invoices])
 
@@ -256,71 +379,48 @@ export default function InvoicesPage() {
             </Button>
           </CardContent>
         </Card>
+      ) : view === 'paid' ? (
+        <div className="space-y-8">
+          {currentMonthGroup ? (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground">{currentMonthGroup.label} (tekući mesec)</h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {currentMonthGroup.invoices.map((invoice) => (
+                  <InvoiceCard
+                    key={invoice.id}
+                    invoice={invoice}
+                    onDelete={handleDelete}
+                    isDeleting={deleteMutation.isPending}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {archivedMonthGroups.length > 0 ? (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground">Arhiva po mesecima</h3>
+              <div className="space-y-3">
+                {archivedMonthGroups.map((group) => (
+                  <MonthArchiveSection
+                    key={group.key}
+                    group={group}
+                    onDelete={handleDelete}
+                    isDeleting={deleteMutation.isPending}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {visibleInvoices.map((invoice) => (
-            <Card key={invoice.id} className={cn(invoice.status === InvoiceStatus.PAID && 'opacity-95')}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg leading-snug break-words">{invoice.invoiceNumber}</CardTitle>
-                    <CardDescription className="mt-2 block break-words">
-                      {invoice.clientName}
-                    </CardDescription>
-                  </div>
-                  {getStatusBadge(invoice.status)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Ukupno</span>
-                    <span className="font-semibold">
-                      {formatRsd(Number(invoice.totalAmount))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Rok</span>
-                    <span>{formatDate(invoice.dueDate)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Kreirano</span>
-                    <span>{formatDate(invoice.createdAt)}</span>
-                  </div>
-                  <InvoiceStatusActions
-                    invoiceId={invoice.id}
-                    status={invoice.status}
-                    className="w-full"
-                  />
-                  <div className="flex flex-wrap gap-2 border-t pt-2">
-                    <Button variant="outline" size="sm" className="min-h-11 flex-1" asChild>
-                      <Link href={`/invoices/${invoice.id}`}>
-                        <Download className="mr-2 h-4 w-4" />
-                        PDF
-                      </Link>
-                    </Button>
-                    {!isPaidInvoiceStatus(invoice.status) && (
-                      <Button variant="outline" size="sm" className="min-h-11" asChild>
-                        <Link href={`/invoices/${invoice.id}/edit`}>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Izmeni</span>
-                        </Link>
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="min-h-11"
-                      onClick={() => handleDelete(invoice.id)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Obriši</span>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <InvoiceCard
+              key={invoice.id}
+              invoice={invoice}
+              onDelete={handleDelete}
+              isDeleting={deleteMutation.isPending}
+            />
           ))}
         </div>
       )}

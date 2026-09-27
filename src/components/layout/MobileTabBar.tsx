@@ -15,6 +15,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { CompanyBrand } from './CompanyBrand'
+import { SignOutControl } from './SignOutControl'
 import { mobileMoreNavigation, mobileTabNavigation } from './navigation'
 
 function isActivePath(pathname: string | null, href: string) {
@@ -133,10 +134,13 @@ export function MobileTabBar() {
               )
             })}
           </nav>
-          <CompanyBrand
-            className="mt-4 border-t pt-3"
-            onNavigate={() => setMoreOpen(false)}
-          />
+          <div className="mt-4 border-t pt-3">
+            <CompanyBrand onNavigate={() => setMoreOpen(false)} />
+            <SignOutControl
+              className="text-base"
+              onBeforeSignOut={() => setMoreOpen(false)}
+            />
+          </div>
           </div>
         </SheetContent>
       </Sheet>

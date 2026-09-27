@@ -134,10 +134,9 @@ export type InvoiceCreateWriteInput = z.infer<typeof invoiceCreateSchema>
 export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
 // Product validations
-export const productSchema = z.object({
+const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
-  price: z.number().positive('Cena mora biti veća od 0'),
   costPrice: z
     .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
     .min(0, 'Nabavna cena ne može biti negativna')
@@ -156,8 +155,21 @@ export const productSchema = z.object({
     .nullable(),
   description: z.string().max(1000).optional().nullable(),
   categoryId: z.string().optional().nullable(),
+}
+
+/** Warehouse / Quick Scan POST /api/products — price 0 is valid (user can update later). */
+export const productIntakeSchema = z.object({
+  ...productFields,
+  price: z.number().min(0, 'Price cannot be negative').default(0),
 })
 
+/** Manual ProductForm create/edit — selling price must be > 0. */
+export const productSchema = z.object({
+  ...productFields,
+  price: z.number().positive('Cena mora biti veća od 0'),
+})
+
+export type ProductIntakeData = z.infer<typeof productIntakeSchema>
 export type ProductFormData = z.infer<typeof productSchema>
 
 // Catalog validations

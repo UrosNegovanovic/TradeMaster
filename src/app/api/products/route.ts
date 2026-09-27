@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { scheduleProductImagePersist } from '@/lib/persist-product-image'
-import { productSchema } from '@/lib/validations'
+import { productIntakeSchema } from '@/lib/validations'
 import { IntakeConflictError, saveProductIntake } from '@/lib/product-intake'
 
 // GET: Fetch all products for the current user
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate input
-    const validatedData = productSchema.parse(body)
+    const validatedData = productIntakeSchema.parse(body)
 
     const key = request.headers.get('Idempotency-Key')
     if (key !== null && !/^[a-zA-Z0-9_-]{16,128}$/.test(key)) {

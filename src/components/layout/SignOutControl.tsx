@@ -48,7 +48,7 @@ function ClerkSignOutControl({ className, onBeforeSignOut }: SignOutControlProps
     onBeforeSignOut?.()
     setPending(true)
     try {
-      await signOut({ redirectUrl: '/sign-in' })
+      await signOut({ redirectUrl: '/' })
     } catch {
       setPending(false)
     }

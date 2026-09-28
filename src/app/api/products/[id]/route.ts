@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { persistProductImage, scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
+import { productPutFields } from '@/lib/product-put'
+
+export const dynamic = 'force-dynamic'
 
 // PUT: Update a product
 export async function PUT(
@@ -86,18 +89,11 @@ export async function PUT(
       validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
     )
 
-    // Update product
     const product = await prisma.product.update({
       where: { id: params.id },
       data: {
-        name: validatedData.name,
-        sku: validatedData.sku,
-        price: validatedData.price,
-        costPrice: validatedData.costPrice ?? null,
-        quantity: validatedData.quantity ?? 1,
-        description: validatedData.description === '' ? null : validatedData.description ?? null,
+        ...productPutFields(validatedData),
         imageUrl,
-        categoryId: validatedData.categoryId ?? null,
       },
       include: {
         category: {

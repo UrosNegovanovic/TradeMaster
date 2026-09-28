@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Validation schema for category
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),

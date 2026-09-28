@@ -13,6 +13,8 @@ import React from 'react'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { notify } from '@/lib/notify'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -22,8 +24,8 @@ async function fetchProfile() {
   return response.json()
 }
 
-async function updateProfile(data: ProfileFormData) {
-  const response = await fetch('/api/profile', {
+async function updateProfile(data: ProfileFormData, request: SessionFetch) {
+  const response = await request('/api/profile', {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -41,6 +43,7 @@ async function updateProfile(data: ProfileFormData) {
 
 export default function SettingsPage() {
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
 
   // Fetch profile
   const { data: profile, isLoading } = useQuery({
@@ -50,7 +53,7 @@ export default function SettingsPage() {
 
   // Update profile mutation
   const mutation = useMutation({
-    mutationFn: updateProfile,
+    mutationFn: (data: ProfileFormData) => updateProfile(data, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] })
       notify.success('Podaci su sačuvani', {

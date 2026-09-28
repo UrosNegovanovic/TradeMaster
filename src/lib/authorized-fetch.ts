@@ -1,4 +1,5 @@
 export type GetSessionToken = () => Promise<string | null | undefined>
+export type SessionFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
 /** Same-origin fetch that still sends Clerk cookies and a Bearer token when the session cookie is dropped (PWA / mobile). */
 export async function authorizedFetch(
@@ -16,4 +17,8 @@ export async function authorizedFetch(
     headers,
     credentials: init.credentials ?? 'include',
   })
+}
+
+export function bindAuthorizedFetch(getToken?: GetSessionToken): SessionFetch {
+  return (input, init) => authorizedFetch(input, init ?? {}, getToken)
 }

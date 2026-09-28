@@ -24,6 +24,8 @@ import {
 import { Plus, Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 interface CategorySelectProps {
   value: string | null
@@ -38,8 +40,8 @@ async function fetchCategories(): Promise<Category[]> {
   return response.json()
 }
 
-async function createCategory(data: { name: string; description?: string }): Promise<Category> {
-  const response = await fetch('/api/categories', {
+async function createCategory(data: { name: string; description?: string }, request: SessionFetch): Promise<Category> {
+  const response = await request('/api/categories', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -57,6 +59,7 @@ async function createCategory(data: { name: string; description?: string }): Pro
 
 export function CategorySelect({ value, onChange }: CategorySelectProps) {
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryDescription, setNewCategoryDescription] = useState('')
@@ -69,7 +72,7 @@ export function CategorySelect({ value, onChange }: CategorySelectProps) {
 
   // Create category mutation
   const createMutation = useMutation({
-    mutationFn: createCategory,
+    mutationFn: (data: { name: string; description?: string }) => createCategory(data, request),
     onSuccess: (newCategory) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       onChange(newCategory.id)

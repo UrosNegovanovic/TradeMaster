@@ -20,6 +20,7 @@ export type StockMovementCreateInput = {
   type: MovementType
   quantity: number
   reason: string
+  costPrice?: number | null
 }
 
 export type LowStockProduct = {

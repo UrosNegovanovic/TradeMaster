@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { CompanyBrand } from './CompanyBrand'
+import { SignOutControl } from './SignOutControl'
 import { navigation } from './navigation'
 
 export function Sidebar() {
@@ -37,7 +38,10 @@ export function Sidebar() {
           )
         })}
       </nav>
-      <CompanyBrand compact className="mx-3 mb-3 mt-auto border-t pt-3" />
+      <div className="mx-3 mb-3 mt-auto border-t pt-3">
+        <CompanyBrand compact />
+        <SignOutControl />
+      </div>
     </div>
   )
 }

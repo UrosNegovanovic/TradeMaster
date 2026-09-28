@@ -10,10 +10,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { AlertTriangle, Package, Minus, ChevronDown, ChevronRight } from 'lucide-react'
+import { AlertTriangle, FileSpreadsheet, Minus, Package, Plus, Upload, ChevronDown, ChevronRight } from 'lucide-react'
 import { StockMovement, LowStockProduct, StockMovementCreateInput } from '@/types/warehouse'
 import { Product } from '@/types/product'
+import { StockInForm, type StockInFormData } from '@/components/warehouse/StockInForm'
 import { StockOutForm } from '@/components/warehouse/StockOutForm'
+import { AssortmentImportDialog } from '@/components/warehouse/AssortmentImportDialog'
+import { StockAdjustImportDialog } from '@/components/warehouse/StockAdjustImportDialog'
 import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
 import { StockMovementHistory } from '@/components/warehouse/StockMovementHistory'
 import { MovementType } from '@prisma/client'
@@ -21,7 +24,6 @@ import { notify } from '@/lib/notify'
 import { ProductImage } from '@/components/shared/ProductImage'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-// Fetch products for the user
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
   if (!response.ok) {
@@ -30,7 +32,6 @@ async function fetchProducts(): Promise<Product[]> {
   return response.json()
 }
 
-// Fetch low stock products
 async function fetchLowStockProducts(): Promise<LowStockProduct[]> {
   const response = await fetch('/api/warehouse/low-stock')
   if (!response.ok) {
@@ -44,7 +45,6 @@ type StockMovementList = {
   totalCount: number
 }
 
-// Fetch stock movements
 async function fetchStockMovements(): Promise<StockMovementList> {
   const response = await fetch('/api/stock-movements?limit=50')
   if (!response.ok) {
@@ -58,7 +58,6 @@ async function fetchStockMovements(): Promise<StockMovementList> {
   }
 }
 
-// Create stock movement
 async function createStockMovement(data: StockMovementCreateInput): Promise<StockMovement> {
   const response = await fetch('/api/stock-movements', {
     method: 'POST',
@@ -78,10 +77,12 @@ async function createStockMovement(data: StockMovementCreateInput): Promise<Stoc
 
 export default function WarehousePage() {
   const queryClient = useQueryClient()
+  const [stockInOpen, setStockInOpen] = useState(false)
   const [stockOutOpen, setStockOutOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [adjustOpen, setAdjustOpen] = useState(false)
   const [lowStockOpen, setLowStockOpen] = useState(false)
 
-  // Fetch data
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
@@ -99,36 +100,87 @@ export default function WarehousePage() {
   const stockMovements = movementList?.movements ?? []
   const movementTotalCount = movementList?.totalCount ?? stockMovements.length
 
-  // Create stock movement mutation (OUT only - IN is handled by Scanner)
+  const invalidateStock = () => {
+    queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
+    queryClient.invalidateQueries({ queryKey: ['products'] })
+    queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
+  }
+
   const createMovementMutation = useMutation({
     mutationFn: createStockMovement,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
-      
-      notify.success('Izlaz je zabeležen', {
-        description: `${data.quantity} kom uklonjeno sa ${data.product.name}`,
+      invalidateStock()
+      const isOut = data.type === MovementType.OUT
+      notify.success(isOut ? 'Izlaz je zabeležen' : 'Ulaz je zabeležen', {
+        description: isOut
+          ? `${data.quantity} kom uklonjeno sa ${data.product.name}`
+          : `${data.quantity} kom dodato na ${data.product.name}`,
       })
     },
     onError: (error: Error) => {
-      notify.error('Izlaz nije sačuvan', {
+      notify.error('Kretanje nije sačuvano', {
         description: error.message,
       })
     },
   })
 
-  const handleStockOut = async (data: any) => {
+  const handleStockOut = async (data: { productId: string; quantity: number; reason: string }) => {
     await createMovementMutation.mutateAsync({
       ...data,
       type: MovementType.OUT,
     })
   }
 
+  const handleStockIn = async (data: StockInFormData) => {
+    await createMovementMutation.mutateAsync({
+      productId: data.productId,
+      quantity: data.quantity,
+      reason: data.reason,
+      type: MovementType.IN,
+      ...(data.costPrice !== undefined && data.costPrice !== null ? { costPrice: data.costPrice } : {}),
+    })
+  }
+
+  const importActions = (
+    <>
+      <Button
+        onClick={() => setImportOpen(true)}
+        variant="outline"
+        className="w-full sm:w-auto"
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        Uvezi iz CSV/Excel
+      </Button>
+      <Button
+        onClick={() => setAdjustOpen(true)}
+        variant="outline"
+        className="w-full sm:w-auto"
+      >
+        <FileSpreadsheet className="mr-2 h-4 w-4" />
+        Ažuriraj stanje
+      </Button>
+    </>
+  )
+
+  const dialogs = (
+    <>
+      <AssortmentImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onCompleted={invalidateStock}
+      />
+      <StockAdjustImportDialog
+        open={adjustOpen}
+        onOpenChange={setAdjustOpen}
+        onCompleted={invalidateStock}
+      />
+    </>
+  )
+
   if (isLoadingProducts) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">Loading warehouse data...</p>
+        <p className="text-muted-foreground">Učitavanje magacina…</p>
       </div>
     )
   }
@@ -139,20 +191,26 @@ export default function WarehousePage() {
         <PageHeader
           title="Magacin"
           description="Pratite stanje i kretanje robe"
+          action={importActions}
         />
         <Card>
           <CardHeader>
             <CardTitle>Još nema proizvoda</CardTitle>
             <CardDescription>
-              Prvo dodajte asortiman da biste pratili promet u magacinu.
+              Uvezite asortiman iz CSV/Excel fajla ili dodajte proizvode ručno.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild>
+          <CardContent className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={() => setImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Uvezi iz CSV/Excel
+            </Button>
+            <Button asChild variant="outline">
               <a href="/inventory">Idi na asortiman</a>
             </Button>
           </CardContent>
         </Card>
+        {dialogs}
       </div>
     )
   }
@@ -163,18 +221,28 @@ export default function WarehousePage() {
         title="Magacin"
         description="Pratite stanje i kretanje robe"
         action={
-          <Button
-            onClick={() => setStockOutOpen(true)}
-            variant="destructive"
-            className="w-full sm:w-auto"
-          >
-            <Minus className="mr-2 h-4 w-4" />
-            Izlaz / korekcija
-          </Button>
+          <>
+            {importActions}
+            <Button
+              onClick={() => setStockInOpen(true)}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Ulaz
+            </Button>
+            <Button
+              onClick={() => setStockOutOpen(true)}
+              variant="destructive"
+              className="w-full sm:w-auto"
+            >
+              <Minus className="mr-2 h-4 w-4" />
+              Izlaz / korekcija
+            </Button>
+          </>
         }
       />
 
-      {/* Low Stock Alerts - Collapsible */}
       {!isLoadingLowStock && lowStockProducts.length > 0 && (
         <Collapsible open={lowStockOpen} onOpenChange={setLowStockOpen}>
           <Alert variant="destructive">
@@ -228,10 +296,10 @@ export default function WarehousePage() {
       )}
 
       <p className="text-sm text-muted-foreground">
-        Ulaz u lager ide skeniranjem. Ovde evidencirate izlaz.
+        Ulaz u lager ide skeniranjem ili ručnim ulazom. CSV uvoz dodaje nov asortiman; ažuriranje stanja
+        postavlja količinu postojećih proizvoda.
       </p>
 
-      {/* Current Inventory Status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -247,7 +315,6 @@ export default function WarehousePage() {
         </CardContent>
       </Card>
 
-      {/* Stock Movement History */}
       <Card>
         <CardHeader>
           <CardTitle>Istorija kretanja</CardTitle>
@@ -264,7 +331,13 @@ export default function WarehousePage() {
         </CardContent>
       </Card>
 
-      {/* Stock Out / Movement Form */}
+      <StockInForm
+        open={stockInOpen}
+        onOpenChange={setStockInOpen}
+        products={products}
+        onSubmit={handleStockIn}
+        isLoading={createMovementMutation.isPending}
+      />
       <StockOutForm
         open={stockOutOpen}
         onOpenChange={setStockOutOpen}
@@ -272,6 +345,7 @@ export default function WarehousePage() {
         onSubmit={handleStockOut}
         isLoading={createMovementMutation.isPending}
       />
+      {dialogs}
     </div>
   )
 }

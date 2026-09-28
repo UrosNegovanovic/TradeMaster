@@ -3,6 +3,8 @@ export const sr = {
   common: {
     cancel: 'Otkaži',
     retry: 'Pokušaj ponovo',
+    signOut: 'Odjava',
+    signingOut: 'Odjava…',
   },
   product: {
     addTitle: 'Dodaj novi proizvod',

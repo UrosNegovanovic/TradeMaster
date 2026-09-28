@@ -133,18 +133,26 @@ export type InvoiceWriteInput = z.infer<typeof invoiceWriteSchema>
 export type InvoiceCreateWriteInput = z.infer<typeof invoiceCreateSchema>
 export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
+export const optionalCostPriceSchema = z
+  .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
+  .min(0, 'Nabavna cena ne može biti negativna')
+  .max(99999999.99, 'Nabavna cena je van podržanog opsega')
+  .refine((value) => Number.isInteger(value * 100), 'Nabavna cena može imati najviše 2 decimale')
+  .nullable()
+  .optional()
+
+export const bulkAdjustItemSchema = z.object({
+  sku: z.string().trim().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
+  quantity: z.number({ invalid_type_error: 'Količina mora biti broj' }).int().min(0, 'Količina ne može biti negativna'),
+})
+
+export type BulkAdjustItem = z.infer<typeof bulkAdjustItemSchema>
+
 // Product validations
-export const productSchema = z.object({
+const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
-  price: z.number().positive('Cena mora biti veća od 0'),
-  costPrice: z
-    .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
-    .min(0, 'Nabavna cena ne može biti negativna')
-    .max(99999999.99, 'Nabavna cena je van podržanog opsega')
-    .refine((value) => Number.isInteger(value * 100), 'Nabavna cena može imati najviše 2 decimale')
-    .nullable()
-    .optional(),
+  costPrice: optionalCostPriceSchema,
   quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([
@@ -156,8 +164,21 @@ export const productSchema = z.object({
     .nullable(),
   description: z.string().max(1000).optional().nullable(),
   categoryId: z.string().optional().nullable(),
+}
+
+/** Warehouse / Quick Scan POST /api/products — price 0 is valid (user can update later). */
+export const productIntakeSchema = z.object({
+  ...productFields,
+  price: z.number().min(0, 'Price cannot be negative').default(0),
 })
 
+/** Manual ProductForm create/edit — selling price must be > 0. */
+export const productSchema = z.object({
+  ...productFields,
+  price: z.number().positive('Cena mora biti veća od 0'),
+})
+
+export type ProductIntakeData = z.infer<typeof productIntakeSchema>
 export type ProductFormData = z.infer<typeof productSchema>
 
 // Catalog validations

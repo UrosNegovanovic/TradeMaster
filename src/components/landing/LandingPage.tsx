@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Camera, FileText, Package, Play } from 'lucide-react'
+import { ArrowRight, Camera, Check, FileText, Package, Play, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { LandingDemo } from './LandingDemo'
@@ -90,6 +90,21 @@ const faqs = [
     q: 'Kako kupac dobija katalog?',
     a: 'Pripremiš katalog sa cenama i popustom, pa pošalješ PDF ili link. Link otvara pregled bez prijave — dovoljno je znati adresu.',
   },
+  {
+    q: 'Da li TradeMaster zamenjuje fiskalnu kasu ili šalje fakture u SEF?',
+    a: 'Ne. TradeMaster vodi vašu internu evidenciju robe, zaliha i B2B faktura — koristite ga uz svoju fiskalnu kasu i SEF, ne umesto njih.',
+  },
+  {
+    q: 'Mogu li da uvezem postojeći asortiman odjednom (Excel/CSV)?',
+    a: 'Da. Na Magacinu postoje dva odvojena uvoza: „Uvezi iz CSV/Excel“ za nove proizvode i „Ažuriraj stanje“ koje po SKU-u postavlja količinu postojećih artikala (uz kretanje u magacinu). Pregled prikaže neispravne redove i oni se ne šalju.',
+  },
+] as const
+
+const pricingIncludes = [
+  'Neograničen broj proizvoda',
+  'Skener, magacin, katalozi, fakture i finansije',
+  '60 dana besplatno, bez kartice',
+  'Otkažite kad god želite',
 ] as const
 
 function HeroActions({ className }: { className?: string }) {
@@ -143,6 +158,9 @@ export function LandingPage() {
             </Link>
             <Link href="#pitanja" className={`hidden lg:inline-flex ${navLink}`}>
               Pitanja
+            </Link>
+            <Link href="#cena" className={`hidden lg:inline-flex ${navLink}`}>
+              Cena
             </Link>
             <Button variant="ghost" size="sm" className="min-h-11 px-2.5 text-[15px] sm:px-3" asChild>
               <Link href="/sign-in">Prijava</Link>
@@ -294,6 +312,76 @@ export function LandingPage() {
         </section>
 
         <section
+          id="cena"
+          aria-labelledby="cena-heading"
+          className="scroll-mt-[80px] pb-6 sm:pb-8"
+        >
+          <div className={shell}>
+            <h2
+              id="cena-heading"
+              className="text-center text-[1.65rem] font-bold tracking-tight text-neutral-950 sm:text-[2rem]"
+            >
+              Cena
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
+              Jedna cena, sve uključeno. Bez skrivenih troškova, bez posebne naplate po
+              proizvodu.
+            </p>
+            <article className="mx-auto mt-8 max-w-[420px] rounded-[16px] border border-neutral-200/80 bg-white p-6 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)] sm:p-7">
+              <p className="text-[16px] font-semibold text-neutral-900">TradeMaster</p>
+              <p className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-[2.5rem] font-bold leading-none tracking-tight text-neutral-950">
+                  30 €
+                </span>
+                <span className="text-[15px] text-neutral-600">mesečno</span>
+              </p>
+              <ul className="mt-6 space-y-2.5">
+                {pricingIncludes.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-[15px] leading-snug text-neutral-700">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2.4} aria-hidden />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                size="lg"
+                className="mt-7 h-11 min-h-11 w-full rounded-full px-6 shadow-sm"
+                asChild
+              >
+                <Link href="/sign-up">
+                  Registruj se
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </article>
+            <p className="mt-4 text-center text-[14px] text-neutral-600">
+              Nema ugovorne obaveze.
+            </p>
+            <p className="mt-1 text-center text-[12px] leading-relaxed text-neutral-500">
+              Naplata u dinarima po važećem kursu NBS na dan fakturisanja.
+            </p>
+          </div>
+        </section>
+
+        <aside
+          aria-label="Najava"
+          className="mb-10 border-y border-neutral-100 bg-brand-tint sm:mb-12"
+        >
+          <div
+            className={`${shell} flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 py-3 sm:py-3.5`}
+          >
+            <Sparkles className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} aria-hidden />
+            <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand">
+              Uskoro
+            </span>
+            <p className="max-w-[40rem] text-center text-[14px] leading-snug text-neutral-700 sm:text-left">
+              AI mesečni izveštaj — kratak pregled prodaje, zaliha i profita, automatski
+              pripremljen svakog meseca.
+            </p>
+          </div>
+        </aside>
+
+        <section
           id="pitanja"
           aria-labelledby="pitanja-heading"
           className="scroll-mt-[80px] pb-10 sm:pb-12"
@@ -326,7 +414,22 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className={`${shell} pb-10 sm:pb-12`}>
+        <section
+          aria-labelledby="rani-pristup-heading"
+          className="border-t border-neutral-100 bg-brand-tint"
+        >
+          <div className={`${shell} py-8 sm:py-10`}>
+            <h2 id="rani-pristup-heading" className="sr-only">
+              Rani pristup
+            </h2>
+            <p className="mx-auto max-w-2xl text-center text-[16px] leading-relaxed text-neutral-800">
+              Gradimo TradeMaster zajedno sa prvim trgovcima u Srbiji. Prijavite se i
+              pomozite da alat oblikujemo prema vašim potrebama.
+            </p>
+          </div>
+        </section>
+
+        <section className={`${shell} py-10 sm:py-12`}>
           <div
             id="zavrsi-cta"
             className="flex flex-col items-start justify-between gap-5 rounded-[16px] bg-brand px-6 py-7 text-white sm:flex-row sm:items-center sm:px-8 sm:py-8"

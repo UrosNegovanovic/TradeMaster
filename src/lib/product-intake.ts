@@ -2,12 +2,20 @@ import { createHash } from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { recordIntakeMovement } from '@/lib/invoice-stock'
-import type { ProductFormData } from '@/lib/validations'
+import type { ProductIntakeData } from '@/lib/validations'
 
 export class IntakeConflictError extends Error {}
 
+export async function lockIntakeSku(
+  tx: { $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
+  profileId: string,
+  sku: string
+) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(['intake-sku', profileId, sku])}, 0))`
+}
+
 /** Serialize intake per company/SKU, including the first row of a new day. */
-export async function saveProductIntake(profileId: string, input: ProductFormData, key: string | null) {
+export async function saveProductIntake(profileId: string, input: ProductIntakeData, key: string | null) {
   const fingerprint = createHash('sha256').update(JSON.stringify(input)).digest('hex')
   return prisma.$transaction(async (tx) => {
     // Transaction-scoped locks also work through a transaction-mode pooler.
@@ -20,7 +28,7 @@ export async function saveProductIntake(profileId: string, input: ProductFormDat
         return { body: receipt.response, status: receipt.status, image: null }
       }
     }
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(['intake-sku', profileId, input.sku])}, 0))`
+    await lockIntakeSku(tx, profileId, input.sku)
     const start = new Date()
     start.setHours(0, 0, 0, 0)
     const end = new Date(start)

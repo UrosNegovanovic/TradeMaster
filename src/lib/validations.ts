@@ -22,10 +22,26 @@ function normalizeMoneyInput(value: number | string): string | null {
   return MONEY_INPUT_PATTERN.test(trimmed) || /^-?\d+\.\d+$/.test(trimmed) ? trimmed : null
 }
 
+function moneyMessage(
+  field: 'unitPrice' | 'discount' | 'costPrice',
+  kind: 'invalid' | 'decimals' | 'range' | 'negative'
+) {
+  if (field === 'costPrice') {
+    if (kind === 'invalid') return 'Nabavna cena mora biti broj'
+    if (kind === 'decimals') return 'Nabavna cena može imati najviše 2 decimale'
+    if (kind === 'negative') return 'Nabavna cena ne može biti negativna'
+    return 'Nabavna cena je van podržanog opsega'
+  }
+  if (kind === 'invalid') return `${field} must be a valid decimal`
+  if (kind === 'decimals') return `${field} cannot have more than 2 decimal places`
+  if (kind === 'negative') return 'unitPrice must be greater than or equal to 0'
+  return `${field} is outside the supported range`
+}
+
 function assertMoneyInput(
   value: number | string,
   ctx: z.RefinementCtx,
-  field: 'unitPrice' | 'discount',
+  field: 'unitPrice' | 'discount' | 'costPrice',
   min: number,
   max: number
 ) {
@@ -33,7 +49,7 @@ function assertMoneyInput(
   if (!text) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${field} must be a valid decimal`,
+      message: moneyMessage(field, 'invalid'),
     })
     return
   }
@@ -41,22 +57,22 @@ function assertMoneyInput(
   if (!MONEY_INPUT_PATTERN.test(text)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${field} cannot have more than 2 decimal places`,
+      message: moneyMessage(field, 'decimals'),
     })
     return
   }
 
   const amount = Number(text)
-  if (field === 'unitPrice' && amount < 0) {
+  if ((field === 'unitPrice' || field === 'costPrice') && amount < 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'unitPrice must be greater than or equal to 0',
+      message: moneyMessage(field, 'negative'),
     })
   }
   if (amount < min || amount > max) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${field} is outside the supported range`,
+      message: moneyMessage(field, 'range'),
     })
   }
 }
@@ -135,9 +151,9 @@ export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
 export const optionalCostPriceSchema = z
   .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
-  .min(0, 'Nabavna cena ne može biti negativna')
-  .max(99999999.99, 'Nabavna cena je van podržanog opsega')
-  .refine((value) => Number.isInteger(value * 100), 'Nabavna cena može imati najviše 2 decimale')
+  .superRefine((value, ctx) => {
+    assertMoneyInput(value, ctx, 'costPrice', 0, MONEY_MAX)
+  })
   .nullable()
   .optional()
 

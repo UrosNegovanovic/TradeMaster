@@ -64,6 +64,22 @@ describe('parseAssortmentGrid', () => {
     expect(parsed.rows[0].payload).toMatchObject({ price: 12.5 })
     expect(parsed.rows[0].payload).not.toHaveProperty('costPrice')
   })
+
+  it('accepts two-decimal nabavna_cena values that fail Number.isInteger(value * 100)', () => {
+    const parsed = parseAssortmentGrid([
+      header,
+      ['A', '1', '1', '20', '19.99', ''],
+      ['B', '2', '1', '20', '0.29', ''],
+      ['C', '3', '1', '20', '10.50', ''],
+      ['D', '4', '1', '20', '1.234', ''],
+    ])
+    if ('error' in parsed) throw new Error(parsed.error)
+    expect(parsed.rows[0].payload?.costPrice).toBe(19.99)
+    expect(parsed.rows[1].payload?.costPrice).toBe(0.29)
+    expect(parsed.rows[2].payload?.costPrice).toBe(10.5)
+    expect(parsed.rows[3].valid).toBe(false)
+    expect(parsed.rows[3].issues[0]?.message).toBe('Nabavna cena može imati najviše 2 decimale')
+  })
 })
 
 describe('parseStockAdjustGrid', () => {

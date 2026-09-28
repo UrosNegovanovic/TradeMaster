@@ -49,7 +49,22 @@ describe('productSchema price', () => {
     expect(productSchema.safeParse({ ...priced, costPrice: null }).success).toBe(true)
     expect(productSchema.safeParse({ ...priced, costPrice: 0 }).success).toBe(true)
     expect(productSchema.safeParse({ ...priced, costPrice: 75.5 }).success).toBe(true)
+    expect(productSchema.safeParse({ ...priced, costPrice: 19.99 }).success).toBe(true)
+    expect(productSchema.safeParse({ ...priced, costPrice: 0.29 }).success).toBe(true)
+    expect(productSchema.safeParse({ ...priced, costPrice: 10.5 }).success).toBe(true)
     expect(productSchema.safeParse({ ...priced, costPrice: -0.01 }).success).toBe(false)
     expect(productSchema.safeParse({ ...priced, costPrice: 1.234 }).success).toBe(false)
+  })
+
+  it('accepts two-decimal costPrice values that fail Number.isInteger(value * 100)', () => {
+    const priced = { ...base, price: 120 }
+    expect(Number.isInteger(19.99 * 100)).toBe(false)
+    expect(Number.isInteger(0.29 * 100)).toBe(false)
+
+    for (const costPrice of [19.99, 0.29, 10.5]) {
+      const parsed = productSchema.safeParse({ ...priced, costPrice })
+      expect(parsed.success).toBe(true)
+      if (parsed.success) expect(parsed.data.costPrice).toBe(costPrice)
+    }
   })
 })

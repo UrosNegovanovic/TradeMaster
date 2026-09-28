@@ -27,7 +27,7 @@ function body(sku: string, quantity = 1) {
   return { name: 'Intake regression fixture', sku, price: 12.5, quantity }
 }
 
-function request(payload: ReturnType<typeof body>, key: string | null = randomUUID()) {
+function request(payload: ReturnType<typeof body> & { costPrice?: number }, key: string | null = randomUUID()) {
   return new NextRequest('http://localhost/api/products', {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(key === null ? {} : { 'Idempotency-Key': key }) },
@@ -228,5 +228,31 @@ describe('product intake against a dedicated test database', () => {
     const sku = `${prefix}-invalid-key`
     expect((await POST(request(body(sku), 'invalid!'))).status).toBe(400)
     expect(await rows(sku)).toHaveLength(0)
+  })
+
+  it('updates costPrice when intake includes it', async () => {
+    const sku = `${prefix}-cost-set`
+    await prisma.product.create({
+      data: { ...body(sku, 4), costPrice: 10, profileId: users.a.profileId },
+    })
+    const response = await POST(request({ ...body(sku, 2), costPrice: 18.5 }))
+    expect(response.ok).toBe(true)
+    const stored = await rows(sku)
+    expect(stored).toHaveLength(1)
+    expect(stored[0].quantity).toBe(6)
+    expect(Number(stored[0].costPrice)).toBe(18.5)
+  })
+
+  it('leaves existing costPrice unchanged when intake omits it', async () => {
+    const sku = `${prefix}-cost-keep`
+    await prisma.product.create({
+      data: { ...body(sku, 4), costPrice: 10, profileId: users.a.profileId },
+    })
+    const response = await POST(request(body(sku, 2)))
+    expect(response.ok).toBe(true)
+    const stored = await rows(sku)
+    expect(stored).toHaveLength(1)
+    expect(stored[0].quantity).toBe(6)
+    expect(Number(stored[0].costPrice)).toBe(10)
   })
 })

@@ -26,15 +26,17 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, AlertTriangle, ScanBarcode } from 'lucide-react'
 import { Product } from '@/types/product'
+import { optionalCostPriceSchema } from '@/lib/validations'
+import { sr } from '@/lib/ui-copy'
 
-// Base schema - we'll add dynamic validation
 const baseStockInSchema = z.object({
-  productId: z.string().min(1, 'Please select a product'),
-  quantity: z.coerce.number().int().positive('Quantity must be a positive number'),
-  reason: z.string().min(1, 'Please enter a reason').max(200, 'Reason is too long'),
+  productId: z.string().min(1, 'Izaberite proizvod'),
+  quantity: z.coerce.number().int().positive('Količina mora biti pozitivan broj'),
+  reason: z.string().min(1, 'Unesite razlog').max(200, 'Razlog je predugačak'),
+  costPrice: optionalCostPriceSchema,
 })
 
-type StockInFormData = z.infer<typeof baseStockInSchema>
+export type StockInFormData = z.infer<typeof baseStockInSchema>
 
 interface StockInFormProps {
   open: boolean
@@ -51,26 +53,22 @@ export function StockInForm({
   onSubmit,
   isLoading = false,
 }: StockInFormProps) {
-  // ✅ Dynamic schema with "Scanner First" policy - defined once
   const dynamicSchema = useMemo(() => {
     return baseStockInSchema.refine(
       (data) => {
-        if (!data.productId) return true // Will be caught by base validation
+        if (!data.productId) return true
         const product = products.find((p) => p.id === data.productId)
         if (!product) return true
-        
+
         const maxAllowed = product.quantity || 0
-        
-        // ✅ SCANNER FIRST POLICY: Cannot manually add more than current stock
         return data.quantity <= maxAllowed
       },
       (data) => {
-        // Dynamic error message based on current product
         const product = products.find((p) => p.id === data.productId)
         const maxAllowed = product?.quantity || 0
-        
+
         return {
-          message: `Manual limit exceeded. Cannot add more than current stock (${maxAllowed}). Use Inventory Scanner for large additions.`,
+          message: `Ručni limit je prekoračen. Ne možete dodati više od trenutnog stanja (${maxAllowed}). Za veći ulaz koristite skener.`,
           path: ['quantity'],
         }
       }
@@ -90,16 +88,22 @@ export function StockInForm({
       productId: '',
       quantity: 1,
       reason: '',
+      costPrice: undefined,
     },
   })
 
-  // ✅ Now watch is available - use it after useForm
   const selectedProductId = watch('productId')
   const selectedProduct = products.find((p) => p.id === selectedProductId)
   const maxAllowed = selectedProduct?.quantity || 0
 
   const handleFormSubmit = async (data: StockInFormData) => {
-    await onSubmit(data)
+    await onSubmit({
+      ...data,
+      costPrice:
+        data.costPrice === undefined || data.costPrice === null || Number.isNaN(data.costPrice)
+          ? undefined
+          : data.costPrice,
+    })
     if (!isLoading) {
       reset()
       onOpenChange(false)
@@ -110,18 +114,17 @@ export function StockInForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>🟢 Register Stock In</DialogTitle>
+          <DialogTitle>Ulaz robe</DialogTitle>
           <DialogDescription>
-            Add stock to inventory. This will increase the product quantity.
+            Dodajte količinu na stanje. Opciona nabavna cena ažurira trenutnu nabavnu cenu proizvoda.
           </DialogDescription>
         </DialogHeader>
-        
-        {/* Scanner First Policy Warning */}
+
         <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
           <ScanBarcode className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>Scanner First Policy:</strong> Manual additions are limited to current stock level. 
-            For large stock increases, use the Inventory Scanner.
+            <strong>Prvo skener:</strong> ručni ulaz je ograničen na trenutno stanje. Za veće količine koristite
+            skener asortimana.
           </AlertDescription>
         </Alert>
 
@@ -129,22 +132,22 @@ export function StockInForm({
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="productId">
-                Product <span className="text-destructive">*</span>
+                Proizvod <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={selectedProductId}
                 onValueChange={(value) => {
                   setValue('productId', value, { shouldValidate: true })
-                  setValue('quantity', 1) // Reset quantity when product changes
+                  setValue('quantity', 1)
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a product" />
+                  <SelectValue placeholder="Izaberite proizvod" />
                 </SelectTrigger>
                 <SelectContent>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name} ({product.sku}) - Stock: {product.quantity || 0}
+                      {product.name} ({product.sku}) - Stanje: {product.quantity || 0}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -155,10 +158,10 @@ export function StockInForm({
               {selectedProduct && (
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">
-                    Current Stock: {selectedProduct.quantity || 0} units
+                    Trenutno stanje: {selectedProduct.quantity || 0} kom
                   </Badge>
                   <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-500">
-                    Manual Limit: {maxAllowed} max
+                    Ručni limit: {maxAllowed} max
                   </Badge>
                 </div>
               )}
@@ -166,7 +169,7 @@ export function StockInForm({
 
             <div className="grid gap-2">
               <Label htmlFor="quantity">
-                Quantity <span className="text-destructive">*</span>
+                Količina <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="quantity"
@@ -174,13 +177,13 @@ export function StockInForm({
                 min="1"
                 max={maxAllowed || undefined}
                 step="1"
-                placeholder="Enter quantity"
+                placeholder="Unesite količinu"
                 {...register('quantity')}
               />
               {selectedProduct && (
                 <p className="text-xs text-muted-foreground">
                   <AlertTriangle className="inline h-3 w-3 mr-1" />
-                  Available for manual entry: <strong>{maxAllowed}</strong> units
+                  Dostupno za ručni unos: <strong>{maxAllowed}</strong> kom
                 </p>
               )}
               {errors.quantity && (
@@ -189,12 +192,32 @@ export function StockInForm({
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="costPrice">{sr.product.costPrice} (opciono)</Label>
+              <Input
+                id="costPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                {...register('costPrice', {
+                  setValueAs: (value) => (value === '' ? undefined : Number(value)),
+                })}
+              />
+              <p className="text-xs text-muted-foreground">
+                {sr.product.costPriceDescription} Ako ostavite prazno, postojeća nabavna cena se ne menja.
+              </p>
+              {errors.costPrice && (
+                <p className="text-sm text-destructive">{errors.costPrice.message}</p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="reason">
-                Reason / Note <span className="text-destructive">*</span>
+                Razlog / napomena <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="reason"
-                placeholder="e.g., Purchase from supplier, Return from customer"
+                placeholder="npr. Nabavka od dobavljača, povrat od kupca"
                 {...register('reason')}
               />
               {errors.reason && (
@@ -209,11 +232,11 @@ export function StockInForm({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              {sr.common.cancel}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Register Stock In
+              Evidentiraj ulaz
             </Button>
           </DialogFooter>
         </form>

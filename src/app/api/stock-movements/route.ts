@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { MovementType, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { parseStockMovementListParams } from '@/lib/stock-movement-query'
+import { optionalCostPriceSchema } from '@/lib/validations'
 import { z } from 'zod'
 
 // Validation schema for stock movement creation
@@ -11,6 +12,7 @@ const stockMovementSchema = z.object({
   type: z.nativeEnum(MovementType, { errorMap: () => ({ message: 'Type must be IN or OUT' }) }),
   quantity: z.number().int().positive('Quantity must be a positive integer'),
   reason: z.string().min(1, 'Reason is required').max(200, 'Reason is too long'),
+  costPrice: optionalCostPriceSchema,
 })
 
 /**
@@ -118,7 +120,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { productId, type, quantity, reason } = validationResult.data
+    const { productId, type, quantity, reason, costPrice } = validationResult.data
 
     // Verify product belongs to user
     const product = await prisma.product.findUnique({
@@ -177,10 +179,14 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Update product quantity
       await tx.product.update({
         where: { id: productId },
-        data: { quantity: newQuantity },
+        data: {
+          quantity: newQuantity,
+          ...(type === MovementType.IN && costPrice !== undefined && costPrice !== null
+            ? { costPrice }
+            : {}),
+        },
       })
 
       return movement

@@ -27,6 +27,7 @@ export default defineConfig({
       'src/lib/persist-product-image.test.ts',
       'src/lib/public-catalog.test.ts',
       'src/lib/product-validation.test.ts',
+      'src/lib/assortment-import.test.ts',
       'src/lib/camera-access.test.ts',
       'src/lib/invoice-number.test.ts',
       'src/lib/pwa-install.test.ts',
@@ -35,6 +36,8 @@ export default defineConfig({
       'src/app/api/public/catalogs/[id]/route.test.ts',
       'src/app/api/shared/catalog/[token]/route.test.ts',
       'src/app/api/catalogs/[id]/route.test.ts',
+      'src/app/api/stock-movements/route.test.ts',
+      'src/app/api/products/bulk-adjust/route.test.ts',
       'src/test/require-test-database.test.ts',
     ],
     exclude: [

@@ -96,7 +96,7 @@ const faqs = [
   },
   {
     q: 'Mogu li da uvezem postojeći asortiman odjednom (Excel/CSV)?',
-    a: 'Trenutno ne — proizvode dodajete skeniranjem ili ručnim unosom, jedan po jedan. Za veći postojeći asortiman to znači da će početno unošenje potrajati, ali svaki sledeći novi proizvod ide brzo.',
+    a: 'Da. Na Magacinu postoje dva odvojena uvoza: „Uvezi iz CSV/Excel“ za nove proizvode i „Ažuriraj stanje“ koje po SKU-u postavlja količinu postojećih artikala (uz kretanje u magacinu). Pregled prikaže neispravne redove i oni se ne šalju.',
   },
 ] as const
 

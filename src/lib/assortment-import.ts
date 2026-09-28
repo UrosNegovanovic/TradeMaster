@@ -1,3 +1,5 @@
+import { optionalCostPriceSchema } from '@/lib/validations'
+
 export const ASSORTMENT_HEADERS = ['naziv', 'sku', 'kolicina', 'cena', 'nabavna_cena', 'kategorija'] as const
 export const STOCK_ADJUST_HEADERS = ['sku', 'kolicina'] as const
 
@@ -134,10 +136,12 @@ function costPriceFromCell(value: unknown): { value?: number; error?: string } {
   if (cellText(value) === '') return {}
   const parsed = parseNumber(value)
   if (parsed == null) return { error: 'Nabavna cena mora biti broj' }
-  if (parsed < 0) return { error: 'Nabavna cena ne može biti negativna' }
-  if (parsed > 99999999.99) return { error: 'Nabavna cena je van podržanog opsega' }
-  if (!Number.isInteger(parsed * 100)) return { error: 'Nabavna cena može imati najviše 2 decimale' }
-  return { value: parsed }
+  const result = optionalCostPriceSchema.safeParse(parsed)
+  if (!result.success) {
+    return { error: result.error.issues[0]?.message ?? 'Nabavna cena mora biti broj' }
+  }
+  if (result.data == null) return {}
+  return { value: result.data }
 }
 
 export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows: AssortmentPreviewRow[] } {

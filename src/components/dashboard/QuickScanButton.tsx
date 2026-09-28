@@ -267,7 +267,7 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
 
     const saved = savedMetadataRef.current.get(cleanBarcode)
     if (saved) {
-      // Today's row exists after the first save, so the server answers 'updated'.
+      // The SKU row exists after the first save, so the server answers 'updated'.
       showSuccessToast(saved, barcode, cleanBarcode, 'updated')
       try {
         const saveResult = await autoSaveProduct(saved, cleanBarcode)

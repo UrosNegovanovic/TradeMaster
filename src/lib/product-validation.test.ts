@@ -15,6 +15,24 @@ describe('productIntakeSchema price', () => {
     const parsed = productIntakeSchema.parse(base)
     expect(parsed.price).toBe(0)
   })
+
+  it('accepts a Quick Scan body with price 0 and no costPrice', () => {
+    const scanned = {
+      name: 'Unknown Product',
+      sku: '8600000000001',
+      price: 0,
+      quantity: 1,
+      description: '',
+      imageUrl: '',
+      categoryId: null,
+    }
+    const parsed = productIntakeSchema.safeParse(scanned)
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.price).toBe(0)
+      expect(parsed.data.costPrice).toBeUndefined()
+    }
+  })
 })
 
 describe('productSchema price', () => {

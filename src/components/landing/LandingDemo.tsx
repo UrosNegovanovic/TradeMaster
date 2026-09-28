@@ -58,13 +58,15 @@ export function LandingDemo() {
             <button
               type="button"
               onClick={() => void startPlayback()}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/20 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+              className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
             >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand shadow-sm">
-                <Play className="ml-0.5 h-6 w-6" fill="currentColor" />
-              </span>
-              <span className="rounded-full bg-white/95 px-3 py-1 text-[13px] font-medium text-neutral-900">
-                Pogledaj pregled · 19 s
+              <span className="relative flex items-center justify-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand shadow-sm">
+                  <Play className="ml-0.5 h-6 w-6" fill="currentColor" />
+                </span>
+                <span className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-3 py-1 text-[13px] font-medium text-neutral-900 shadow-sm">
+                  Pogledaj pregled · 19 s
+                </span>
               </span>
             </button>
           )}

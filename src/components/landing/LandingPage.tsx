@@ -326,7 +326,22 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className={`${shell} pb-10 sm:pb-12`}>
+        <section
+          aria-labelledby="rani-pristup-heading"
+          className="border-t border-neutral-100 bg-brand-tint"
+        >
+          <div className={`${shell} py-8 sm:py-10`}>
+            <h2 id="rani-pristup-heading" className="sr-only">
+              Rani pristup
+            </h2>
+            <p className="mx-auto max-w-2xl text-center text-[16px] leading-relaxed text-neutral-800">
+              Gradimo TradeMaster zajedno sa prvim trgovcima u Srbiji. Prijavite se i
+              pomozite da alat oblikujemo prema vašim potrebama.
+            </p>
+          </div>
+        </section>
+
+        <section className={`${shell} py-10 sm:py-12`}>
           <div
             id="zavrsi-cta"
             className="flex flex-col items-start justify-between gap-5 rounded-[16px] bg-brand px-6 py-7 text-white sm:flex-row sm:items-center sm:px-8 sm:py-8"

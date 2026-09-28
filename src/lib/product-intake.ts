@@ -14,7 +14,7 @@ export async function lockIntakeSku(
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(['intake-sku', profileId, sku])}, 0))`
 }
 
-/** Serialize intake per company/SKU, including the first row of a new day. */
+/** Serialize intake per company/SKU. Repeat scans update the latest row for that SKU. */
 export async function saveProductIntake(profileId: string, input: ProductIntakeData, key: string | null) {
   const fingerprint = createHash('sha256').update(JSON.stringify(input)).digest('hex')
   return prisma.$transaction(async (tx) => {
@@ -29,13 +29,9 @@ export async function saveProductIntake(profileId: string, input: ProductIntakeD
       }
     }
     await lockIntakeSku(tx, profileId, input.sku)
-    const start = new Date()
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(start)
-    end.setDate(end.getDate() + 1)
     const include = { category: { select: { id: true, name: true } } }
     const existing = await tx.product.findFirst({
-      where: { profileId, sku: input.sku, createdAt: { gte: start, lt: end } },
+      where: { profileId, sku: input.sku },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     })
     const imageUrl = input.imageUrl || null
@@ -67,7 +63,7 @@ export async function saveProductIntake(profileId: string, input: ProductIntakeD
       key,
     })
     const payload = existing
-      ? { ...product, action: 'updated', batchMode: 'daily', quantityAdded: input.quantity, previousQuantity: product.quantity - input.quantity }
+      ? { ...product, action: 'updated', quantityAdded: input.quantity, previousQuantity: product.quantity - input.quantity }
       : { ...product, action: 'created' }
     // Store the wire representation, including decimal/date serialization.
     const body = JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonObject

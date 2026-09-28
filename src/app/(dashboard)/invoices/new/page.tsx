@@ -8,6 +8,8 @@ import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -17,8 +19,8 @@ async function fetchProducts(): Promise<Product[]> {
   return response.json()
 }
 
-async function createInvoice(data: InvoiceCreateInput) {
-  const response = await fetch('/api/invoices', {
+async function createInvoice(data: InvoiceCreateInput, request: SessionFetch) {
+  const response = await request('/api/invoices', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -36,6 +38,7 @@ async function createInvoice(data: InvoiceCreateInput) {
 export default function NewInvoicePage() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -45,7 +48,7 @@ export default function NewInvoicePage() {
 
   // Create invoice mutation
   const createMutation = useMutation({
-    mutationFn: createInvoice,
+    mutationFn: (data: InvoiceCreateInput) => createInvoice(data, request),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })

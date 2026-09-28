@@ -13,6 +13,8 @@ import { readApiErrorMessage } from '@/lib/api-error'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -30,8 +32,8 @@ async function fetchInvoice(id: string) {
   return response.json()
 }
 
-async function updateInvoice(id: string, data: InvoiceCreateInput) {
-  const response = await fetch(`/api/invoices/${id}`, {
+async function updateInvoice(id: string, data: InvoiceCreateInput, request: SessionFetch) {
+  const response = await request(`/api/invoices/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -51,6 +53,7 @@ export default function EditInvoicePage() {
   const params = useParams()
   const queryClient = useQueryClient()
   const invoiceId = params.id as string
+  const request = useAuthorizedFetch()
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -66,7 +69,7 @@ export default function EditInvoicePage() {
 
   // Update invoice mutation
   const updateMutation = useMutation({
-    mutationFn: (data: InvoiceCreateInput) => updateInvoice(invoiceId, data),
+    mutationFn: (data: InvoiceCreateInput) => updateInvoice(invoiceId, data, request),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] })

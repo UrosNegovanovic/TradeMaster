@@ -14,6 +14,8 @@ import {
 import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
 
+export const dynamic = 'force-dynamic'
+
 const invoiceInclude = {
   items: {
     include: {

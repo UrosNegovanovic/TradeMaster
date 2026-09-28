@@ -31,6 +31,8 @@ import {
   type AssortmentPreviewRow,
 } from '@/lib/assortment-import'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 type Category = { id: string; name: string }
 
@@ -56,14 +58,15 @@ async function fetchCategories(): Promise<Category[]> {
 
 async function resolveCategoryId(
   name: string | undefined,
-  cache: Map<string, string>
+  cache: Map<string, string>,
+  request: SessionFetch
 ): Promise<string | undefined> {
   if (!name) return undefined
   const key = name.trim().toLowerCase()
   const cached = cache.get(key)
   if (cached) return cached
 
-  const created = await fetch('/api/categories', {
+  const created = await request('/api/categories', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: name.trim() }),
@@ -83,7 +86,7 @@ async function resolveCategoryId(
   return undefined
 }
 
-async function postIntake(payload: AssortmentPayload, categoryId?: string) {
+async function postIntake(payload: AssortmentPayload, categoryId: string | undefined, request: SessionFetch) {
   const body: Record<string, unknown> = {
     name: payload.name,
     sku: payload.sku,
@@ -93,7 +96,7 @@ async function postIntake(payload: AssortmentPayload, categoryId?: string) {
   if (payload.costPrice !== undefined) body.costPrice = payload.costPrice
   if (categoryId) body.categoryId = categoryId
 
-  const response = await fetch('/api/products', {
+  const response = await request('/api/products', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -113,6 +116,7 @@ export function AssortmentImportDialog({
   onOpenChange,
   onCompleted,
 }: AssortmentImportDialogProps) {
+  const request = useAuthorizedFetch()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
@@ -173,8 +177,8 @@ export function AssortmentImportDialog({
     for (const row of toSend) {
       const payload = row.payload!
       try {
-        const categoryId = await resolveCategoryId(payload.categoryName, cache)
-        const { status } = await postIntake(payload, categoryId)
+        const categoryId = await resolveCategoryId(payload.categoryName, cache, request)
+        const { status } = await postIntake(payload, categoryId, request)
         nextResults.push({ line: row.line, sku: payload.sku, ok: true, status })
       } catch (error) {
         nextResults.push({

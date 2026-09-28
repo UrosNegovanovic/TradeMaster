@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { adjustStockToQuantity, SKU_MISSING_ERROR } from '@/lib/stock-adjust'
 import { bulkAdjustItemSchema } from '@/lib/validations'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/products/bulk-adjust
  * Set quantity for an existing product identified by SKU.

@@ -5,6 +5,8 @@ import { catalogSchema } from '@/lib/validations'
 import { ZodError } from 'zod'
 import type { Prisma } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 // GET: Fetch all catalogs for the current user
 export async function GET() {
   try {

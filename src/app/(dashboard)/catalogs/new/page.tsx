@@ -8,6 +8,8 @@ import { CatalogFormData } from '@/lib/validations'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -17,8 +19,8 @@ async function fetchProducts(): Promise<Product[]> {
   return response.json()
 }
 
-async function createCatalog(data: CatalogFormData) {
-  const response = await fetch('/api/catalogs', {
+async function createCatalog(data: CatalogFormData, request: SessionFetch) {
+  const response = await request('/api/catalogs', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,6 +39,7 @@ async function createCatalog(data: CatalogFormData) {
 export default function NewCatalogPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -46,7 +49,7 @@ export default function NewCatalogPage() {
 
   // Create catalog mutation
   const createMutation = useMutation({
-    mutationFn: createCatalog,
+    mutationFn: (data: CatalogFormData) => createCatalog(data, request),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
       

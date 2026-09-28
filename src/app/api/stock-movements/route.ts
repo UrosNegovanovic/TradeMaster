@@ -6,6 +6,8 @@ import { parseStockMovementListParams } from '@/lib/stock-movement-query'
 import { optionalCostPriceSchema } from '@/lib/validations'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Validation schema for stock movement creation
 const stockMovementSchema = z.object({
   productId: z.string().min(1, 'Product ID is required'),

@@ -99,4 +99,15 @@ describe('intake queue', () => {
     await expect(createIntakeQueue('owner-a', journal, { send }).submit(body)).rejects.toThrow('storage unavailable')
     expect(send).not.toHaveBeenCalled()
   })
+
+  it('attaches a Clerk Bearer token on the default send path', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(ok())
+    vi.stubGlobal('fetch', fetchMock)
+    const getToken = vi.fn().mockResolvedValue('sess_intake')
+    await createIntakeQueue('owner-a', storage(), { getToken, ...noSleep }).submit(body)
+    expect(getToken).toHaveBeenCalled()
+    expect(new Headers(fetchMock.mock.calls[0][1].headers).get('Authorization')).toBe('Bearer sess_intake')
+    expect(fetchMock.mock.calls[0][1].credentials).toBe('include')
+    vi.unstubAllGlobals()
+  })
 })

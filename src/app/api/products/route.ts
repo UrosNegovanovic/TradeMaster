@@ -5,6 +5,8 @@ import { scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productIntakeSchema } from '@/lib/validations'
 import { IntakeConflictError, saveProductIntake } from '@/lib/product-intake'
 
+export const dynamic = 'force-dynamic'
+
 // GET: Fetch all products for the current user
 export async function GET() {
   try {

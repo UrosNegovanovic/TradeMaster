@@ -7,6 +7,8 @@ import { ScanBarcode } from 'lucide-react'
 import { BarcodeScanner } from '@/components/inventory/BarcodeScanner'
 import { ProductActionToast } from '@/components/inventory/ProductActionToast'
 import { isValidBarcode } from '@/lib/openfoodfacts'
+import { isIntakeBarcode } from '@/lib/barcode'
+import { authorizedFetch } from '@/lib/authorized-fetch'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
 import { useQueryClient } from '@tanstack/react-query'
@@ -35,7 +37,7 @@ const QuickScanContext = createContext<{
 
 /** One scanner and one processing/cooldown state for all dashboard entry points. */
 export function QuickScanProvider({ children }: { children: ReactNode }) {
-  const { userId } = useAuth()
+  const { userId, getToken } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -47,7 +49,7 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
   const scanGateRef = useRef(createScanGate())
   // ✅ Cumulative quantity tracking for same product in sequence
   const cumulativeQuantityRef = useRef<{ barcode: string; quantity: number; timestamp: number } | null>(null)
-  const lookupsRef = useRef(new Map<string, Promise<ProductMetadata>>())
+    const lookupsRef = useRef(new Map<string, Promise<ProductMetadata | null>>())
   // Products saved in this scanner session: repeat reads show feedback without waiting for the save.
   const savedMetadataRef = useRef(new Map<string, ProductMetadata>())
   const intakeQueueRef = useRef<{ userId: string; queue: ReturnType<typeof createIntakeQueue> } | null>(null)
@@ -95,7 +97,10 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
   const getIntakeQueue = () => {
     if (!userId) return null
     if (intakeQueueRef.current?.userId !== userId) {
-      intakeQueueRef.current = { userId, queue: createIntakeQueue(userId, window.sessionStorage) }
+      intakeQueueRef.current = {
+        userId,
+        queue: createIntakeQueue(userId, window.sessionStorage, { getToken }),
+      }
     }
     return intakeQueueRef.current.queue
   }
@@ -138,14 +143,28 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const lookupProduct = (cleanBarcode: string) => {
+  const lookupProduct = (cleanBarcode: string): Promise<ProductMetadata | null> => {
     const inFlight = lookupsRef.current.get(cleanBarcode)
     if (inFlight) return inFlight
     const lookup = (async () => {
-      // ✅ UNIFIED PRODUCT LOOKUP: Check local DB first, then external APIs
-      const response = await fetch(`/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`)
+      const response = await authorizedFetch(
+        `/api/products/fetch-by-barcode?barcode=${encodeURIComponent(cleanBarcode)}`,
+        {},
+        getToken
+      )
+      // Partial / invalid codes must not toast "Greška pri skeniranju".
+      if (response.status === 400) return null
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Unauthorized')
+      }
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
+        return {
+          name: '',
+          description: '',
+          imageUrl: null,
+          found: false,
+          barcode: cleanBarcode,
+        }
       }
       return (await response.json()) as ProductMetadata
     })()
@@ -258,6 +277,11 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
     // Clean barcode for comparison (remove spaces, non-numeric characters)
     const cleanBarcode = barcode.replace(/\D/g, '')
 
+    // html5-qrcode can emit a 4–7 digit slice of the same pack; the lookup API rejects those as 400.
+    if (!isIntakeBarcode(cleanBarcode)) {
+      return
+    }
+
     if (!scanGateRef.current.accept(cleanBarcode, Date.now())) {
       // ✅ SILENT MODE: No toast, just silently ignore duplicate scan
       return
@@ -280,8 +304,9 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
 
     try {
       const metadata = await lookupProduct(cleanBarcode)
-      
-      if (metadata && metadata.found) {
+      if (!metadata) return
+
+      if (metadata.found) {
         // ✅ PRODUCT FOUND: Auto-save to database
         const saveResult = await autoSaveProduct(metadata, cleanBarcode)
         

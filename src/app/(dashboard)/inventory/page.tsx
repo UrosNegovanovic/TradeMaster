@@ -15,6 +15,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
+import { useAuth } from '@clerk/nextjs'
+import { authorizedFetch, type GetSessionToken } from '@/lib/authorized-fetch'
+import { readApiErrorMessage } from '@/lib/api-error'
 import Link from 'next/link'
 import { formatLocalYmd, isSameLocalDay, parseLocalYmd } from '@/lib/local-date'
 import {
@@ -54,19 +57,19 @@ async function createProduct(data: ProductFormData): Promise<Product> {
 
 async function updateProduct(
   id: string,
-  data: ProductFormData
+  data: ProductFormData,
+  getToken?: GetSessionToken
 ): Promise<Product> {
-  const response = await fetch(`/api/products/${id}`, {
+  const response = await authorizedFetch(`/api/products/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
-  })
+  }, getToken)
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to update product')
+    throw new Error(await readApiErrorMessage(response, 'Failed to update product'))
   }
 
   return response.json()
@@ -84,6 +87,7 @@ async function deleteProduct(id: string): Promise<void> {
 }
 
 export default function InventoryPage() {
+  const { getToken } = useAuth()
   const queryClient = useQueryClient()
   const router = useRouter()
   const pathname = usePathname()
@@ -266,7 +270,7 @@ export default function InventoryPage() {
   // Update product mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductFormData }) =>
-      updateProduct(id, data),
+      updateProduct(id, data, getToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
+import { operator } from '@/lib/operator'
 
 export const metadata: Metadata = {
   title: 'Privatnost',
@@ -19,9 +20,9 @@ export default function PrivatnostPage() {
           početni ekran.
         </p>
         <p>
-          Pravni naziv firme, PIB, adresa i kontakt e-pošta nisu navedeni na ovoj
-          stranici — vlasnik ih još nije objavio. Kada stignu, biće dodati ovde.
-          Prazan kontakt zato nije zamenjen izmišljenom adresom.
+          Operater usluge je {operator.name}, PIB {operator.pib}. Kontakt:{' '}
+          {operator.email}, {operator.phone}. Adresa koju je vlasnik naveo je
+          „{operator.address}“.
         </p>
       </LegalSection>
 
@@ -79,9 +80,8 @@ export default function PrivatnostPage() {
 
       <LegalSection title="Zahtevi u vezi sa podacima">
         <p>
-          Podaci ostaju dok nalog postoji. Objavljeni kontakt za uvid ili
-          brisanje trenutno ne postoji; kada vlasnik dostavi e-poštu, biće
-          navedena ovde.
+          Podaci ostaju dok nalog postoji. Za uvid ili brisanje pišite na{' '}
+          {operator.email}.
         </p>
       </LegalSection>
     </LegalDocument>

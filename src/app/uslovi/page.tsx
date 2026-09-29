@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
+import { operator } from '@/lib/operator'
 
 export const metadata: Metadata = {
   title: 'Uslovi',
@@ -20,8 +21,9 @@ export default function UsloviPage() {
           Play-a.
         </p>
         <p>
-          Pravni naziv izdavača, PIB i sedište nisu navedeni — vlasnik ih još
-          nije objavio. Kada stignu, biće dodati ovde.
+          Uslugu nudi {operator.name}, PIB {operator.pib}. Kontakt:{' '}
+          {operator.email}, {operator.phone}. Adresa koju je vlasnik naveo je
+          „{operator.address}“.
         </p>
       </LegalSection>
 

@@ -30,6 +30,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.5, // Sign-in is less important for SEO
     },
+    {
+      url: `${baseUrl}/privatnost`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/uslovi`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
     // Note: Public catalog pages (/shared/catalog/[id]) are dynamic
     // Consider adding them from database in the future:
     // 

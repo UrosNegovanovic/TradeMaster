@@ -21,6 +21,10 @@ describe('shouldProtectHtmlRoute', () => {
   it('leaves public pages and public catalog APIs unprotected', () => {
     expect(shouldProtectHtmlRoute(request('/'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/sign-in'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/privatnost'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/uslovi'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/privacy'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/terms'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/api/public/catalogs/abc'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/api/shared/catalog/token'))).toBe(false)
   })

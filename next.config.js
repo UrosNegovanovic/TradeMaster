@@ -113,6 +113,21 @@ const nextConfig = {
     ]
   },
 
+  async redirects() {
+    return [
+      {
+        source: '/privacy',
+        destination: '/privatnost',
+        permanent: false,
+      },
+      {
+        source: '/terms',
+        destination: '/uslovi',
+        permanent: false,
+      },
+    ]
+  },
+
   experimental: {
     serverComponentsExternalPackages: ['xlsx'],
   },

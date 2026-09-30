@@ -55,4 +55,58 @@ describe('PUT /api/profile', () => {
     expect(JSON.stringify(body)).not.toMatch(/"stack"/)
     expect(mocks.profile.upsert).not.toHaveBeenCalled()
   })
+
+  it('stores a public merchant-logo URL', async () => {
+    const logoUrl =
+      'https://abc.supabase.co/storage/v1/object/public/merchant-logos/p/logo.jpg'
+    mocks.profile.upsert.mockResolvedValue({ logoUrl })
+
+    const response = await PUT(
+      putRequest({
+        companyName: 'T&G Nest',
+        pib: '123124121',
+        logoUrl,
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.profile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({ logoUrl }),
+        create: expect.objectContaining({ logoUrl }),
+      })
+    )
+  })
+
+  it('does not wipe an existing logo when the client omits logoUrl', async () => {
+    mocks.profile.upsert.mockResolvedValue({ companyName: 'T&G Nest' })
+
+    const response = await PUT(
+      putRequest({
+        companyName: 'T&G Nest',
+        pib: '123124121',
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const arg = mocks.profile.upsert.mock.calls[0][0]
+    expect(arg.update).not.toHaveProperty('logoUrl')
+    expect(arg.create).not.toHaveProperty('logoUrl')
+  })
+
+  it('does not persist a FileReader data URL', async () => {
+    mocks.profile.upsert.mockResolvedValue({ companyName: 'T&G Nest' })
+
+    const response = await PUT(
+      putRequest({
+        companyName: 'T&G Nest',
+        pib: '123124121',
+        logoUrl: 'data:image/png;base64,aaa',
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const arg = mocks.profile.upsert.mock.calls[0][0]
+    expect(arg.update).not.toHaveProperty('logoUrl')
+  })
 })

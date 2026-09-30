@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react'
 import { notify } from '@/lib/notify'
-import Image from 'next/image'
 import { sr } from '@/lib/ui-copy'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import { readApiErrorMessage } from '@/lib/api-error'
+import { isDisplayableImageSrc, persistableImageUrl } from '@/lib/image-src'
 
 interface ImageUploadProps {
   value?: string | null
@@ -18,6 +18,7 @@ interface ImageUploadProps {
   label?: string
   description?: string
   className?: string
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export function ImageUpload({
@@ -27,17 +28,23 @@ export function ImageUpload({
   label = sr.image.label,
   description,
   className,
+  onUploadingChange,
 }: ImageUploadProps) {
   const authorizedFetch = useAuthorizedFetch()
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(
-    value && value !== '' ? value : null
+    isDisplayableImageSrc(value) ? value : null
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const markUploading = (next: boolean) => {
+    setUploading(next)
+    onUploadingChange?.(next)
+  }
+
   // Update preview when value changes externally
   React.useEffect(() => {
-    setPreview(value && value !== '' ? value : null)
+    setPreview(isDisplayableImageSrc(value) ? value : null)
   }, [value])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,8 +86,9 @@ export function ImageUpload({
   }
 
   const uploadFile = async (file: File) => {
+    const previous = isDisplayableImageSrc(value) ? value : null
     try {
-      setUploading(true)
+      markUploading(true)
 
       const form = new FormData()
       form.set('bucket', bucket)
@@ -95,21 +103,22 @@ export function ImageUpload({
       }
 
       const data = (await response.json()) as { url?: string }
-      if (!data.url) {
+      const storedUrl = persistableImageUrl(data.url)
+      if (!storedUrl) {
         throw new Error('Javna adresa slike nije dostupna')
       }
 
-      onChange(data.url)
-      setPreview(data.url)
+      onChange(storedUrl)
+      setPreview(storedUrl)
     } catch (error) {
       console.error('Error uploading file:', error)
       notify.error(sr.image.uploadFailed, {
         description: error instanceof Error ? error.message : sr.image.uploadFailed,
       })
-      setPreview(null)
+      setPreview(previous)
     } finally {
-      setUploading(false)
-      // Reset file input
+      markUploading(false)
+      // File input is snapshot-only; keep logoUrl from onChange / form state.
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -139,30 +148,18 @@ export function ImageUpload({
         {/* Preview */}
         {preview && (
           <div className="relative w-full h-48 rounded-md border overflow-hidden bg-muted">
-            {preview.startsWith('data:') ? (
-              // Use regular img for data URLs (FileReader preview)
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview}
-                alt={sr.image.preview}
-                className="w-full h-full object-contain"
-                onError={() => {
-                  setPreview(null)
-                }}
-              />
-            ) : (
-              // Use Next.js Image for http/https URLs
-              <Image
-                src={preview}
-                alt={sr.image.preview}
-                fill
-                sizes="(max-width: 768px) 100vw, 400px"
-                className="object-contain"
-                onError={() => {
-                  setPreview(null)
-                }}
-              />
-            )}
+            {/* Raw img: next/image optimizer empty-states a valid stored URL as "not selected". */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview}
+              alt={sr.image.preview}
+              className="w-full h-full object-contain"
+              onError={() => {
+                if (preview.startsWith('data:') || preview.startsWith('blob:')) {
+                  setPreview(isDisplayableImageSrc(value) ? value : null)
+                }
+              }}
+            />
             {!uploading && (
               <Button
                 type="button"

@@ -141,6 +141,7 @@ export function ImageUpload({
           <div className="relative w-full h-48 rounded-md border overflow-hidden bg-muted">
             {preview.startsWith('data:') ? (
               // Use regular img for data URLs (FileReader preview)
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={preview}
                 alt={sr.image.preview}
@@ -155,6 +156,7 @@ export function ImageUpload({
                 src={preview}
                 alt={sr.image.preview}
                 fill
+                sizes="(max-width: 768px) 100vw, 400px"
                 className="object-contain"
                 onError={() => {
                   setPreview(null)
@@ -168,6 +170,7 @@ export function ImageUpload({
                 size="sm"
                 className="absolute top-2 right-2"
                 onClick={handleRemove}
+                aria-label={sr.image.remove}
               >
                 <X className="h-4 w-4" />
               </Button>

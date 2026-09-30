@@ -31,6 +31,7 @@ export type Invoice = {
   dueDate: Date
   clientName: string
   clientAddress: string | null
+  clientPib: string | null
   status: InvoiceStatus
   totalAmount: Decimal
   paidAt: Date | null
@@ -42,6 +43,8 @@ export type Invoice = {
     contactEmail: string | null
     contactPhone: string | null
     address: string | null
+    pib: string | null
+    giroAccount: string | null
     logoUrl: string | null
   }
 }
@@ -55,6 +58,7 @@ export type InvoiceCreateInput = {
   dueDate: string | Date
   clientName: string
   clientAddress?: string
+  clientPib?: string | null
   status?: InvoiceStatus
   items: {
     productId?: string | null

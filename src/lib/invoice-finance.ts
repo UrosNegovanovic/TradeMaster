@@ -1,6 +1,8 @@
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
 import {
   addLocalMonths,
+  belgradeMonthIndex,
+  belgradeYear,
   formatLocalYm,
   startOfLocalMonth,
   startOfLocalYear,
@@ -169,7 +171,7 @@ const MONTHS_SR = [
 ]
 
 function formatMonthLabel(date: Date): string {
-  return `${MONTHS_SR[date.getMonth()]} ${date.getFullYear()}.`
+  return `${MONTHS_SR[belgradeMonthIndex(date)]} ${belgradeYear(date)}.`
 }
 
 export function buildFinanceSnapshot(

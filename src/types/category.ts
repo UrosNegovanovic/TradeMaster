@@ -2,6 +2,7 @@ export type Category = {
   id: string
   name: string
   description: string | null
+  profileId: string
   createdAt: Date
   updatedAt: Date
 }

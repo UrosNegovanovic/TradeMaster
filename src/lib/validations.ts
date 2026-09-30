@@ -116,11 +116,40 @@ export const invoiceItemWriteSchema = z.object({
   discount: discountSchema,
 })
 
+function normalizeClientPib(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+function assertClientPib(value: string | null | undefined, ctx: z.RefinementCtx) {
+  if (value === undefined || value === null) return
+  if (!/^\d{9}$/.test(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'PIB kupca mora imati tačno 9 cifara',
+    })
+  }
+}
+
+const clientPibWriteSchema = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => normalizeClientPib(value) ?? null)
+  .superRefine((value, ctx) => assertClientPib(value, ctx))
+
+const clientPibPatchSchema = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((value) => (value === undefined ? undefined : normalizeClientPib(value)))
+  .superRefine((value, ctx) => assertClientPib(value, ctx))
+
 export const invoiceWriteSchema = z.object({
   invoiceNumber: z.string().trim().min(1, 'invoiceNumber is required').max(255),
   dueDate: dueDateSchema,
   clientName: z.string().trim().min(1, 'clientName is required').max(255),
   clientAddress: z.string().max(500).nullable().optional(),
+  clientPib: clientPibWriteSchema,
   status: invoiceStatusSchema.optional(),
   items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
 })
@@ -134,6 +163,7 @@ export const invoicePatchSchema = z
     dueDate: dueDateSchema.optional(),
     clientName: z.string().trim().min(1, 'clientName is required').max(255).optional(),
     clientAddress: z.string().max(500).nullable().optional(),
+    clientPib: clientPibPatchSchema,
   })
   .refine(
     (value) =>
@@ -141,7 +171,8 @@ export const invoicePatchSchema = z
       value.invoiceNumber !== undefined ||
       value.dueDate !== undefined ||
       value.clientName !== undefined ||
-      value.clientAddress !== undefined,
+      value.clientAddress !== undefined ||
+      value.clientPib !== undefined,
     { message: 'At least one supported field is required' }
   )
 
@@ -220,6 +251,13 @@ export const profileSchema = z.object({
   contactPhone: z.string().max(50).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
   pib: z.string().trim().regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara'),
+  giroAccount: z
+    .string()
+    .trim()
+    .max(80, 'Žiro-račun je predugačak')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   logoUrl: z
     .union([
       z.string().url('Invalid URL'),

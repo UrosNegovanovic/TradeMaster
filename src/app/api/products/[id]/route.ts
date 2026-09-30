@@ -58,28 +58,20 @@ export async function PUT(
     // Validate input
     const validatedData = productSchema.parse(body)
 
-    // If SKU is being changed, check if new SKU already exists for TODAY (Daily Batching logic)
+    // If SKU is being changed, reject when another product already uses it.
     if (validatedData.sku !== existingProduct.sku) {
-      const startOfToday = new Date()
-      startOfToday.setHours(0, 0, 0, 0)
-      
-      const endOfToday = new Date()
-      endOfToday.setHours(23, 59, 59, 999)
-
       const skuExists = await prisma.product.findFirst({
         where: {
           profileId: profile.id,
           sku: validatedData.sku,
-          createdAt: {
-            gte: startOfToday,
-            lte: endOfToday,
-          },
+          NOT: { id: params.id },
         },
+        select: { id: true },
       })
 
       if (skuExists) {
         return NextResponse.json(
-          { error: 'Product with this SKU already exists for today' },
+          { error: 'Proizvod sa ovim SKU-om već postoji' },
           { status: 409 }
         )
       }

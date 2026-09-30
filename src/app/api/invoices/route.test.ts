@@ -205,6 +205,7 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
     expect(response.status).toBe(201)
     expect(mocks.invoice.create.mock.calls[0][0].data.invoiceNumber).toBe('2026-001')
     expect(mocks.invoice.create.mock.calls[0][0].data.invoiceNumber).not.toBe('2026-003')
+    expect(mocks.invoice.create.mock.calls[0][0].data.clientPib).toBeNull()
     expect(mocks.$executeRaw).toHaveBeenCalledTimes(1)
     expect(mocks.product.findMany).toHaveBeenCalledWith({
       where: { id: { in: ['product-a'] }, profileId: profile.id },
@@ -260,6 +261,27 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
     expect(response.status).toBe(201)
     expect(mocks.invoice.create.mock.calls[0][0].data.totalAmount.toString()).toBe('21.1')
     expect(mocks.invoiceItem.create.mock.calls[0][0].data.total.toString()).toBe('21.1')
+  })
+
+  it('persists buyer PIB on create', async () => {
+    const response = await POST(
+      postRequest({
+        dueDate: '2026-10-01',
+        clientName: 'Acme',
+        clientPib: '123456789',
+        items: [
+          {
+            productId: null,
+            productName: 'Manual',
+            quantity: 1,
+            unitPrice: 4,
+            discount: 0,
+          },
+        ],
+      })
+    )
+    expect(response.status).toBe(201)
+    expect(mocks.invoice.create.mock.calls[0][0].data.clientPib).toBe('123456789')
   })
 
   it('defaults omitted status to UNPAID and accepts an explicit enum value', async () => {

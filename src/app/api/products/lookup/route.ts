@@ -43,9 +43,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // ✅ Look up product by SKU (scoped to user's profile)
-    // With daily batching, there may be multiple entries for the same SKU
-    // We return the MOST RECENT entry for auto-fill purposes
+    // Look up product by SKU (scoped to user's profile). Repeat scans share one row;
+    // leftover daily-batch rows may still exist, so we return the most recent.
     const product = await prisma.product.findFirst({
       where: {
         profileId: profile.id,

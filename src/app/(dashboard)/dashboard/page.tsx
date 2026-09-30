@@ -41,11 +41,10 @@ function formatPieces(value: number): string {
  *   Stock value label is therefore "Prodajna vrednost lagera".
  * - Daily batching allows multiple Product rows per SKU. Totals sum row quantity and
  *   row quantity × price; they are not unique-SKU counts.
- * - "Dodato danas" uses Product.createdAt in the server-local calendar day
+ * - "Dodato danas" uses Product.createdAt in the Europe/Belgrade calendar day
  *   [startOfToday, startOfTomorrow). It is not complete stock-receipt history.
- * - "Današnji ulazi" uses StockMovement IN rows for the same local day, including
- *   restocks of an existing daily batch.
- * - Europe/Belgrade timezone policy is deferred.
+ * - "Današnji ulazi" uses StockMovement IN rows for the same Belgrade day, including
+ *   restocks of an existing SKU row.
  * - "Otvorene fakture" are DRAFT + UNPAID. The headline is receivables
  *   (sum of open totals). PAID invoices are booked as cash-basis revenue.
  */

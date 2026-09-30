@@ -48,6 +48,7 @@ export default defineConfig({
       'src/app/api/stock-movements/route.test.ts',
       'src/app/api/products/bulk-adjust/route.test.ts',
       'src/app/api/products/fetch-by-barcode/route.test.ts',
+      'src/app/api/categories/route.test.ts',
       'src/test/require-test-database.test.ts',
     ],
     exclude: [

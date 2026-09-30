@@ -303,7 +303,7 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
             )}
             <View style={styles.companyInfo}>
               <Text style={styles.companyName}>
-                {profile.companyName || 'Company Name'}
+                {profile.companyName || 'Naziv firme'}
               </Text>
               {profile.address && (
                 <Text style={styles.companyDetails}>{profile.address}</Text>
@@ -322,7 +322,7 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
             )}
             {profile.contactPhone && (
               <View>
-                <Text style={styles.contactLabel}>Phone:</Text>
+                <Text style={styles.contactLabel}>Telefon:</Text>
                 <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
               </View>
             )}
@@ -332,32 +332,33 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         {/* Invoice Info */}
         <View style={styles.invoiceInfo}>
           <View style={styles.invoiceInfoLeft}>
-            <Text style={styles.invoiceTitle}>INVOICE</Text>
+            <Text style={styles.invoiceTitle}>FAKTURA</Text>
             <View>
-              <Text style={styles.invoiceLabel}>Invoice Number:</Text>
+              <Text style={styles.invoiceLabel}>Broj fakture:</Text>
               <Text style={styles.invoiceValue}>{invoice.invoiceNumber}</Text>
             </View>
-            {/* Bill To moved to left side */}
             <View style={{ marginTop: 15 }}>
-              <Text style={styles.clientTitle}>Bill To:</Text>
+              <Text style={styles.clientTitle}>Kupac:</Text>
               <View style={styles.clientDetails}>
                 <Text>{invoice.clientName}</Text>
                 {invoice.clientAddress && <Text>{invoice.clientAddress}</Text>}
+                {invoice.clientPib && <Text>PIB: {invoice.clientPib}</Text>}
               </View>
             </View>
           </View>
           <View style={styles.invoiceInfoRight}>
             <View style={{ marginBottom: 15 }}>
               <Text style={styles.invoiceLabel}>Status:</Text>
-              <Text style={styles.invoiceValue}>{invoice.status}</Text>
+              <Text style={styles.invoiceValue}>
+                {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'DRAFT' ? 'Nacrt' : 'Otvoreno'}
+              </Text>
             </View>
-            {/* Date and Due Date moved to right side */}
             <View>
-              <Text style={styles.invoiceLabel}>Date:</Text>
+              <Text style={styles.invoiceLabel}>Datum:</Text>
               <Text style={styles.invoiceValue}>{formatDate(invoice.createdAt)}</Text>
             </View>
             <View>
-              <Text style={styles.invoiceLabel}>Due Date:</Text>
+              <Text style={styles.invoiceLabel}>Rok plaćanja:</Text>
               <Text style={styles.invoiceValue}>{formatDate(invoice.dueDate)}</Text>
             </View>
           </View>
@@ -367,11 +368,11 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         <View style={styles.table}>
           {/* Table Header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.colItem, styles.tableHeaderText]}>Item</Text>
-            <Text style={[styles.colQty, styles.tableHeaderText]}>Qty</Text>
-            <Text style={[styles.colPrice, styles.tableHeaderText]}>Unit Price</Text>
-            <Text style={[styles.colDiscount, styles.tableHeaderText]}>Discount</Text>
-            <Text style={[styles.colTotal, styles.tableHeaderText]}>Total</Text>
+            <Text style={[styles.colItem, styles.tableHeaderText]}>Stavka</Text>
+            <Text style={[styles.colQty, styles.tableHeaderText]}>Kol.</Text>
+            <Text style={[styles.colPrice, styles.tableHeaderText]}>Jed. cena</Text>
+            <Text style={[styles.colDiscount, styles.tableHeaderText]}>Popust</Text>
+            <Text style={[styles.colTotal, styles.tableHeaderText]}>Ukupno</Text>
           </View>
 
           {/* Table Rows */}
@@ -395,7 +396,7 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         <View style={styles.summary}>
           <View style={styles.summaryBox}>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total:</Text>
+              <Text style={styles.totalLabel}>Ukupno:</Text>
               <Text style={styles.totalValue}>
                 {formatPrice(Number(invoice.totalAmount))}
               </Text>
@@ -406,17 +407,20 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         {/* Footer - Fixed position on every page */}
         <View style={styles.footer} fixed>
           <View style={styles.footerLeft}>
-            <Text style={styles.footerTitle}>Banking Information</Text>
+            <Text style={styles.footerTitle}>Žiro-račun</Text>
+            {profile.giroAccount ? (
+              <Text style={styles.footerText}>{profile.giroAccount}</Text>
+            ) : null}
             <Text style={styles.footerText}>
-              Please include invoice number when making payment.
+              Molimo navedite broj fakture pri uplati.
             </Text>
             <Text style={styles.footerText}>
-              Payment terms: Net {Math.ceil((new Date(invoice.dueDate).getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days
+              Rok plaćanja: {Math.ceil((new Date(invoice.dueDate).getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24))} dana
             </Text>
           </View>
           <View style={styles.footerRight}>
             <Text style={styles.signatureLabel}>
-              Authorized Signature: _____________________________
+              Ovlašćeni potpis: _____________________________
             </Text>
           </View>
         </View>

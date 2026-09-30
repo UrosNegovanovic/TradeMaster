@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useQuery } from '@tanstack/react-query'
 import { CatalogWithItems } from '@/types/catalog'
 import { Profile } from '@/types/profile'
@@ -13,13 +14,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Edit, Download, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Edit, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProductImage } from '@/components/shared/ProductImage'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
-import { BlobProvider } from '@react-pdf/renderer'
-import { CatalogPDF } from '@/components/catalogs/CatalogPDF'
+import { useParams } from 'next/navigation'
 import { CatalogSharing } from '@/components/catalogs/CatalogSharing'
+
+const CatalogPdfDownload = dynamic(() => import('@/components/catalogs/CatalogPdfDownload'), {
+  ssr: false,
+  loading: () => (
+    <Button disabled>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      PDF…
+    </Button>
+  ),
+})
 
 async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: Profile }> {
   const response = await fetch(`/api/catalogs/${id}`)
@@ -31,7 +40,6 @@ async function fetchCatalog(id: string): Promise<CatalogWithItems & { profile: P
 
 export default function CatalogDetailsPage() {
   const params = useParams()
-  const router = useRouter()
   const catalogId = params.id as string
   const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(12)
   const [currentPage, setCurrentPage] = useState(1)
@@ -87,18 +95,6 @@ export default function CatalogDetailsPage() {
     return items.slice(startIndex, endIndex)
   }, [items, currentPage, itemsPerPage, itemsPerPageNum])
 
-  // Memoize the PDF document to prevent infinite re-renders
-  // Only recreate when catalog data, itemsPerPage, or pdfItemsPerPage changes
-  const pdfDocument = useMemo(() => {
-    if (!catalog) return null
-    return <CatalogPDF 
-      catalog={catalog} 
-      itemsPerPage={itemsPerPage}
-      pdfItemsPerPage={pdfItemsPerPage}
-    />
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catalog?.id, itemsPerPage, pdfItemsPerPage])
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -127,8 +123,6 @@ export default function CatalogDetailsPage() {
       </div>
     )
   }
-
-  const fileName = `${catalog.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_catalog.pdf`
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -170,44 +164,11 @@ export default function CatalogDetailsPage() {
               </SelectContent>
             </Select>
           </div>
-          {pdfDocument && (
-            <BlobProvider 
-              document={pdfDocument}
-              key={`pdf-${itemsPerPage}-${pdfItemsPerPage}-${catalog?.id}`}
-            >
-              {({ blob, url, loading, error }) => {
-                const handleDownload = () => {
-                  if (blob && url) {
-                    const link = document.createElement('a')
-                    link.href = url
-                    link.download = fileName
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                  }
-                }
-
-                return (
-                  <Button
-                    onClick={handleDownload}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download PDF
-                      </>
-                    )}
-                  </Button>
-                )
-              }}
-            </BlobProvider>
-          )}
+          <CatalogPdfDownload
+            catalog={catalog}
+            itemsPerPage={itemsPerPage}
+            pdfItemsPerPage={pdfItemsPerPage}
+          />
         </div>
       </div>
 

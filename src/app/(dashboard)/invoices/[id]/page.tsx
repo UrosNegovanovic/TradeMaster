@@ -2,17 +2,25 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
-import { useMemo } from 'react'
-import { BlobProvider } from '@react-pdf/renderer'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Download, Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { InvoicePDF } from '@/components/invoices/InvoicePDF'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { invoiceStatusLabel, invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
+
+const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
+  ssr: false,
+  loading: () => (
+    <Button disabled className="min-h-11 w-full sm:w-auto">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      PDF…
+    </Button>
+  ),
+})
 
 async function fetchInvoice(id: string): Promise<InvoiceWithItems & { profile: Profile }> {
   const response = await fetch(`/api/invoices/${id}`)
@@ -31,12 +39,6 @@ export default function InvoiceDetailPage() {
     queryKey: ['invoice', invoiceId],
     queryFn: () => fetchInvoice(invoiceId),
   })
-
-  // PDF document
-  const pdfDocument = useMemo(() => {
-    if (!invoice) return null
-    return <InvoicePDF invoice={invoice} />
-  }, [invoice])
 
   // Format currency
   const formatCurrency = (value: number | string) => {
@@ -100,38 +102,7 @@ export default function InvoiceDetailPage() {
               className="min-h-11 w-full sm:w-auto"
             />
           )}
-          {pdfDocument && (
-          <BlobProvider document={pdfDocument}>
-            {({ blob, url, loading }) => (
-              <Button
-                onClick={() => {
-                  if (url) {
-                    const link = document.createElement('a')
-                    link.href = url
-                    link.download = `${invoice.invoiceNumber.replace(/\s+/g, '_')}_invoice.pdf`
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                  }
-                }}
-                disabled={loading}
-                className="min-h-11 w-full sm:w-auto"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </>
-                )}
-              </Button>
-            )}
-          </BlobProvider>
-          )}
+          <InvoicePdfDownload invoice={invoice} />
         </div>
       </div>
 

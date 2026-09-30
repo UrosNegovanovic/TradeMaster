@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
+import { consumeRateLimit, rateLimitKey, rateLimits, resetRateLimitStore } from '@/lib/rate-limit'
 
 const mocks = vi.hoisted(() => ({
   catalog: { findUnique: vi.fn() },
@@ -52,6 +53,7 @@ const sharedCatalog = {
 describe('GET /api/public/catalogs/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetRateLimitStore()
   })
 
   it('returns 404 JSON when the catalog does not exist', async () => {
@@ -82,5 +84,20 @@ describe('GET /api/public/catalogs/[id]', () => {
     expect(body.items[0].product).not.toHaveProperty('quantity')
     expect(body.items[0].product).not.toHaveProperty('costPrice')
     expect(JSON.stringify(body)).not.toMatch(/costPrice|nabav/i)
+  })
+
+  it('returns 429 after the guest catalog quota is exceeded', async () => {
+    const headers = { 'x-forwarded-for': '203.0.113.40' }
+    const request = new NextRequest('http://localhost/api/public/catalogs/cat-1', { headers })
+    const key = rateLimitKey(rateLimits.publicCatalog.name, request)
+    for (let i = 0; i < rateLimits.publicCatalog.limit; i += 1) {
+      consumeRateLimit(key, rateLimits.publicCatalog.limit, rateLimits.publicCatalog.windowMs)
+    }
+
+    const blocked = await GET(request, { params: { id: 'cat-1' } })
+    expect(blocked.status).toBe(429)
+    await expect(blocked.json()).resolves.toEqual({ error: 'Too many requests' })
+    expect(blocked.headers.get('Retry-After')).toMatch(/^\d+$/)
+    expect(mocks.catalog.findUnique).not.toHaveBeenCalled()
   })
 })

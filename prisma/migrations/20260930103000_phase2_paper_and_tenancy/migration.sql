@@ -12,6 +12,12 @@ ALTER TABLE public.invoices
 ALTER TABLE public.categories
   ADD COLUMN IF NOT EXISTS "profileId" TEXT;
 
+-- Live unique is an index, not a table constraint. Drop it before tenant copies
+-- or unused names (e.g. Chocolates) collide with the original global row.
+DROP INDEX IF EXISTS public.categories_name_key;
+ALTER TABLE public.categories
+  DROP CONSTRAINT IF EXISTS categories_name_key;
+
 -- Categories used by exactly one merchant keep their row.
 UPDATE public.categories AS c
 SET "profileId" = owned."profileId"
@@ -120,9 +126,6 @@ END $$;
 
 ALTER TABLE public.categories
   ALTER COLUMN "profileId" SET NOT NULL;
-
-ALTER TABLE public.categories
-  DROP CONSTRAINT IF EXISTS categories_name_key;
 
 ALTER TABLE public.categories
   DROP CONSTRAINT IF EXISTS categories_profileId_fkey;

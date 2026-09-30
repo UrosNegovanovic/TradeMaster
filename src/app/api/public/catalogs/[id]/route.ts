@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { toPublicCatalog } from '@/lib/public-catalog'
+import { rateLimitedResponse, rateLimits } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,9 +13,12 @@ const headers = {
 
 /** Guest JSON for old catalog-id links. Requires shareEnabled; token route is the revocable share. */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const limited = rateLimitedResponse(request, rateLimits.publicCatalog)
+  if (limited) return limited
+
   try {
     const catalog = await prisma.catalog.findUnique({
       where: { id: params.id },

@@ -5,6 +5,15 @@ export const sr = {
     retry: 'Pokušaj ponovo',
     signOut: 'Odjava',
     signingOut: 'Odjava…',
+    home: 'Početna',
+    dashboard: 'Početna tabla',
+  },
+  route: {
+    errorTitle: 'Nešto nije u redu',
+    errorDescription: 'Stranica nije učitana. Pokušajte ponovo.',
+    notFoundTitle: 'Stranica nije pronađena',
+    notFoundDescription: 'Ova adresa ne postoji ili je uklonjena.',
+    loading: 'Učitavanje…',
   },
   product: {
     addTitle: 'Dodaj novi proizvod',

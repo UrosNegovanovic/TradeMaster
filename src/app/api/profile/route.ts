@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { ZodError } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { profileSchema } from '@/lib/validations'
 
@@ -83,10 +84,15 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating profile:', error)
 
-    // Handle validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error },
+        {
+          error: 'Validation error',
+          details: error.errors.map((issue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+          })),
+        },
         { status: 400 }
       )
     }

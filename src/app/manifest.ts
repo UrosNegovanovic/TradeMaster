@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'TradeMaster',
     short_name: 'TradeMaster',
     description: 'Skeniraj robu, vidi lager, pošalji katalog, izdaj fakturu.',
-    start_url: '/',
+    start_url: '/dashboard',
     display: 'standalone',
     background_color: '#f9fafb',
     theme_color: '#1a6e5c',

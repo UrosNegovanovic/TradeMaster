@@ -8,6 +8,7 @@ import {
   type BarcodeLookupResult,
 } from '@/lib/barcode-lookup'
 import { MIN_INTAKE_BARCODE_DIGITS } from '@/lib/barcode'
+import { rateLimitedResponse, rateLimits } from '@/lib/rate-limit'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -255,6 +256,9 @@ async function fetchFromUPCItemDB(barcode: string, timeoutMs = 1500): Promise<Pr
  * 3. Return standardized ProductMetadata
  */
 export async function GET(request: NextRequest) {
+  const limited = rateLimitedResponse(request, rateLimits.barcodeLookup)
+  if (limited) return limited
+
   try {
     const { userId } = await auth()
 

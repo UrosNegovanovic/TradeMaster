@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { profileSchema, type ProfileFormData } from '@/lib/validations'
+import { profileSavePayload, toProfileFormValues } from '@/lib/profile-put'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +16,7 @@ import { notify } from '@/lib/notify'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
+import type { Profile } from '@/types/profile'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -51,11 +53,26 @@ export default function SettingsPage() {
     queryFn: fetchProfile,
   })
 
-  // Update profile mutation
+  const [logoUploading, setLogoUploading] = React.useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    watch,
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: toProfileFormValues(profile),
+    shouldUnregister: false,
+  })
+
   const mutation = useMutation({
     mutationFn: (data: ProfileFormData) => updateProfile(data, request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] })
+    onSuccess: (saved: Profile) => {
+      queryClient.setQueryData(['profile'], saved)
+      reset(toProfileFormValues(saved))
       notify.success('Podaci su sačuvani', {
         description: 'Podaci o firmi su ažurirani.',
       })
@@ -67,43 +84,21 @@ export default function SettingsPage() {
     },
   })
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-    watch,
-  } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      companyName: profile?.companyName ?? '',
-      contactEmail: profile?.contactEmail ?? '',
-      contactPhone: profile?.contactPhone ?? '',
-      address: profile?.address ?? '',
-      pib: profile?.pib ?? '',
-      giroAccount: profile?.giroAccount ?? '',
-      logoUrl: profile?.logoUrl ?? '',
-    },
-  })
+  React.useEffect(() => {
+    register('logoUrl')
+  }, [register])
 
-  // Reset form when profile data loads
+  // Keep a dirty uploaded logo when profile refetch would otherwise wipe it.
   React.useEffect(() => {
     if (profile) {
-      reset({
-        companyName: profile.companyName ?? '',
-        contactEmail: profile.contactEmail ?? '',
-        contactPhone: profile.contactPhone ?? '',
-        address: profile.address ?? '',
-        pib: profile.pib ?? '',
-        giroAccount: profile.giroAccount ?? '',
-        logoUrl: profile.logoUrl ?? '',
-      })
+      reset(toProfileFormValues(profile), { keepDirtyValues: true })
     }
   }, [profile, reset])
 
+  const logoUrl = watch('logoUrl')
+
   const onSubmit = (data: ProfileFormData) => {
-    mutation.mutate(data)
+    mutation.mutate(profileSavePayload({ ...data, logoUrl: data.logoUrl ?? logoUrl }))
   }
 
   if (isLoading) {
@@ -223,8 +218,15 @@ export default function SettingsPage() {
 
               <div className="space-y-2 md:col-span-2">
                 <ImageUpload
-                  value={watch('logoUrl')}
-                  onChange={(url) => setValue('logoUrl', url ?? null, { shouldValidate: true })}
+                  value={logoUrl}
+                  onChange={(url) =>
+                    setValue('logoUrl', url ?? '', {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                      shouldTouch: true,
+                    })
+                  }
+                  onUploadingChange={setLogoUploading}
                   bucket="merchant-logos"
                   label="Logo firme"
                   description="PNG, JPG ili GIF. Maksimalno 5 MB."
@@ -242,12 +244,16 @@ export default function SettingsPage() {
                 type="button"
                 variant="outline"
                 className="w-full sm:w-auto"
-                onClick={() => reset()}
-                disabled={mutation.isPending}
+                onClick={() => reset(toProfileFormValues(profile))}
+                disabled={mutation.isPending || logoUploading}
               >
                 Poništi
               </Button>
-              <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending}>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={mutation.isPending || logoUploading}
+              >
                 {mutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}

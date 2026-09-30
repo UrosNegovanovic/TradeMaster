@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { profilePutFields } from '@/lib/profile-put'
 import { profileSchema } from '@/lib/validations'
 
 // Force dynamic rendering (uses Clerk auth with headers)
@@ -59,17 +60,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate input
     const validatedData = profileSchema.parse(body)
-
-    // Convert empty strings to null
-    const updateData = {
-      companyName: validatedData.companyName === '' ? null : validatedData.companyName ?? null,
-      contactEmail: validatedData.contactEmail === '' ? null : validatedData.contactEmail ?? null,
-      contactPhone: validatedData.contactPhone === '' ? null : validatedData.contactPhone ?? null,
-      address: validatedData.address === '' ? null : validatedData.address ?? null,
-      pib: validatedData.pib === '' ? null : validatedData.pib ?? null,
-      giroAccount: validatedData.giroAccount === '' ? null : validatedData.giroAccount ?? null,
-      logoUrl: validatedData.logoUrl === '' ? null : validatedData.logoUrl ?? null,
-    }
+    const updateData = profilePutFields(validatedData, body)
 
     // Update or create profile
     const profile = await prisma.profile.upsert({

@@ -77,6 +77,7 @@ export const sr = {
     success: 'Slika je uspešno otpremljena',
     empty: 'Slika nije izabrana',
     preview: 'Pregled izabrane slike',
+    remove: 'Ukloni sliku',
     productPlaceholder: (name: string) => `Nema slike za proizvod ${name}`,
   },
   catalog: {

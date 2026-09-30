@@ -82,6 +82,7 @@ export default function SettingsPage() {
       contactPhone: profile?.contactPhone ?? '',
       address: profile?.address ?? '',
       pib: profile?.pib ?? '',
+      giroAccount: profile?.giroAccount ?? '',
       logoUrl: profile?.logoUrl ?? '',
     },
   })
@@ -95,6 +96,7 @@ export default function SettingsPage() {
         contactPhone: profile.contactPhone ?? '',
         address: profile.address ?? '',
         pib: profile.pib ?? '',
+        giroAccount: profile.giroAccount ?? '',
         logoUrl: profile.logoUrl ?? '',
       })
     }
@@ -124,7 +126,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Podaci o firmi</CardTitle>
           <CardDescription>
-            Naziv, PIB, kontakt i logo koji idu na katalog i fakturu
+            Naziv, PIB, žiro-račun, kontakt i logo koji idu na katalog i fakturu
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -186,6 +188,23 @@ export default function SettingsPage() {
                     {errors.contactPhone.message}
                   </p>
                 )}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="giroAccount">Žiro-račun</Label>
+                <Input
+                  id="giroAccount"
+                  placeholder="npr. 160-0000000000000-00"
+                  {...register('giroAccount')}
+                />
+                {errors.giroAccount && (
+                  <p className="text-sm text-destructive">
+                    {errors.giroAccount.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Broj računa za uplatu koji ide na fakturu.
+                </p>
               </div>
 
               <div className="space-y-2 md:col-span-2">

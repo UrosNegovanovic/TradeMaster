@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { MovementType, StockMovementSource } from '@prisma/client'
-import { BULK_ADJUST_REASON, SKU_AMBIGUOUS_ERROR, SKU_MISSING_ERROR } from '@/lib/stock-adjust'
+import { BULK_ADJUST_REASON, SKU_MISSING_ERROR } from '@/lib/stock-adjust'
 
 vi.mock('@clerk/nextjs/server', () => ({
   auth: vi.fn(),
@@ -10,7 +10,7 @@ vi.mock('@clerk/nextjs/server', () => ({
 const mocks = vi.hoisted(() => {
   const prisma = {
     profile: { findUnique: vi.fn() },
-    product: { findMany: vi.fn(), update: vi.fn() },
+    product: { findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     stockMovement: { create: vi.fn() },
     $executeRaw: vi.fn(),
     $transaction: vi.fn(),
@@ -44,6 +44,7 @@ describe('POST /api/products/bulk-adjust', () => {
     mocks.profile.findUnique.mockResolvedValue(profile)
     mocks.$executeRaw.mockResolvedValue(1)
     mocks.product.update.mockResolvedValue({})
+    mocks.product.updateMany.mockResolvedValue({ count: 0 })
     mocks.stockMovement.create.mockResolvedValue({})
   })
 
@@ -63,16 +64,40 @@ describe('POST /api/products/bulk-adjust', () => {
     expect(mocks.stockMovement.create).not.toHaveBeenCalled()
   })
 
-  it('skips an ambiguous daily-batched SKU without guessing', async () => {
+  it('consolidates leftover daily-batch rows onto the newest SKU instead of 409', async () => {
     mocks.product.findMany.mockResolvedValue([
-      { id: 'p1', quantity: 3 },
-      { id: 'p2', quantity: 5 },
+      { id: 'p-new', quantity: 3 },
+      { id: 'p-old', quantity: 5 },
     ])
     const response = await POST(postRequest({ sku: '86001', quantity: 10 }))
-    expect(response.status).toBe(409)
-    expect(await response.json()).toMatchObject({ ok: false, error: SKU_AMBIGUOUS_ERROR })
-    expect(mocks.product.update).not.toHaveBeenCalled()
-    expect(mocks.stockMovement.create).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      sku: '86001',
+      productId: 'p-new',
+      previousQuantity: 8,
+      quantity: 10,
+      delta: 2,
+      leftoverRowsZeroed: 1,
+    })
+    expect(mocks.product.update).toHaveBeenCalledWith({
+      where: { id: 'p-new' },
+      data: { quantity: 10 },
+    })
+    expect(mocks.product.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['p-old'] } },
+      data: { quantity: 0 },
+    })
+    expect(mocks.stockMovement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: MovementType.IN,
+        quantity: 2,
+        reason: BULK_ADJUST_REASON,
+        source: StockMovementSource.MANUAL,
+        productId: 'p-new',
+        profileId: 'profile-a',
+      }),
+    })
   })
 
   it('sets quantity higher with a MANUAL IN movement', async () => {

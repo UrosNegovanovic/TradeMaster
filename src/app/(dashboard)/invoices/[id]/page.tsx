@@ -140,6 +140,9 @@ export default function InvoiceDetailPage() {
             <div className="pt-4 border-t">
               <p className="text-sm text-muted-foreground mb-2">Client</p>
               <p className="text-base font-semibold">{invoice.clientName}</p>
+              {invoice.clientPib && (
+                <p className="text-sm text-muted-foreground mt-1">PIB: {invoice.clientPib}</p>
+              )}
               {invoice.clientAddress && (
                 <p className="text-sm text-muted-foreground mt-1">
                   {invoice.clientAddress}

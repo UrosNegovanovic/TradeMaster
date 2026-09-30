@@ -31,6 +31,30 @@ describe('invoiceWriteSchema (unit)', () => {
     }
   })
 
+  it('accepts a 9-digit buyer PIB and rejects a short one', () => {
+    expect(
+      invoiceWriteSchema.safeParse({
+        ...validInvoice,
+        clientPib: '123456789',
+      }).success
+    ).toBe(true)
+
+    expect(
+      invoiceWriteSchema.safeParse({
+        ...validInvoice,
+        clientPib: '123',
+      }).success
+    ).toBe(false)
+  })
+
+  it('treats an omitted buyer PIB as null', () => {
+    const result = invoiceWriteSchema.safeParse(validInvoice)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.clientPib).toBeNull()
+    }
+  })
+
   it('accepts a repeated product id on multiple lines', () => {
     const result = invoiceWriteSchema.safeParse({
       ...validInvoice,

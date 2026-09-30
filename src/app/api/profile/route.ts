@@ -67,6 +67,7 @@ export async function PUT(request: NextRequest) {
       contactPhone: validatedData.contactPhone === '' ? null : validatedData.contactPhone ?? null,
       address: validatedData.address === '' ? null : validatedData.address ?? null,
       pib: validatedData.pib === '' ? null : validatedData.pib ?? null,
+      giroAccount: validatedData.giroAccount === '' ? null : validatedData.giroAccount ?? null,
       logoUrl: validatedData.logoUrl === '' ? null : validatedData.logoUrl ?? null,
     }
 

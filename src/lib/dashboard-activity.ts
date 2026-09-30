@@ -1,4 +1,4 @@
-import { startOfLocalDay } from '@/lib/local-date'
+import { APP_TIMEZONE, startOfLocalDay } from '@/lib/local-date'
 
 export const DASHBOARD_OPEN_INVOICE_PREVIEW = 8
 export const DASHBOARD_LOW_STOCK_PREVIEW = 8
@@ -87,6 +87,7 @@ export function formatDashboardDate(date: Date | string): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    timeZone: APP_TIMEZONE,
   }).format(new Date(date))
 }
 
@@ -94,5 +95,6 @@ export function formatDashboardTime(date: Date | string): string {
   return new Intl.DateTimeFormat('sr-RS', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: APP_TIMEZONE,
   }).format(new Date(date))
 }

@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
           dueDate: new Date(parsed.dueDate),
           clientName: parsed.clientName,
           clientAddress: parsed.clientAddress || null,
+          clientPib: parsed.clientPib || null,
           status,
           paidAt: paidAt ?? null,
           totalAmount,

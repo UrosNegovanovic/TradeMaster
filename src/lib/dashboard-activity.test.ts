@@ -7,7 +7,7 @@ import {
   previewTodayMovements,
 } from './dashboard-activity'
 
-const now = new Date(2026, 8, 23, 15, 0, 0)
+const now = new Date('2026-09-23T13:00:00.000Z')
 
 function movement(
   partial: Partial<{
@@ -59,12 +59,12 @@ describe('dashboard activity', () => {
   })
 
   it('treats due dates before today as overdue, including the due-date clock time', () => {
-    expect(isInvoiceOverdue(new Date(2026, 8, 22, 23, 0, 0), now)).toBe(true)
-    expect(isInvoiceOverdue(new Date(2026, 8, 23, 8, 0, 0), now)).toBe(false)
-    expect(isInvoiceOverdue(new Date(2026, 8, 24), now)).toBe(false)
+    expect(isInvoiceOverdue(new Date('2026-09-22T10:00:00.000Z'), now)).toBe(true)
+    expect(isInvoiceOverdue(new Date('2026-09-23T08:00:00.000Z'), now)).toBe(false)
+    expect(isInvoiceOverdue(new Date('2026-09-24T00:00:00.000Z'), now)).toBe(false)
     expect(
       countOverdueInvoices(
-        [{ dueDate: new Date(2026, 8, 20) }, { dueDate: new Date(2026, 8, 23) }],
+        [{ dueDate: new Date('2026-09-20T12:00:00.000Z') }, { dueDate: new Date('2026-09-23T12:00:00.000Z') }],
         now
       )
     ).toBe(1)

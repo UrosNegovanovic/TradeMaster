@@ -5,13 +5,17 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-// Validation schema for category
 const categorySchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
+  name: z.string().min(1, 'Naziv je obavezan').max(100),
   description: z.string().optional().nullable(),
 })
 
-// GET: Fetch all categories
+async function requireProfile(userId: string) {
+  return prisma.profile.findUnique({
+    where: { clerkUserId: userId },
+  })
+}
+
 export async function GET() {
   try {
     const { userId } = await auth()
@@ -23,8 +27,16 @@ export async function GET() {
       )
     }
 
-    // Fetch all categories (categories are global, not per-profile)
+    const profile = await requireProfile(userId)
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      )
+    }
+
     const categories = await prisma.category.findMany({
+      where: { profileId: profile.id },
       orderBy: {
         name: 'asc',
       },
@@ -47,7 +59,6 @@ export async function GET() {
   }
 }
 
-// POST: Create a new category
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -59,11 +70,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const profile = await requireProfile(userId)
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      )
+    }
+
     const body = await request.json()
-    
-    // Validate request body
     const validationResult = categorySchema.safeParse(body)
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validationResult.error.errors },
@@ -73,28 +90,34 @@ export async function POST(request: NextRequest) {
 
     const { name, description } = validationResult.data
 
-    // Check if category with same name already exists
-    const existingCategory = await prisma.category.findUnique({
-      where: { name },
+    const existingCategory = await prisma.category.findFirst({
+      where: { profileId: profile.id, name },
     })
 
     if (existingCategory) {
       return NextResponse.json(
-        { error: 'Category with this name already exists' },
+        { error: 'Kategorija sa ovim nazivom već postoji' },
         { status: 409 }
       )
     }
 
-    // Create new category
     const category = await prisma.category.create({
       data: {
         name,
         description: description || null,
+        profileId: profile.id,
       },
     })
 
     return NextResponse.json(category, { status: 201 })
   } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Kategorija sa ovim nazivom već postoji' },
+        { status: 409 }
+      )
+    }
+
     console.error('Error creating category:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

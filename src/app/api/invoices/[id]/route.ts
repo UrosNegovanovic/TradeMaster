@@ -144,6 +144,7 @@ export async function PUT(
           dueDate: new Date(parsed.dueDate),
           clientName: parsed.clientName,
           clientAddress: parsed.clientAddress || null,
+          clientPib: parsed.clientPib,
           totalAmount,
           items: {
             create: items.map((item) => ({
@@ -215,7 +216,8 @@ export async function PATCH(
       parsed.invoiceNumber !== undefined ||
       parsed.dueDate !== undefined ||
       parsed.clientName !== undefined ||
-      parsed.clientAddress !== undefined
+      parsed.clientAddress !== undefined ||
+      parsed.clientPib !== undefined
 
     const updatedInvoice = await prisma.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<
@@ -262,6 +264,7 @@ export async function PATCH(
           ...(parsed.dueDate && { dueDate: new Date(parsed.dueDate) }),
           ...(parsed.clientName && { clientName: parsed.clientName }),
           ...(parsed.clientAddress !== undefined && { clientAddress: parsed.clientAddress }),
+          ...(parsed.clientPib !== undefined && { clientPib: parsed.clientPib }),
         },
         include: {
           items: {

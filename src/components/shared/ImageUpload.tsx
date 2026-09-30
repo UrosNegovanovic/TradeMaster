@@ -44,17 +44,18 @@ export function ImageUpload({
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      notify.error(sr.image.invalidFile, {
-        description: sr.image.selectImage,
+    const declaredType = (file.type || '').split(';')[0]?.trim().toLowerCase()
+    if (declaredType === 'image/heic' || declaredType === 'image/heif') {
+      notify.error(sr.image.unsupportedFormat, {
+        description: sr.image.unsupportedFormatDescription,
       })
       return
     }
 
-    if (file.type === 'image/heic' || file.type === 'image/heif') {
-      notify.error(sr.image.unsupportedFormat, {
-        description: sr.image.unsupportedFormatDescription,
+    // Empty type / octet-stream still go to /api/uploads — server sniffs magic bytes.
+    if (declaredType && !declaredType.startsWith('image/') && declaredType !== 'application/octet-stream') {
+      notify.error(sr.image.invalidFile, {
+        description: sr.image.selectImage,
       })
       return
     }

@@ -26,6 +26,8 @@ import { auth } from '@clerk/nextjs/server'
 import { POST } from './route'
 
 const jpegBytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01])
+const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d])
+const gifBytes = Buffer.from([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00])
 
 function postRequest(body: FormData) {
   return new NextRequest('http://localhost/api/uploads', { method: 'POST', body })
@@ -84,5 +86,34 @@ describe('POST /api/uploads', () => {
     expect(options.bucket).toBe('merchant-logos')
     expect(options.path).toMatch(/^profile-a\/.+\.jpg$/)
     expect(options.contentType).toBe('image/jpeg')
+  })
+
+  it('accepts a png when the browser sends application/octet-stream', async () => {
+    const form = new FormData()
+    form.set('bucket', 'merchant-logos')
+    form.set('file', new File([pngBytes], 'logo.png', { type: 'application/octet-stream' }))
+    const response = await POST(postRequest(form))
+    expect(response.status).toBe(200)
+    const [options] = mocks.uploadPublicImage.mock.calls[0]
+    expect(options.contentType).toBe('image/png')
+    expect(options.path).toMatch(/^profile-a\/.+\.png$/)
+  })
+
+  it('accepts a jpeg when the declared MIME is wrong', async () => {
+    const form = new FormData()
+    form.set('bucket', 'merchant-logos')
+    form.set('file', new File([jpegBytes], 'logo.png', { type: 'image/png' }))
+    const response = await POST(postRequest(form))
+    expect(response.status).toBe(200)
+    expect(mocks.uploadPublicImage.mock.calls[0][0].contentType).toBe('image/jpeg')
+  })
+
+  it('accepts a gif with an empty Content-Type', async () => {
+    const form = new FormData()
+    form.set('bucket', 'merchant-logos')
+    form.set('file', new File([gifBytes], 'logo.gif', { type: '' }))
+    const response = await POST(postRequest(form))
+    expect(response.status).toBe(200)
+    expect(mocks.uploadPublicImage.mock.calls[0][0].contentType).toBe('image/gif')
   })
 })

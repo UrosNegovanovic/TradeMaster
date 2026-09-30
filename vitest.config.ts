@@ -25,6 +25,7 @@ export default defineConfig({
       'src/lib/dashboard-activity.test.ts',
       'src/lib/draft-number.test.ts',
       'src/lib/persist-product-image.test.ts',
+      'src/lib/server-storage.test.ts',
       'src/lib/safe-remote-url.test.ts',
       'src/lib/public-catalog.test.ts',
       'src/lib/product-validation.test.ts',

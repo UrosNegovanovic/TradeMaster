@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react'
-import { supabase } from '@/lib/supabase-client'
 import { notify } from '@/lib/notify'
 import Image from 'next/image'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { readApiErrorMessage } from '@/lib/api-error'
 
 interface ImageUploadProps {
   value?: string | null
@@ -27,6 +28,7 @@ export function ImageUpload({
   description,
   className,
 }: ImageUploadProps) {
+  const authorizedFetch = useAuthorizedFetch()
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(
     value && value !== '' ? value : null
@@ -72,7 +74,6 @@ export function ImageUpload({
     }
     reader.readAsDataURL(file)
 
-    // Upload to Supabase
     await uploadFile(file)
   }
 
@@ -80,35 +81,25 @@ export function ImageUpload({
     try {
       setUploading(true)
 
-      // Generate unique filename with timestamp
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${fileName}`
+      const form = new FormData()
+      form.set('bucket', bucket)
+      form.set('file', file)
 
-      // Upload file
-      const { error: uploadError, data } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '31536000',
-          contentType: file.type || 'image/jpeg',
-          upsert: false,
-        })
-
-      if (uploadError) {
-        throw uploadError
+      const response = await authorizedFetch('/api/uploads', {
+        method: 'POST',
+        body: form,
+      })
+      if (!response.ok) {
+        throw new Error(await readApiErrorMessage(response, sr.image.uploadFailed))
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(data.path)
-
-      if (urlData?.publicUrl) {
-        onChange(urlData.publicUrl)
-        setPreview(urlData.publicUrl)
-      } else {
+      const data = (await response.json()) as { url?: string }
+      if (!data.url) {
         throw new Error('Javna adresa slike nije dostupna')
       }
+
+      onChange(data.url)
+      setPreview(data.url)
     } catch (error) {
       console.error('Error uploading file:', error)
       notify.error(sr.image.uploadFailed, {

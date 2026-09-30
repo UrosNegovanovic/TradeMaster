@@ -41,10 +41,15 @@ async function publicRead(token: string) {
   return publicGET(new NextRequest(`http://localhost/api/shared/catalog/${token}`), { params: { token } })
 }
 
+async function publicIdRead() {
+  const { GET: publicIdGET } = await import('../public/catalogs/[id]/route')
+  return publicIdGET(new NextRequest(`http://localhost/api/public/catalogs/${catalogId}`), { params: { id: catalogId } })
+}
+
 function assertNoPrivateFields(value: unknown) {
   if (!value || typeof value !== 'object') return
   for (const [key, child] of Object.entries(value)) {
-    expect(['profileId', 'clerkUserId', 'quantity', 'minStock', 'shareToken', 'shareEnabled']).not.toContain(key)
+    expect(['profileId', 'clerkUserId', 'quantity', 'minStock', 'shareToken', 'shareEnabled', 'costPrice']).not.toContain(key)
     assertNoPrivateFields(child)
   }
 }
@@ -142,6 +147,25 @@ describe('catalog access against a dedicated test database', () => {
     login(null)
     expect((await publicRead(token)).status).toBe(404)
     expect((await publicRead(catalogId)).status).toBe(404)
+    expect((await publicIdRead()).status).toBe(410)
+  })
+
+  it('does not publish a catalog by CUID unless share is enabled', async () => {
+    await prisma.catalog.update({
+      where: { id: catalogId },
+      data: { shareEnabled: false, shareToken: null },
+    })
+    login(null)
+    expect((await publicIdRead()).status).toBe(410)
+
+    login(users.a.clerkUserId)
+    await enableShare()
+    login(null)
+    const response = await publicIdRead()
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    expect(payload.items[0].product).not.toHaveProperty('costPrice')
+    assertNoPrivateFields(payload)
   })
 
   it('rotates a share token so only the latest link works', async () => {

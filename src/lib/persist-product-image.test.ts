@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const lookup = vi.fn()
 const mockUpload = vi.fn()
 const mockGetPublicUrl = vi.fn()
+
+vi.mock('node:dns/promises', () => ({
+  lookup: (...args: unknown[]) => lookup(...args),
+}))
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
@@ -46,9 +51,11 @@ describe('persistProductImage', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abc.supabase.co'
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
     mockUpload.mockReset()
     mockGetPublicUrl.mockReset()
+    lookup.mockReset()
+    lookup.mockResolvedValue([{ address: '1.2.3.4', family: 4 }])
   })
 
   it('returns null for missing urls', async () => {
@@ -61,6 +68,18 @@ describe('persistProductImage', () => {
       'https://abc.supabase.co/storage/v1/object/public/product-images/1.jpg'
     const fetchSpy = vi.spyOn(global, 'fetch')
     expect(await persistProductImage(url)).toBe(url)
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
+  })
+
+  it('does not fetch private, localhost, or metadata URLs', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch')
+    const metadata = 'http://169.254.169.254/latest/meta-data'
+    const loopback = 'http://127.0.0.1/admin'
+    const local = 'http://localhost:3000/secret'
+    expect(await persistProductImage(metadata)).toBe(metadata)
+    expect(await persistProductImage(loopback)).toBe(loopback)
+    expect(await persistProductImage(local)).toBe(local)
     expect(fetchSpy).not.toHaveBeenCalled()
     fetchSpy.mockRestore()
   })

@@ -84,7 +84,7 @@ QuickScan poziva `/api/products/fetch-by-barcode`, zatim `/api/products` pri pro
 
 U ovom aktivnom handler-u nije pronađen eksplicitan trajni cache rezultata providera. Lokalni sačuvani proizvodi jesu ponovna upotreba metapodataka. Next/fetch infrastrukturni cache nije ovim potvrđen kao poslovni cache. Provider timeout/error vraća null pa se konačno može pretvoriti u found:false: nema pouzdanog razlikovanja „ne postoji” i „izvor ne radi”.
 
-`src/lib/openfoodfacts.ts` i `/api/products/barcode` takođe sadrže lookup implementacije. ProductForm koristi lookup i metadata helper; ne treba unapred menjati sve varijante kao da su isti tok.
+QuickScan i ProductForm koriste `/api/products/fetch-by-barcode` (Clerk `auth()`). `src/lib/openfoodfacts.ts` je helper oko tog endpointa. Neotvoreni `/api/products/barcode` proxy je uklonjen.
 
 Benchmark plan:
 

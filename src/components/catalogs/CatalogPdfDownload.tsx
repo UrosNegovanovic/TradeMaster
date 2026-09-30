@@ -19,8 +19,6 @@ export default function CatalogPdfDownload({
   itemsPerPage,
   pdfItemsPerPage,
 }: CatalogPdfDownloadProps) {
-  const items = catalog.items
-
   const pdfDocument = useMemo(
     () => (
       <CatalogPDF
@@ -29,7 +27,8 @@ export default function CatalogPdfDownload({
         pdfItemsPerPage={pdfItemsPerPage}
       />
     ),
-    [catalog, items, itemsPerPage, pdfItemsPerPage]
+    // catalog (not catalog.id) so item edits recreate the PDF
+    [catalog, itemsPerPage, pdfItemsPerPage]
   )
 
   const fileName = `${catalog.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_catalog.pdf`
@@ -37,7 +36,7 @@ export default function CatalogPdfDownload({
   return (
     <BlobProvider
       document={pdfDocument}
-      key={`pdf-${catalog.id}-${pdfItemsPerPage}-${items?.length ?? 0}`}
+      key={`pdf-${catalog.id}-${pdfItemsPerPage}-${catalog.items?.length ?? 0}`}
     >
       {({ blob, url, loading }) => {
         const handleDownload = () => {

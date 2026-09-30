@@ -13,11 +13,10 @@ type InvoicePdfDownloadProps = {
 }
 
 export default function InvoicePdfDownload({ invoice }: InvoicePdfDownloadProps) {
-  const items = invoice.items
-
   const pdfDocument = useMemo(
     () => <InvoicePDF invoice={invoice} />,
-    [invoice, items]
+    // invoice (not invoice.id) so line-item edits recreate the PDF
+    [invoice]
   )
 
   return (

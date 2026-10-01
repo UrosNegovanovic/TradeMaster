@@ -124,6 +124,49 @@ describe('PUT /api/invoices/:id (mocked Prisma/Clerk)', () => {
   })
 })
 
+describe('PUT /api/invoices/:id PDV (mocked Prisma/Clerk)', () => {
+  const vatPutBody = {
+    ...validPutBody,
+    items: [{ ...validPutBody.items[0], unitPrice: 100, vatRate: 20 }],
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
+    mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
+    vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
+    mocks.product.findMany.mockResolvedValue([{ id: 'product-a', costPrice: '6.25' }])
+    mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, items: [] })
+  })
+
+  it('keeps the PDV setting an issued invoice was issued with, even if the company changed it', async () => {
+    // Issued without PDV; the company has since entered the PDV system.
+    mocks.profile.findUnique.mockResolvedValue({ ...profile, inVatSystem: true })
+    mocks.$queryRaw.mockResolvedValue([{ id: 'inv-open', status: 'UNPAID', vatEnabled: false }])
+
+    await PUT(request('PUT', vatPutBody), context)
+
+    const data = mocks.invoice.update.mock.calls[0][0].data
+    expect(data.vatEnabled).toBe(false)
+    expect(data.vatAmount.toString()).toBe('0')
+    expect(data.totalAmount.toString()).toBe('100')
+    expect(data.items.create[0].vatRate.toString()).toBe('0')
+  })
+
+  it('lets a draft follow the current company setting', async () => {
+    mocks.profile.findUnique.mockResolvedValue({ ...profile, inVatSystem: true })
+    mocks.$queryRaw.mockResolvedValue([{ id: 'inv-open', status: 'DRAFT', vatEnabled: false }])
+
+    await PUT(request('PUT', vatPutBody), context)
+
+    const data = mocks.invoice.update.mock.calls[0][0].data
+    expect(data.vatEnabled).toBe(true)
+    expect(data.vatAmount.toString()).toBe('20')
+    expect(data.totalAmount.toString()).toBe('120')
+    expect(data.items.create[0].vatRate.toString()).toBe('20')
+  })
+})
+
 describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
   beforeEach(() => {
     vi.clearAllMocks()

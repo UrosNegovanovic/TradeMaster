@@ -11,6 +11,7 @@ import {
 } from '@react-pdf/renderer'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
+import { summarizeVat } from '@/lib/invoice-vat'
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
@@ -169,6 +170,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontWeight: 'bold',
   },
+  colVat: {
+    width: '9%',
+    fontSize: 10,
+    color: '#111827',
+    textAlign: 'right',
+  },
   tableHeaderText: {
     fontSize: 10,
     fontWeight: 'bold',
@@ -261,6 +268,18 @@ interface InvoicePDFProps {
 
 export function InvoicePDF({ invoice }: InvoicePDFProps) {
   const profile = invoice.profile
+  // vatEnabled is the snapshot taken when the invoice was issued; old invoices have it false.
+  const vatEnabled = invoice.vatEnabled === true
+  const vat = vatEnabled ? summarizeVat(invoice.items) : null
+  const narrow = vatEnabled
+    ? {
+        item: { width: '24%' },
+        qty: { width: '10%' },
+        price: { width: '17%' },
+        discount: { width: '13%' },
+        total: { width: '27%' },
+      }
+    : { item: {}, qty: {}, price: {}, discount: {}, total: {} }
 
   // Check if URL is valid
   const isValidImageUrl = (url: string | null | undefined): boolean => {
@@ -368,11 +387,18 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         <View style={styles.table}>
           {/* Table Header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.colItem, styles.tableHeaderText]}>Stavka</Text>
-            <Text style={[styles.colQty, styles.tableHeaderText]}>Kol.</Text>
-            <Text style={[styles.colPrice, styles.tableHeaderText]}>Jed. cena</Text>
-            <Text style={[styles.colDiscount, styles.tableHeaderText]}>Popust</Text>
-            <Text style={[styles.colTotal, styles.tableHeaderText]}>Ukupno</Text>
+            <Text style={[styles.colItem, narrow.item, styles.tableHeaderText]}>Stavka</Text>
+            <Text style={[styles.colQty, narrow.qty, styles.tableHeaderText]}>Kol.</Text>
+            <Text style={[styles.colPrice, narrow.price, styles.tableHeaderText]}>
+              {vatEnabled ? 'Jed. cena bez PDV' : 'Jed. cena'}
+            </Text>
+            <Text style={[styles.colDiscount, narrow.discount, styles.tableHeaderText]}>Popust</Text>
+            {vatEnabled ? (
+              <Text style={[styles.colVat, styles.tableHeaderText]}>PDV</Text>
+            ) : null}
+            <Text style={[styles.colTotal, narrow.total, styles.tableHeaderText]}>
+              {vatEnabled ? 'Iznos bez PDV' : 'Ukupno'}
+            </Text>
           </View>
 
           {/* Table Rows */}
@@ -382,11 +408,14 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
             
             return (
               <View key={item.id} style={styles.tableRow}>
-                <Text style={styles.colItem}>{item.productName}</Text>
-                <Text style={styles.colQty}>{item.quantity}</Text>
-                <Text style={styles.colPrice}>{formatPrice(Number(item.unitPrice))}</Text>
-                <Text style={styles.colDiscount}>{discountText}</Text>
-                <Text style={styles.colTotal}>{formatPrice(Number(item.total))}</Text>
+                <Text style={[styles.colItem, narrow.item]}>{item.productName}</Text>
+                <Text style={[styles.colQty, narrow.qty]}>{item.quantity}</Text>
+                <Text style={[styles.colPrice, narrow.price]}>{formatPrice(Number(item.unitPrice))}</Text>
+                <Text style={[styles.colDiscount, narrow.discount]}>{discountText}</Text>
+                {vatEnabled ? (
+                  <Text style={styles.colVat}>{Number(item.vatRate ?? 0)}%</Text>
+                ) : null}
+                <Text style={[styles.colTotal, narrow.total]}>{formatPrice(Number(item.total))}</Text>
               </View>
             )
           })}
@@ -395,8 +424,24 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         {/* Summary */}
         <View style={styles.summary}>
           <View style={styles.summaryBox}>
+            {vat ? (
+              <>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Osnovica:</Text>
+                  <Text style={styles.summaryValue}>{formatPrice(vat.base)}</Text>
+                </View>
+                {vat.groups.map((group) => (
+                  <View key={group.rate} style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>
+                      PDV {group.rate}% (osnovica {formatPrice(group.base)}):
+                    </Text>
+                    <Text style={styles.summaryValue}>{formatPrice(group.vat)}</Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Ukupno:</Text>
+              <Text style={styles.totalLabel}>{vat ? 'Ukupno za uplatu:' : 'Ukupno:'}</Text>
               <Text style={styles.totalValue}>
                 {formatPrice(Number(invoice.totalAmount))}
               </Text>

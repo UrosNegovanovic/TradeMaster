@@ -378,4 +378,51 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
     expect(response.headers.get('content-type')).toContain('application/json')
     await expect(response.json()).resolves.toEqual({ error: 'Internal server error' })
   })
+  describe('PDV', () => {
+    const vatBody = {
+      dueDate: '2026-10-01',
+      clientName: 'Acme',
+      items: [
+        { productId: 'product-a', productName: 'Coffee', quantity: 3, unitPrice: 33.33, discount: 0, vatRate: 20 },
+        { productId: 'product-a', productName: 'Bread', quantity: 1, unitPrice: 10, discount: 0, vatRate: 10 },
+      ],
+    }
+
+    it('stores the rate per line, vatAmount and a gross totalAmount for a company in the PDV system', async () => {
+      mocks.profile.findUnique.mockResolvedValue({ ...profile, inVatSystem: true })
+      mocks.product.findMany.mockResolvedValue([ownedProduct])
+
+      const response = await POST(postRequest(vatBody))
+
+      expect(response.status).toBe(201)
+      // 20%: base 99.99 -> 20.00 (19.998); 10%: base 10.00 -> 1.00
+      const invoiceData = mocks.invoice.create.mock.calls[0][0].data
+      expect(invoiceData.vatEnabled).toBe(true)
+      expect(String(invoiceData.vatAmount)).toBe('21')
+      expect(String(invoiceData.totalAmount)).toBe('130.99')
+      expect(mocks.invoiceItem.create.mock.calls.map(([call]) => String(call.data.vatRate))).toEqual(['20', '10'])
+    })
+
+    it('forces vatRate 0 and no PDV when the company is not in the PDV system', async () => {
+      mocks.profile.findUnique.mockResolvedValue({ ...profile, inVatSystem: false })
+
+      const response = await POST(postRequest(vatBody))
+
+      expect(response.status).toBe(201)
+      const invoiceData = mocks.invoice.create.mock.calls[0][0].data
+      expect(invoiceData.vatEnabled).toBe(false)
+      expect(String(invoiceData.vatAmount)).toBe('0')
+      expect(String(invoiceData.totalAmount)).toBe('109.99')
+      expect(mocks.invoiceItem.create.mock.calls.every(([call]) => String(call.data.vatRate) === '0')).toBe(true)
+    })
+
+    it('rejects a rate that is not 0, 10 or 20', async () => {
+      mocks.profile.findUnique.mockResolvedValue({ ...profile, inVatSystem: true })
+      const response = await POST(
+        postRequest({ ...vatBody, items: [{ ...vatBody.items[0], vatRate: 18 }] })
+      )
+      expect(response.status).toBe(400)
+      expect(mocks.invoice.create).not.toHaveBeenCalled()
+    })
+  })
 })

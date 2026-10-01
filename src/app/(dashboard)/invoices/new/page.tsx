@@ -19,6 +19,14 @@ async function fetchProducts(): Promise<Product[]> {
   return response.json()
 }
 
+async function fetchProfile(): Promise<{ inVatSystem?: boolean }> {
+  const response = await fetch('/api/profile')
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile')
+  }
+  return response.json()
+}
+
 async function createInvoice(data: InvoiceCreateInput, request: SessionFetch) {
   const response = await request('/api/invoices', {
     method: 'POST',
@@ -44,6 +52,12 @@ export default function NewInvoicePage() {
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
+  })
+
+  // The PDV setting decides which line fields the form shows
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: fetchProfile,
   })
 
   // Create invoice mutation
@@ -75,7 +89,7 @@ export default function NewInvoicePage() {
     await createMutation.mutateAsync(data)
   }
 
-  if (isLoadingProducts) {
+  if (isLoadingProducts || isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -115,6 +129,7 @@ export default function NewInvoicePage() {
 
       <InvoiceForm
         products={products}
+        inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}
       />

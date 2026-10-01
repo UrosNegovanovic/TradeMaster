@@ -2,7 +2,7 @@
 
 Short-lived file: update it when something changes. Stable rules live in `CLAUDE.md`, the plan in `docs/ROADMAP.md`.
 
-_Last updated: 2026-10-01. Target release: 2026-11-01._
+_Last updated: 2026-10-02. Target release: 2026-11-01._
 
 ## Done on main
 
@@ -10,6 +10,7 @@ _Last updated: 2026-10-01. Target release: 2026-11-01._
 - Settings logo persists after save.
 - Purchase price rules: `costPrice` required on ProductForm, invoice cost snapshots.
 - Optional sale price and Clerk-authenticated product image upload.
+- PDV on invoices (branch `feat/pdv-na-fakturi`, draft PR): company setting "u sistemu PDV-a", per-line rate snapshot (0/10/20), osnovica + PDV per rate + total on form, detail and PDF, finance on osnovica. **Needs migration `20261002100000_invoice_vat.sql` applied in Supabase before deploy.**
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
 
 ## Blocked on the owner
@@ -25,7 +26,7 @@ No paid ads until the first three are done.
 
 ## Known gaps (from code review, 2026-10-01)
 
-- Invoices have no VAT (PDV) fields; totals are plain sums in RSD.
+- PDV is on invoices (see Done). Still missing: PDV-aware CSV export (roadmap #5) and IPS QR amount (roadmap #6) must use `totalAmount` (payable) and `vatAmount`.
 - No transactional email (invoice delivery, password-less onboarding mails).
 - No product analytics or error monitoring.
 - `README.md` and `SEO_DEVOPS_AUDIT.md` are partly outdated (January 2026); the 2026-09-23 launch-readiness doc predates the catalog-share and debug-ingest fixes.

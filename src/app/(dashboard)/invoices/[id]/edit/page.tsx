@@ -48,6 +48,14 @@ async function updateInvoice(id: string, data: InvoiceCreateInput, request: Sess
   return response.json()
 }
 
+async function fetchProfile(): Promise<{ inVatSystem?: boolean }> {
+  const response = await fetch('/api/profile')
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile')
+  }
+  return response.json()
+}
+
 export default function EditInvoicePage() {
   const router = useRouter()
   const params = useParams()
@@ -65,6 +73,11 @@ export default function EditInvoicePage() {
   const { data: invoice, isLoading: isLoadingInvoice } = useQuery({
     queryKey: ['invoice', invoiceId],
     queryFn: () => fetchInvoice(invoiceId),
+  })
+
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: fetchProfile,
   })
 
   // Update invoice mutation
@@ -96,7 +109,7 @@ export default function EditInvoicePage() {
     await updateMutation.mutateAsync(data)
   }
 
-  if (isLoadingProducts || isLoadingInvoice) {
+  if (isLoadingProducts || isLoadingInvoice || isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -182,6 +195,7 @@ export default function EditInvoicePage() {
 
       <InvoiceForm
         products={products}
+        inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={updateMutation.isPending}
         initialData={invoice}

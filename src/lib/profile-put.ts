@@ -23,6 +23,7 @@ export function toProfileFormValues(profile?: {
   address?: string | null
   pib?: string | null
   giroAccount?: string | null
+  inVatSystem?: boolean | null
   logoUrl?: string | null
 } | null): ProfileFormData {
   return {
@@ -32,6 +33,7 @@ export function toProfileFormValues(profile?: {
     address: profile?.address ?? '',
     pib: profile?.pib ?? '',
     giroAccount: profile?.giroAccount ?? '',
+    inVatSystem: profile?.inVatSystem ?? false,
     logoUrl: persistableImageUrl(profile?.logoUrl) ?? '',
   }
 }
@@ -48,6 +50,10 @@ export function profilePutFields(validated: ProfileFormData, rawBody: unknown = 
     address: emptyToNull(validated.address),
     pib: emptyToNull(validated.pib),
     giroAccount: emptyToNull(validated.giroAccount),
+    // Omitted by older clients: leave the stored setting untouched instead of resetting it.
+    ...(hasOwn(rawBody, 'inVatSystem') && validated.inVatSystem !== undefined
+      ? { inVatSystem: validated.inVatSystem }
+      : {}),
     ...(hasOwn(rawBody, 'logoUrl') ? logoUrlPatch(validated.logoUrl) : {}),
   }
 }

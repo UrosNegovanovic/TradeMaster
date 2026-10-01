@@ -10,6 +10,7 @@ export default defineConfig({
       'src/lib/scan-gate.test.ts',
       'src/lib/local-date.test.ts',
       'src/lib/invoice-totals.test.ts',
+      'src/lib/invoice-vat.test.ts',
       'src/lib/invoice-validation.test.ts',
       'src/lib/invoice-status.test.ts',
       'src/lib/invoice-finance.test.ts',

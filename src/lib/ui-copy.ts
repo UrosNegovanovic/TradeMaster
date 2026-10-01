@@ -26,7 +26,10 @@ export const sr = {
     skuPlaceholder: 'Unesite SKU ili skenirajte barkod',
     quantityTip: 'Skenirajte isti barkod više puta da automatski povećate količinu.',
     costPrice: 'Nabavna cena',
-    costPriceDescription: 'Opciono. Koristi se za obračun profita i ne prikazuje se kupcu.',
+    costPriceDescription: 'Obavezna. Koristi se za obračun profita i ne prikazuje se kupcu.',
+    costPriceZeroReason: 'Razlog za nabavnu cenu 0',
+    costPriceZeroReasonDescription:
+      'npr. Promotivna roba, Besplatna zaliha dobavljača, Početni lager, Kompenzacija, Poklon/uzorak',
     description: 'Opis',
     descriptionPlaceholder: 'Unesite opis proizvoda (opciono)',
     image: 'Slika proizvoda',

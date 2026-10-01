@@ -37,17 +37,21 @@ describe('productIntakeSchema price', () => {
 
 describe('productSchema price', () => {
   it('requires a positive selling price for product creation and editing', () => {
-    expect(productSchema.safeParse({ ...base, price: 0 }).success).toBe(false)
-    expect(productSchema.safeParse({ ...base, price: -1 }).success).toBe(false)
-    expect(productSchema.safeParse({ ...base, price: 0.01 }).success).toBe(true)
+    expect(productSchema.safeParse({ ...base, price: 0, costPrice: 10 }).success).toBe(false)
+    expect(productSchema.safeParse({ ...base, price: -1, costPrice: 10 }).success).toBe(false)
+    expect(productSchema.safeParse({ ...base, price: 0.01, costPrice: 10 }).success).toBe(true)
   })
 
-  it('accepts an omitted or non-negative cost price and rejects invalid cost', () => {
+  it('requires a non-negative purchase price and a note only when that price is 0', () => {
     const priced = { ...base, price: 120 }
 
-    expect(productSchema.safeParse(priced).success).toBe(true)
-    expect(productSchema.safeParse({ ...priced, costPrice: null }).success).toBe(true)
-    expect(productSchema.safeParse({ ...priced, costPrice: 0 }).success).toBe(true)
+    expect(productSchema.safeParse(priced).success).toBe(false)
+    expect(productSchema.safeParse({ ...priced, costPrice: null }).success).toBe(false)
+    expect(productSchema.safeParse({ ...priced, costPrice: 0 }).success).toBe(false)
+    expect(
+      productSchema.safeParse({ ...priced, costPrice: 0, costPriceZeroReason: 'Promotional goods' })
+        .success
+    ).toBe(true)
     expect(productSchema.safeParse({ ...priced, costPrice: 75.5 }).success).toBe(true)
     expect(productSchema.safeParse({ ...priced, costPrice: 19.99 }).success).toBe(true)
     expect(productSchema.safeParse({ ...priced, costPrice: 0.29 }).success).toBe(true)

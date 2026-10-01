@@ -212,6 +212,11 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
       select: { id: true, costPrice: true },
     })
     expect(mocks.invoiceItem.create).toHaveBeenCalledTimes(3)
+    expect(mocks.invoiceItem.create.mock.calls[0][0].data).toMatchObject({
+      quantity: 1,
+      productName: 'Coffee',
+    })
+    expect(mocks.invoiceItem.create.mock.calls[0][0].data.unitPrice.toString()).toBe('10')
     expect(mocks.invoiceItem.create.mock.calls[0][0].data.unitCost.toString()).toBe('6.25')
     expect(mocks.invoiceItem.create.mock.calls[1][0].data.unitCost.toString()).toBe('6.25')
     expect(mocks.invoiceItem.create.mock.calls[2][0].data.unitCost).toBeNull()

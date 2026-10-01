@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   buildFinanceSnapshot,
   formatRsd,
+  marginPercent,
   nextPaidAt,
   paymentDate,
   sumInvoiceAmounts,
+  totalProfit,
+  unitProfit,
 } from './invoice-finance'
 
 const now = new Date(2026, 8, 21, 10, 0, 0)
@@ -94,6 +97,12 @@ describe('invoice-finance', () => {
     expect(sumInvoiceAmounts([{ totalAmount: '12.5' }, { totalAmount: 7.5 }])).toBe(20)
     expect(formatRsd(1000)).toContain('1.000')
     expect(buildFinanceSnapshot([], now).months[0].label).toBe('septembar 2026.')
+  })
+
+  it('exposes line profit helpers used by invoice finance', () => {
+    expect(unitProfit(200, 120)).toBe(80)
+    expect(totalProfit(2, 50, 20)).toBe(60)
+    expect(marginPercent(80, 200)).toBe(40)
   })
 
   it('calculates paid invoice profit and margin from snapshotted unit costs', () => {

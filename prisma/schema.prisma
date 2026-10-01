@@ -73,8 +73,9 @@ model Product {
   id          String   @id @default(cuid())
   name        String
   sku         String
-  price       Decimal  @default(0) @db.Decimal(10, 2) // Base price (defaults to 0 for quick intake)
-  costPrice   Decimal? @db.Decimal(10, 2) // Current purchase cost; nullable until the merchant records it
+  price       Decimal  @default(0) @db.Decimal(10, 2) // Default sale price; prefills invoice items, never rewrites history
+  costPrice   Decimal? @db.Decimal(10, 2) // Current purchase cost; nullable for legacy rows, required on ProductForm writes
+  costPriceZeroReason String? // Free-text note required by the app when costPrice is 0; not an enum
   imageUrl    String? // URL to product image (stored in Supabase Storage)
   description String?
   quantity    Int      @default(0) // Current stock quantity

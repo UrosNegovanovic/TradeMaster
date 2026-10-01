@@ -140,7 +140,9 @@ export default function WarehousePage() {
       quantity: data.quantity,
       reason: data.reason,
       type: MovementType.IN,
-      ...(data.costPrice !== undefined && data.costPrice !== null ? { costPrice: data.costPrice } : {}),
+      ...(data.costPrice !== undefined && data.costPrice !== null
+        ? { costPrice: data.costPrice, costPriceZeroReason: data.costPriceZeroReason }
+        : {}),
     })
   }
 

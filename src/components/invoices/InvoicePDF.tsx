@@ -201,6 +201,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6b7280',
   },
+  summaryLabelGroup: {
+    flexShrink: 1,
+    paddingRight: 8,
+  },
+  summaryNote: {
+    fontSize: 8,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
   summaryValue: {
     fontSize: 11,
     color: '#111827',
@@ -432,9 +441,12 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
                 </View>
                 {vat.groups.map((group) => (
                   <View key={group.rate} style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>
-                      PDV {group.rate}% (osnovica {formatPrice(group.base)}):
-                    </Text>
+                    <View style={styles.summaryLabelGroup}>
+                      <Text style={styles.summaryLabel}>PDV {group.rate}%:</Text>
+                      <Text style={styles.summaryNote}>
+                        osnovica {formatPrice(group.base)}
+                      </Text>
+                    </View>
                     <Text style={styles.summaryValue}>{formatPrice(group.vat)}</Text>
                   </View>
                 ))}

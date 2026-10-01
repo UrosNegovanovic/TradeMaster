@@ -30,6 +30,7 @@ import {
   type StockAdjustPreviewRow,
 } from '@/lib/assortment-import'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 
 type ConfirmResult = {
   line: number
@@ -49,6 +50,7 @@ export function StockAdjustImportDialog({
   onOpenChange,
   onCompleted,
 }: StockAdjustImportDialogProps) {
+  const request = useAuthorizedFetch()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
@@ -106,7 +108,7 @@ export function StockAdjustImportDialog({
     for (const row of toSend) {
       const payload = row.payload!
       try {
-        const response = await fetch('/api/products/bulk-adjust', {
+        const response = await request('/api/products/bulk-adjust', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sku: payload.sku, quantity: payload.quantity }),

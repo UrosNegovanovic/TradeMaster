@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { getSafeCatalogSharePath } from '@/lib/public-catalog'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 
 type ShareState = { url: string | null }
 
@@ -18,6 +19,7 @@ function parseShareState(value: unknown): ShareState {
 
 export function CatalogSharing({ catalogId }: { catalogId: string }) {
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const endpoint = `/api/catalogs/${catalogId}/share`
@@ -35,7 +37,7 @@ export function CatalogSharing({ catalogId }: { catalogId: string }) {
     setBusy(true)
     setMessage('')
     try {
-      const response = await fetch(endpoint, { method })
+      const response = await request(endpoint, { method })
       if (!response.ok) throw new Error('Promena deljenja nije uspela. Pokušajte ponovo.')
       queryClient.setQueryData(queryKey, parseShareState(await response.json()))
       setMessage(method === 'DELETE' ? 'Link je opozvan.' : 'Novi link je spreman. Prethodni link više ne važi.')

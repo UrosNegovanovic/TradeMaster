@@ -85,7 +85,7 @@ export function ProductList({
                 {Number(product.price) > 0 ? (
                   <span className="font-medium">{formatPrice(Number(product.price))}</span>
                 ) : (
-                  <Button variant="outline" size="sm" className="h-8 gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
+                  <Button type="button" variant="outline" size="sm" className="h-8 gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
                     <Badge variant="outline" className="border-0 p-0 text-inherit">Nedostaje cena</Badge>
                     Dodaj cenu
                   </Button>
@@ -167,7 +167,7 @@ export function ProductList({
                     {Number(product.price) > 0 ? (
                       formatPrice(Number(product.price))
                     ) : (
-                      <Button variant="outline" size="sm" className="gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
+                      <Button type="button" variant="outline" size="sm" className="gap-1 border-amber-500 text-amber-700" onClick={() => onEdit(product)}>
                         Nedostaje cena · Dodaj
                       </Button>
                     )}

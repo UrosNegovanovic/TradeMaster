@@ -11,6 +11,8 @@ import { notify } from '@/lib/notify'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchCatalogs() {
   const response = await fetch('/api/catalogs')
@@ -20,8 +22,8 @@ async function fetchCatalogs() {
   return response.json()
 }
 
-async function deleteCatalog(id: string) {
-  const response = await fetch(`/api/catalogs/${id}`, {
+async function deleteCatalog(id: string, request: SessionFetch) {
+  const response = await request(`/api/catalogs/${id}`, {
     method: 'DELETE',
   })
 
@@ -36,6 +38,7 @@ async function deleteCatalog(id: string) {
 export default function CatalogsPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
 
   // Fetch catalogs
   const { data: catalogs, isLoading } = useQuery<Catalog[]>({
@@ -45,7 +48,7 @@ export default function CatalogsPage() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: deleteCatalog,
+    mutationFn: (id: string) => deleteCatalog(id, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
       notify.success(sr.catalog.deleted, {

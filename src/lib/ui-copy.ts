@@ -5,6 +5,23 @@ export const sr = {
     retry: 'Pokušaj ponovo',
     signOut: 'Odjava',
     signingOut: 'Odjava…',
+    home: 'Početna',
+    dashboard: 'Početna tabla',
+  },
+  pdf: {
+    download: 'Preuzmi PDF',
+    generating: 'Priprema PDF-a…',
+  },
+  scan: {
+    missingCostNote:
+      'Brzi sken ne unosi nabavnu cenu. Dopunite je u asortimanu ili na Ulazu.',
+  },
+  route: {
+    errorTitle: 'Nešto nije u redu',
+    errorDescription: 'Stranica nije učitana. Pokušajte ponovo.',
+    notFoundTitle: 'Stranica nije pronađena',
+    notFoundDescription: 'Ova adresa ne postoji ili je uklonjena.',
+    loading: 'Učitavanje…',
   },
   product: {
     addTitle: 'Dodaj novi proizvod',
@@ -16,8 +33,14 @@ export const sr = {
     nameEditableHint: 'Naziv iz skenirane baze je samo predlog — izmenite ga pre čuvanja ako je potrebno.',
     skuPlaceholder: 'Unesite SKU ili skenirajte barkod',
     quantityTip: 'Skenirajte isti barkod više puta da automatski povećate količinu.',
+    salePrice: 'Cena',
+    salePriceOptional: 'Cena (opciono)',
+    salePriceDescription: 'Opciono. Možete je uneti sada ili kasnije na fakturi.',
     costPrice: 'Nabavna cena',
-    costPriceDescription: 'Opciono. Koristi se za obračun profita i ne prikazuje se kupcu.',
+    costPriceDescription: 'Obavezna. Već je poznata pri ulazu robe i ne prikazuje se kupcu.',
+    costPriceZeroReason: 'Razlog za nabavnu cenu 0',
+    costPriceZeroReasonDescription:
+      'npr. Promotivna roba, Besplatna zaliha dobavljača, Početni lager, Kompenzacija, Poklon/uzorak',
     description: 'Opis',
     descriptionPlaceholder: 'Unesite opis proizvoda (opciono)',
     image: 'Slika proizvoda',
@@ -68,6 +91,7 @@ export const sr = {
     success: 'Slika je uspešno otpremljena',
     empty: 'Slika nije izabrana',
     preview: 'Pregled izabrane slike',
+    remove: 'Ukloni sliku',
     productPlaceholder: (name: string) => `Nema slike za proizvod ${name}`,
   },
   catalog: {

@@ -1,3 +1,5 @@
+import { authorizedFetch, type GetSessionToken } from '@/lib/authorized-fetch'
+
 type Journal = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 type IntakeBody = { sku: string; [key: string]: unknown }
 type Operation = { key: string; body: IntakeBody }
@@ -27,6 +29,7 @@ const retryable = (status: number) => status >= 500 || status === 401 || status 
 
 type QueueOptions = {
   send?: typeof fetch
+  getToken?: GetSessionToken
   sleep?: (ms: number) => Promise<void>
   retryDelaysMs?: number[]
 }
@@ -41,7 +44,9 @@ type QueueOptions = {
  * confirms the unconfirmed intake rather than adding another unit.
  */
 export function createIntakeQueue(userId: string, journal: Journal, options: QueueOptions = {}) {
-  const send = options.send ?? ((...args: Parameters<typeof fetch>) => fetch(...args))
+  const send =
+    options.send ??
+    ((input, init) => authorizedFetch(input, init ?? {}, options.getToken))
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
   const retryDelaysMs = options.retryDelaysMs ?? INTAKE_RETRY_DELAYS_MS
   const queued = new Map<string, number>()

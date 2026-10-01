@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react'
-import { supabase } from '@/lib/supabase-client'
 import { notify } from '@/lib/notify'
-import Image from 'next/image'
 import { sr } from '@/lib/ui-copy'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { uploadImageViaApi } from '@/lib/client-image-upload'
+import { isDisplayableImageSrc } from '@/lib/image-src'
 
 interface ImageUploadProps {
   value?: string | null
@@ -17,6 +18,7 @@ interface ImageUploadProps {
   label?: string
   description?: string
   className?: string
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export function ImageUpload({
@@ -26,33 +28,41 @@ export function ImageUpload({
   label = sr.image.label,
   description,
   className,
+  onUploadingChange,
 }: ImageUploadProps) {
+  const authorizedFetch = useAuthorizedFetch()
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(
-    value && value !== '' ? value : null
+    isDisplayableImageSrc(value) ? value : null
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const markUploading = (next: boolean) => {
+    setUploading(next)
+    onUploadingChange?.(next)
+  }
+
   // Update preview when value changes externally
   React.useEffect(() => {
-    setPreview(value && value !== '' ? value : null)
+    setPreview(isDisplayableImageSrc(value) ? value : null)
   }, [value])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      notify.error(sr.image.invalidFile, {
-        description: sr.image.selectImage,
+    const declaredType = (file.type || '').split(';')[0]?.trim().toLowerCase()
+    if (declaredType === 'image/heic' || declaredType === 'image/heif') {
+      notify.error(sr.image.unsupportedFormat, {
+        description: sr.image.unsupportedFormatDescription,
       })
       return
     }
 
-    if (file.type === 'image/heic' || file.type === 'image/heif') {
-      notify.error(sr.image.unsupportedFormat, {
-        description: sr.image.unsupportedFormatDescription,
+    // Empty type / octet-stream still go to /api/uploads — server sniffs magic bytes.
+    if (declaredType && !declaredType.startsWith('image/') && declaredType !== 'application/octet-stream') {
+      notify.error(sr.image.invalidFile, {
+        description: sr.image.selectImage,
       })
       return
     }
@@ -72,52 +82,27 @@ export function ImageUpload({
     }
     reader.readAsDataURL(file)
 
-    // Upload to Supabase
     await uploadFile(file)
   }
 
   const uploadFile = async (file: File) => {
+    const previous = isDisplayableImageSrc(value) ? value : null
     try {
-      setUploading(true)
+      markUploading(true)
 
-      // Generate unique filename with timestamp
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${fileName}`
+      const storedUrl = await uploadImageViaApi(file, bucket, authorizedFetch)
 
-      // Upload file
-      const { error: uploadError, data } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '31536000',
-          contentType: file.type || 'image/jpeg',
-          upsert: false,
-        })
-
-      if (uploadError) {
-        throw uploadError
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(data.path)
-
-      if (urlData?.publicUrl) {
-        onChange(urlData.publicUrl)
-        setPreview(urlData.publicUrl)
-      } else {
-        throw new Error('Javna adresa slike nije dostupna')
-      }
+      onChange(storedUrl)
+      setPreview(storedUrl)
     } catch (error) {
       console.error('Error uploading file:', error)
       notify.error(sr.image.uploadFailed, {
         description: error instanceof Error ? error.message : sr.image.uploadFailed,
       })
-      setPreview(null)
+      setPreview(previous)
     } finally {
-      setUploading(false)
-      // Reset file input
+      markUploading(false)
+      // File input is snapshot-only; keep logoUrl from onChange / form state.
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -147,28 +132,18 @@ export function ImageUpload({
         {/* Preview */}
         {preview && (
           <div className="relative w-full h-48 rounded-md border overflow-hidden bg-muted">
-            {preview.startsWith('data:') ? (
-              // Use regular img for data URLs (FileReader preview)
-              <img
-                src={preview}
-                alt={sr.image.preview}
-                className="w-full h-full object-contain"
-                onError={() => {
-                  setPreview(null)
-                }}
-              />
-            ) : (
-              // Use Next.js Image for http/https URLs
-              <Image
-                src={preview}
-                alt={sr.image.preview}
-                fill
-                className="object-contain"
-                onError={() => {
-                  setPreview(null)
-                }}
-              />
-            )}
+            {/* Raw img: next/image optimizer empty-states a valid stored URL as "not selected". */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={preview}
+              alt={sr.image.preview}
+              className="w-full h-full object-contain"
+              onError={() => {
+                if (preview.startsWith('data:') || preview.startsWith('blob:')) {
+                  setPreview(isDisplayableImageSrc(value) ? value : null)
+                }
+              }}
+            />
             {!uploading && (
               <Button
                 type="button"
@@ -176,6 +151,7 @@ export function ImageUpload({
                 size="sm"
                 className="absolute top-2 right-2"
                 onClick={handleRemove}
+                aria-label={sr.image.remove}
               >
                 <X className="h-4 w-4" />
               </Button>

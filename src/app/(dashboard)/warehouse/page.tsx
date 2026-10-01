@@ -23,6 +23,9 @@ import { MovementType } from '@prisma/client'
 import { notify } from '@/lib/notify'
 import { ProductImage } from '@/components/shared/ProductImage'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
+import { readApiErrorMessage } from '@/lib/api-error'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -58,8 +61,8 @@ async function fetchStockMovements(): Promise<StockMovementList> {
   }
 }
 
-async function createStockMovement(data: StockMovementCreateInput): Promise<StockMovement> {
-  const response = await fetch('/api/stock-movements', {
+async function createStockMovement(data: StockMovementCreateInput, request: SessionFetch): Promise<StockMovement> {
+  const response = await request('/api/stock-movements', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -68,8 +71,7 @@ async function createStockMovement(data: StockMovementCreateInput): Promise<Stoc
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to create stock movement')
+    throw new Error(await readApiErrorMessage(response, 'Failed to create stock movement'))
   }
 
   return response.json()
@@ -77,6 +79,7 @@ async function createStockMovement(data: StockMovementCreateInput): Promise<Stoc
 
 export default function WarehousePage() {
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
   const [stockInOpen, setStockInOpen] = useState(false)
   const [stockOutOpen, setStockOutOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -107,7 +110,7 @@ export default function WarehousePage() {
   }
 
   const createMovementMutation = useMutation({
-    mutationFn: createStockMovement,
+    mutationFn: (data: StockMovementCreateInput) => createStockMovement(data, request),
     onSuccess: (data) => {
       invalidateStock()
       const isOut = data.type === MovementType.OUT
@@ -137,7 +140,9 @@ export default function WarehousePage() {
       quantity: data.quantity,
       reason: data.reason,
       type: MovementType.IN,
-      ...(data.costPrice !== undefined && data.costPrice !== null ? { costPrice: data.costPrice } : {}),
+      ...(data.costPrice !== undefined && data.costPrice !== null
+        ? { costPrice: data.costPrice, costPriceZeroReason: data.costPriceZeroReason }
+        : {}),
     })
   }
 

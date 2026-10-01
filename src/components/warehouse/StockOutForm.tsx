@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -17,17 +17,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-// Removed Popover and Command - using native dropdown instead
 import { Loader2, AlertTriangle, Check, ChevronsUpDown } from 'lucide-react'
 import { Product } from '@/types/product'
 import { pickerProductForId, productsForPicker } from '@/lib/product-picker'
 import { cn } from '@/lib/utils'
+import { sr } from '@/lib/ui-copy'
 
-// Base schema - we'll add dynamic validation
 const baseStockOutSchema = z.object({
-  productId: z.string().min(1, 'Please select a product'),
-  quantity: z.coerce.number().int().positive('Quantity must be a positive number'),
-  reason: z.string().min(1, 'Please enter a reason').max(200, 'Reason is too long'),
+  productId: z.string().min(1, 'Izaberite proizvod'),
+  quantity: z.coerce.number().int().positive('Količina mora biti pozitivan broj'),
+  reason: z.string().min(1, 'Unesite razlog').max(200, 'Razlog je predugačak'),
 })
 
 type StockOutFormData = z.infer<typeof baseStockOutSchema>
@@ -49,10 +48,9 @@ export function StockOutForm({
 }: StockOutFormProps) {
   const [productSearchOpen, setProductSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  
+
   const pickerProducts = useMemo(() => productsForPicker(products), [products])
 
-  // Filter products based on search
   const filteredProducts = useMemo(() => {
     if (!searchQuery) return pickerProducts
     const query = searchQuery.toLowerCase()
@@ -61,26 +59,20 @@ export function StockOutForm({
     )
   }, [pickerProducts, searchQuery])
 
-  // Native dropdown - no need for portal fixes anymore!
-
-  // ✅ Dynamic schema with "Prevent Negative Stock" policy - defined once
   const dynamicSchema = useMemo(() => {
     return baseStockOutSchema.refine(
       (data) => {
-        if (!data.productId) return true // Will be caught by base validation
+        if (!data.productId) return true
         const product = pickerProductForId(products, data.productId)
         if (!product) return true
-        
+
         const availableStock = product.quantity || 0
-        
-        // ✅ PREVENT NEGATIVE STOCK: Cannot remove more than available
         return data.quantity <= availableStock
       },
       (data) => {
-        // Dynamic error message based on current product
         const product = pickerProductForId(products, data.productId)
         const availableStock = product?.quantity || 0
-        
+
         return {
           message: `Ne može se skinuti više od stanja (${availableStock} kom).`,
           path: ['quantity'],
@@ -105,7 +97,6 @@ export function StockOutForm({
     },
   })
 
-  // ✅ Now watch is available - use it after useForm
   const selectedProductId = watch('productId')
   const selectedProduct = pickerProductForId(products, selectedProductId)
   const availableStock = selectedProduct?.quantity || 0
@@ -122,18 +113,17 @@ export function StockOutForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>🔴 Register Stock Out</DialogTitle>
+          <DialogTitle>Izlaz robe</DialogTitle>
           <DialogDescription>
-            Remove stock from inventory. This will decrease the product quantity.
+            Uklonite količinu sa stanja. Ovo smanjuje količinu proizvoda.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="productId">
-                Product <span className="text-destructive">*</span>
+                Proizvod <span className="text-destructive">*</span>
               </Label>
-              {/* NATIVE DROPDOWN - No Radix, No cmdk */}
               <div className="relative">
                 <Button
                   type="button"
@@ -150,30 +140,28 @@ export function StockOutForm({
                   <span className="truncate">
                     {selectedProduct
                       ? `${selectedProduct.name} (${selectedProduct.sku})`
-                      : "Select a product..."}
+                      : 'Izaberite proizvod'}
                   </span>
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
-                
+
                 {productSearchOpen && (
-                  <div 
+                  <div
                     className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md"
                     style={{ maxHeight: '300px', overflow: 'hidden' }}
                   >
-                    {/* Search Input */}
                     <div className="p-2 border-b">
                       <Input
                         type="text"
-                        placeholder="Search products..."
+                        placeholder="Pretraži proizvode..."
                         value={searchQuery}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         className="h-9"
                         autoFocus
                       />
                     </div>
-                    
-                    {/* Product List */}
-                    <div 
+
+                    <div
                       className="overflow-y-auto"
                       style={{ maxHeight: '250px' }}
                     >
@@ -185,7 +173,7 @@ export function StockOutForm({
                         filteredProducts.map((product) => (
                           <div
                             key={product.sku}
-                            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                            onClick={() => {
                               setValue('productId', product.id, { shouldValidate: true })
                               setValue('quantity', 1)
                               setProductSearchOpen(false)
@@ -207,7 +195,7 @@ export function StockOutForm({
                                 {product.name}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
-                                SKU: {product.sku} • Stock: {product.quantity || 0}
+                                SKU: {product.sku} • Stanje: {product.quantity || 0}
                               </p>
                             </div>
                           </div>
@@ -216,8 +204,7 @@ export function StockOutForm({
                     </div>
                   </div>
                 )}
-                
-                {/* Backdrop to close dropdown */}
+
                 {productSearchOpen && (
                   <div
                     className="fixed inset-0 z-40"
@@ -233,7 +220,7 @@ export function StockOutForm({
                 <p className="text-sm text-destructive">{errors.productId.message}</p>
               )}
               {selectedProduct && (
-                <Badge 
+                <Badge
                   variant={availableStock === 0 ? 'destructive' : availableStock <= 10 ? 'outline' : 'outline'}
                   className={availableStock === 0 ? '' : availableStock <= 10 ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400' : 'border-green-500 text-green-700 dark:text-green-400'}
                 >
@@ -244,7 +231,7 @@ export function StockOutForm({
 
             <div className="grid gap-2">
               <Label htmlFor="quantity">
-                Quantity <span className="text-destructive">*</span>
+                Količina <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="quantity"
@@ -252,14 +239,14 @@ export function StockOutForm({
                 min="1"
                 max={availableStock || undefined}
                 step="1"
-                placeholder="Enter quantity"
+                placeholder="Unesite količinu"
                 disabled={availableStock === 0}
                 {...register('quantity')}
               />
               {selectedProduct && availableStock === 0 && (
                 <p className="text-sm text-destructive">
                   <AlertTriangle className="inline h-3 w-3 mr-1" />
-                  Out of stock! Cannot register stock out.
+                  Nema na stanju. Izlaz nije moguć.
                 </p>
               )}
               {selectedProduct && availableStock > 0 && (
@@ -274,11 +261,11 @@ export function StockOutForm({
 
             <div className="grid gap-2">
               <Label htmlFor="reason">
-                Reason <span className="text-destructive">*</span>
+                Razlog / napomena <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="reason"
-                placeholder="e.g., Sale, Damaged, Lost, Sample"
+                placeholder="npr. Prodaja, oštećenje, gubitak, uzorak"
                 {...register('reason')}
               />
               {errors.reason && (
@@ -293,11 +280,11 @@ export function StockOutForm({
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              {sr.common.cancel}
             </Button>
             <Button type="submit" variant="destructive" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Register Stock Out
+              Evidentiraj izlaz
             </Button>
           </DialogFooter>
         </form>

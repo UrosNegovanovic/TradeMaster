@@ -18,8 +18,7 @@ import { ProductImage } from '@/components/shared/ProductImage'
 import { getSafeEmailHref, getSafePhoneHref } from '@/lib/public-catalog'
 
 async function fetchCatalog(id: string): Promise<PublicCatalog> {
-  // Keep already-issued catalog-id links working while all newly issued links use
-  // a revocable, unguessable token.
+  // Token links are the share contract. Catalog-id links only work while shareEnabled is on.
   const endpoint = /^[a-f0-9]{64}$/.test(id)
     ? `/api/shared/catalog/${id}`
     : `/api/public/catalogs/${id}`

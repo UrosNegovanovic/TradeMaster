@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { catalogSchema } from '@/lib/validations'
 import { ZodError } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // GET: Fetch a specific catalog with products
 export async function GET(
   request: NextRequest,

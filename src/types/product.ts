@@ -6,6 +6,7 @@ export type Product = {
   sku: string
   price: Decimal
   costPrice: Decimal | null
+  costPriceZeroReason: string | null
   imageUrl: string | null
   description: string | null
   quantity: number
@@ -25,6 +26,7 @@ export type ProductCreateInput = {
   sku: string
   price: number
   costPrice?: number | null
+  costPriceZeroReason?: string | null
   imageUrl?: string | null
   description?: string | null
   categoryId?: string | null

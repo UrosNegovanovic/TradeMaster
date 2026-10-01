@@ -19,6 +19,8 @@ import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchInvoices() {
   const response = await fetch('/api/invoices')
@@ -28,8 +30,8 @@ async function fetchInvoices() {
   return response.json()
 }
 
-async function deleteInvoice(id: string) {
-  const response = await fetch(`/api/invoices/${id}`, {
+async function deleteInvoice(id: string, request: SessionFetch) {
+  const response = await request(`/api/invoices/${id}`, {
     method: 'DELETE',
   })
 
@@ -163,6 +165,7 @@ export default function InvoicesPage() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const request = useAuthorizedFetch()
   const view = parseInvoiceView(searchParams.get('status'))
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
@@ -185,7 +188,7 @@ export default function InvoicesPage() {
 
     Promise.all(
       drafts.map((invoice) =>
-        fetch(`/api/invoices/${invoice.id}`, {
+        request(`/api/invoices/${invoice.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: InvoiceStatus.UNPAID }),
@@ -194,10 +197,10 @@ export default function InvoicesPage() {
     ).then(() => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
     })
-  }, [invoices, queryClient])
+  }, [invoices, queryClient, request])
 
   const deleteMutation = useMutation({
-    mutationFn: deleteInvoice,
+    mutationFn: (id: string) => deleteInvoice(id, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })

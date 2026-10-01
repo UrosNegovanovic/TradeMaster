@@ -193,6 +193,29 @@ describe('product intake against a dedicated test database', () => {
     expect((await rows(sku))[0].quantity).toBe(existing ? 11 : 1)
   })
 
+  it('updates the latest SKU row from a previous day instead of creating another product', async () => {
+    const sku = `${prefix}-across-days`
+    const created = await POST(request(body(sku, 4)))
+    expect(created.status).toBe(201)
+    const original = await created.json()
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    yesterday.setHours(12, 0, 0, 0)
+    await prisma.product.update({ where: { id: original.id }, data: { createdAt: yesterday } })
+
+    const response = await POST(request({ ...body(sku, 2), price: 0 }))
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    expect(payload.action).toBe('updated')
+    expect(payload.id).toBe(original.id)
+
+    const stored = await rows(sku)
+    expect(stored).toHaveLength(1)
+    expect(stored[0].id).toBe(original.id)
+    expect(stored[0].quantity).toBe(6)
+    expect(Number(stored[0].price)).toBe(12.5)
+  })
+
   it('replays a receipt when its product belongs to a previous day', async () => {
     const sku = `${prefix}-previous-day`
     const key = randomUUID()

@@ -1,40 +1,107 @@
-/** Local calendar date helpers. Europe/Belgrade timezone policy is deferred. */
+/** Calendar helpers in Europe/Belgrade, independent of the server UTC clock. */
+
+export const APP_TIMEZONE = 'Europe/Belgrade'
+
+type ZonedParts = {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+}
+
+function zonedParts(date: Date, timeZone = APP_TIMEZONE): ZonedParts {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value)
+
+  let hour = read('hour')
+  if (hour === 24) hour = 0
+
+  return {
+    year: read('year'),
+    month: read('month'),
+    day: read('day'),
+    hour,
+    minute: read('minute'),
+    second: read('second'),
+  }
+}
+
+function tzOffsetMs(date: Date): number {
+  const zoned = zonedParts(date)
+  const asUtc = Date.UTC(zoned.year, zoned.month - 1, zoned.day, zoned.hour, zoned.minute, zoned.second)
+  return asUtc - date.getTime()
+}
+
+/** UTC instant of a civil datetime in Europe/Belgrade. */
+export function zonedDateTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+  second = 0
+): Date {
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second)
+  const firstOffset = tzOffsetMs(new Date(utcGuess))
+  const instant = utcGuess - firstOffset
+  const secondOffset = tzOffsetMs(new Date(instant))
+  if (secondOffset !== firstOffset) {
+    return new Date(utcGuess - secondOffset)
+  }
+  return new Date(instant)
+}
 
 export function startOfLocalDay(date = new Date()): Date {
-  const next = new Date(date)
-  next.setHours(0, 0, 0, 0)
-  return next
+  const { year, month, day } = zonedParts(date)
+  return zonedDateTimeToUtc(year, month, day, 0, 0, 0)
 }
 
 export function startOfLocalTomorrow(date = new Date()): Date {
-  const next = startOfLocalDay(date)
-  next.setDate(next.getDate() + 1)
-  return next
+  const start = startOfLocalDay(date)
+  // Advance 26h then snap back to the next Belgrade midnight (DST-safe).
+  const { year, month, day } = zonedParts(new Date(start.getTime() + 26 * 60 * 60 * 1000))
+  return zonedDateTimeToUtc(year, month, day, 0, 0, 0)
 }
 
 export function startOfLocalMonth(date = new Date()): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0)
+  const { year, month } = zonedParts(date)
+  return zonedDateTimeToUtc(year, month, 1, 0, 0, 0)
 }
 
 export function startOfLocalYear(date = new Date()): Date {
-  return new Date(date.getFullYear(), 0, 1, 0, 0, 0, 0)
+  const { year } = zonedParts(date)
+  return zonedDateTimeToUtc(year, 1, 1, 0, 0, 0)
 }
 
 export function addLocalMonths(date: Date, months: number): Date {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1, 0, 0, 0, 0)
+  const { year, month } = zonedParts(date)
+  const total = year * 12 + (month - 1) + months
+  const nextYear = Math.floor(total / 12)
+  const nextMonth = (total % 12) + 1
+  return zonedDateTimeToUtc(nextYear, nextMonth, 1, 0, 0, 0)
 }
 
 export function formatLocalYm(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  return `${year}-${month}`
+  const { year, month } = zonedParts(date)
+  return `${year}-${String(month).padStart(2, '0')}`
 }
 
 export function formatLocalYmd(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const { year, month, day } = zonedParts(date)
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 export function parseLocalYmd(value: string | null | undefined): Date | null {
@@ -50,18 +117,17 @@ export function parseLocalYmd(value: string | null | undefined): Date | null {
   const year = Number(match[1])
   const month = Number(match[2])
   const day = Number(match[3])
-  const date = new Date(year, month - 1, day)
+  const utcProbe = new Date(Date.UTC(year, month - 1, day))
 
   if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
+    utcProbe.getUTCFullYear() !== year ||
+    utcProbe.getUTCMonth() !== month - 1 ||
+    utcProbe.getUTCDate() !== day
   ) {
     return null
   }
 
-  date.setHours(0, 0, 0, 0)
-  return date
+  return zonedDateTimeToUtc(year, month, day, 0, 0, 0)
 }
 
 export function isSameLocalDay(left: Date | null, right: Date | null): boolean {
@@ -69,9 +135,13 @@ export function isSameLocalDay(left: Date | null, right: Date | null): boolean {
     return false
   }
 
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  )
+  return formatLocalYmd(left) === formatLocalYmd(right)
+}
+
+export function belgradeMonthIndex(date: Date): number {
+  return zonedParts(date).month - 1
+}
+
+export function belgradeYear(date: Date): number {
+  return zonedParts(date).year
 }

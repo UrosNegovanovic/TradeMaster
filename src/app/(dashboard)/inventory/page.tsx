@@ -15,6 +15,10 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
+import { useAuth } from '@clerk/nextjs'
+import { authorizedFetch, type GetSessionToken, type SessionFetch } from '@/lib/authorized-fetch'
+import { readApiErrorMessage } from '@/lib/api-error'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import Link from 'next/link'
 import { formatLocalYmd, isSameLocalDay, parseLocalYmd } from '@/lib/local-date'
 import {
@@ -35,8 +39,8 @@ async function fetchProducts(): Promise<Product[]> {
   return response.json()
 }
 
-async function createProduct(data: ProductFormData): Promise<Product> {
-  const response = await fetch('/api/products', {
+async function createProduct(data: ProductFormData, request: SessionFetch): Promise<Product> {
+  const response = await request('/api/products', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -45,8 +49,7 @@ async function createProduct(data: ProductFormData): Promise<Product> {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to create product')
+    throw new Error(await readApiErrorMessage(response, 'Failed to create product'))
   }
 
   return response.json()
@@ -54,36 +57,37 @@ async function createProduct(data: ProductFormData): Promise<Product> {
 
 async function updateProduct(
   id: string,
-  data: ProductFormData
+  data: ProductFormData,
+  getToken?: GetSessionToken
 ): Promise<Product> {
-  const response = await fetch(`/api/products/${id}`, {
+  const response = await authorizedFetch(`/api/products/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
-  })
+  }, getToken)
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to update product')
+    throw new Error(await readApiErrorMessage(response, 'Failed to update product'))
   }
 
   return response.json()
 }
 
-async function deleteProduct(id: string): Promise<void> {
-  const response = await fetch(`/api/products/${id}`, {
+async function deleteProduct(id: string, request: SessionFetch): Promise<void> {
+  const response = await request(`/api/products/${id}`, {
     method: 'DELETE',
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to delete product')
+    throw new Error(await readApiErrorMessage(response, 'Failed to delete product'))
   }
 }
 
 export default function InventoryPage() {
+  const { getToken } = useAuth()
+  const request = useAuthorizedFetch()
   const queryClient = useQueryClient()
   const router = useRouter()
   const pathname = usePathname()
@@ -210,7 +214,7 @@ export default function InventoryPage() {
 
   // Create product mutation (with inventory upsert support)
   const createMutation = useMutation({
-    mutationFn: createProduct,
+    mutationFn: (data: ProductFormData) => createProduct(data, request),
     onSuccess: (response: Product & { action?: 'created' | 'updated'; quantityAdded?: number; previousQuantity?: number }) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
@@ -266,7 +270,7 @@ export default function InventoryPage() {
   // Update product mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductFormData }) =>
-      updateProduct(id, data),
+      updateProduct(id, data, getToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setIsFormOpen(false)
@@ -285,7 +289,7 @@ export default function InventoryPage() {
 
   // Delete product mutation
   const deleteMutation = useMutation({
-    mutationFn: ({ id, product }: { id: string; product: Product }) => deleteProduct(id),
+    mutationFn: ({ id, product }: { id: string; product: Product }) => deleteProduct(id, request),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setDeleteConfirm(null)

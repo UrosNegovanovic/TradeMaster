@@ -5,7 +5,6 @@ import { lockIntakeSku } from '@/lib/product-intake'
 
 export const BULK_ADJUST_REASON = 'Korekcija stanja (CSV uvoz)'
 export const SKU_MISSING_ERROR = 'SKU ne postoji'
-export const SKU_AMBIGUOUS_ERROR = 'nejasno — više proizvoda sa ovim SKU-om'
 
 export type StockAdjustSuccess = {
   ok: true
@@ -15,16 +14,22 @@ export type StockAdjustSuccess = {
   quantity: number
   delta: number
   type: MovementType | null
+  leftoverRowsZeroed: number
 }
 
 export type StockAdjustFailure = {
   ok: false
   sku: string
-  error: typeof SKU_MISSING_ERROR | typeof SKU_AMBIGUOUS_ERROR
+  error: typeof SKU_MISSING_ERROR
 }
 
 export type StockAdjustResult = StockAdjustSuccess | StockAdjustFailure
 
+/**
+ * SET quantity for a SKU. Leftover daily-batch rows keep their ids (invoices/catalogs
+ * may still point at them) but stock is moved onto the newest row so CSV correction
+ * is not blocked by “ambiguous SKU”.
+ */
 export async function adjustStockToQuantity(
   profileId: string,
   sku: string,
@@ -42,49 +47,62 @@ export async function adjustStockToQuantity(
       if (matches.length === 0) {
         return { ok: false, sku, error: SKU_MISSING_ERROR }
       }
-      if (matches.length > 1) {
-        return { ok: false, sku, error: SKU_AMBIGUOUS_ERROR }
-      }
 
-      const product = matches[0]
-      const delta = quantity - product.quantity
-      if (delta === 0) {
+      const canonical = matches[0]
+      const leftovers = matches.slice(1)
+      const previousQuantity = matches.reduce((sum, row) => sum + row.quantity, 0)
+      const delta = quantity - previousQuantity
+      const leftoversWithStock = leftovers.filter((row) => row.quantity !== 0)
+
+      if (delta === 0 && leftoversWithStock.length === 0) {
         return {
           ok: true,
           sku,
-          productId: product.id,
-          previousQuantity: product.quantity,
+          productId: canonical.id,
+          previousQuantity,
           quantity,
           delta: 0,
           type: null,
+          leftoverRowsZeroed: 0,
         }
       }
 
-      const type = delta > 0 ? MovementType.IN : MovementType.OUT
-      await tx.stockMovement.create({
-        data: {
-          type,
-          quantity: Math.abs(delta),
-          reason: BULK_ADJUST_REASON,
-          source: StockMovementSource.MANUAL,
-          sourceKey: `bulk-adjust:${randomUUID()}`,
-          profileId,
-          productId: product.id,
-        },
-      })
+      if (delta !== 0) {
+        const type = delta > 0 ? MovementType.IN : MovementType.OUT
+        await tx.stockMovement.create({
+          data: {
+            type,
+            quantity: Math.abs(delta),
+            reason: BULK_ADJUST_REASON,
+            source: StockMovementSource.MANUAL,
+            sourceKey: `bulk-adjust:${randomUUID()}`,
+            profileId,
+            productId: canonical.id,
+          },
+        })
+      }
+
       await tx.product.update({
-        where: { id: product.id },
+        where: { id: canonical.id },
         data: { quantity },
       })
+
+      if (leftoversWithStock.length > 0) {
+        await tx.product.updateMany({
+          where: { id: { in: leftoversWithStock.map((row) => row.id) } },
+          data: { quantity: 0 },
+        })
+      }
 
       return {
         ok: true,
         sku,
-        productId: product.id,
-        previousQuantity: product.quantity,
+        productId: canonical.id,
+        previousQuantity,
         quantity,
         delta,
-        type,
+        type: delta === 0 ? null : delta > 0 ? MovementType.IN : MovementType.OUT,
+        leftoverRowsZeroed: leftoversWithStock.length,
       }
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, maxWait: 5000, timeout: 10000 }

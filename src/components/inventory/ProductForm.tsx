@@ -59,12 +59,15 @@ export function ProductForm({
     defaultValues: {
       name: initialData?.name ?? product?.name ?? '',
       sku: initialData?.sku ?? product?.sku ?? '',
-      price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+      price:
+        initialData?.price ??
+        (product?.price !== null && product?.price !== undefined ? Number(product.price) : undefined),
       costPrice:
         initialData?.costPrice ??
         (product?.costPrice !== null && product?.costPrice !== undefined
           ? Number(product.costPrice)
-          : null),
+          : undefined),
+      costPriceZeroReason: initialData?.costPriceZeroReason ?? product?.costPriceZeroReason ?? '',
       quantity: initialData?.quantity ?? product?.quantity ?? 1,
       description: initialData?.description ?? product?.description ?? '',
       imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
@@ -76,6 +79,15 @@ export function ProductForm({
   const currentName = watch('name')
   const currentDescription = watch('description')
   const currentImageUrl = watch('imageUrl')
+  const currentCostPrice = watch('costPrice')
+  const showZeroCostReason = currentCostPrice === 0
+
+  React.useEffect(() => {
+    if (currentCostPrice === 0) return
+    if (getValues('costPriceZeroReason')) {
+      setValue('costPriceZeroReason', '', { shouldValidate: false })
+    }
+  }, [currentCostPrice, getValues, setValue])
 
   // Reset form when product or initialData changes or dialog opens/closes
   React.useEffect(() => {
@@ -83,12 +95,15 @@ export function ProductForm({
       reset({
         name: initialData?.name ?? product?.name ?? '',
         sku: initialData?.sku ?? product?.sku ?? '',
-        price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+        price:
+          initialData?.price ??
+          (product?.price !== null && product?.price !== undefined ? Number(product.price) : undefined),
         costPrice:
           initialData?.costPrice ??
           (product?.costPrice !== null && product?.costPrice !== undefined
             ? Number(product.costPrice)
-            : null),
+            : undefined),
+        costPriceZeroReason: initialData?.costPriceZeroReason ?? product?.costPriceZeroReason ?? '',
         quantity: initialData?.quantity ?? product?.quantity ?? 1,
         description: initialData?.description ?? product?.description ?? '',
         imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
@@ -171,11 +186,12 @@ export function ProductForm({
           
           setValue('name', existingProduct.name, { shouldValidate: true })
           setValue('price', Number(existingProduct.price), { shouldValidate: true })
-          setValue(
-            'costPrice',
-            existingProduct.costPrice === null ? null : Number(existingProduct.costPrice),
-            { shouldValidate: true }
-          )
+          if (existingProduct.costPrice !== null && existingProduct.costPrice !== undefined) {
+            setValue('costPrice', Number(existingProduct.costPrice), { shouldValidate: true })
+          }
+          setValue('costPriceZeroReason', existingProduct.costPriceZeroReason ?? '', {
+            shouldValidate: true,
+          })
           setValue('quantity', 1, { shouldValidate: true }) // Reset to 1 for new scan
           
           if (existingProduct.imageUrl) {
@@ -378,31 +394,36 @@ export function ProductForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="price">Cena</Label>
+              <Label htmlFor="price">{sr.product.salePriceOptional}</Label>
               <Input
                 id="price"
                 type="number"
                 step="0.01"
-                min="0.01"
+                min="0"
                 placeholder="0,00"
-                required
-                {...register('price', { valueAsNumber: true })}
+                {...register('price', {
+                  setValueAs: (value) => (value === '' || value === undefined ? 0 : Number(value)),
+                })}
               />
+              <p className="text-xs text-muted-foreground">{sr.product.salePriceDescription}</p>
               {errors.price && (
                 <p className="text-sm text-destructive">{errors.price.message}</p>
               )}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="costPrice">{sr.product.costPrice} (opciono)</Label>
+              <Label htmlFor="costPrice">
+                {sr.product.costPrice} <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="costPrice"
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0,00"
+                required
                 {...register('costPrice', {
-                  setValueAs: (value) => (value === '' ? null : Number(value)),
+                  setValueAs: (value) => (value === '' ? undefined : Number(value)),
                 })}
               />
               <p className="text-xs text-muted-foreground">
@@ -412,6 +433,25 @@ export function ProductForm({
                 <p className="text-sm text-destructive">{errors.costPrice.message}</p>
               )}
             </div>
+
+            {showZeroCostReason ? (
+              <div className="grid gap-2">
+                <Label htmlFor="costPriceZeroReason">
+                  {sr.product.costPriceZeroReason} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="costPriceZeroReason"
+                  placeholder={sr.product.costPriceZeroReasonDescription}
+                  {...register('costPriceZeroReason')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {sr.product.costPriceZeroReasonDescription}
+                </p>
+                {errors.costPriceZeroReason && (
+                  <p className="text-sm text-destructive">{errors.costPriceZeroReason.message}</p>
+                )}
+              </div>
+            ) : null}
 
             <div className="grid gap-2">
               <Label htmlFor="description">{sr.product.description}</Label>

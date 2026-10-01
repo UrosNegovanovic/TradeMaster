@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { persistProductImage, scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
+import { productPutFields } from '@/lib/product-put'
+
+export const dynamic = 'force-dynamic'
 
 // PUT: Update a product
 export async function PUT(
@@ -55,28 +58,20 @@ export async function PUT(
     // Validate input
     const validatedData = productSchema.parse(body)
 
-    // If SKU is being changed, check if new SKU already exists for TODAY (Daily Batching logic)
+    // If SKU is being changed, reject when another product already uses it.
     if (validatedData.sku !== existingProduct.sku) {
-      const startOfToday = new Date()
-      startOfToday.setHours(0, 0, 0, 0)
-      
-      const endOfToday = new Date()
-      endOfToday.setHours(23, 59, 59, 999)
-
       const skuExists = await prisma.product.findFirst({
         where: {
           profileId: profile.id,
           sku: validatedData.sku,
-          createdAt: {
-            gte: startOfToday,
-            lte: endOfToday,
-          },
+          NOT: { id: params.id },
         },
+        select: { id: true },
       })
 
       if (skuExists) {
         return NextResponse.json(
-          { error: 'Product with this SKU already exists for today' },
+          { error: 'Proizvod sa ovim SKU-om već postoji' },
           { status: 409 }
         )
       }
@@ -86,18 +81,11 @@ export async function PUT(
       validatedData.imageUrl === '' ? null : validatedData.imageUrl ?? null
     )
 
-    // Update product
     const product = await prisma.product.update({
       where: { id: params.id },
       data: {
-        name: validatedData.name,
-        sku: validatedData.sku,
-        price: validatedData.price,
-        costPrice: validatedData.costPrice ?? null,
-        quantity: validatedData.quantity ?? 1,
-        description: validatedData.description === '' ? null : validatedData.description ?? null,
+        ...productPutFields(validatedData),
         imageUrl,
-        categoryId: validatedData.categoryId ?? null,
       },
       include: {
         category: {

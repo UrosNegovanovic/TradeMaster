@@ -1,3 +1,5 @@
+import { optionalCostPriceSchema } from '@/lib/validations'
+
 export const ASSORTMENT_HEADERS = ['naziv', 'sku', 'kolicina', 'cena', 'nabavna_cena', 'kategorija'] as const
 export const STOCK_ADJUST_HEADERS = ['sku', 'kolicina'] as const
 
@@ -134,10 +136,15 @@ function costPriceFromCell(value: unknown): { value?: number; error?: string } {
   if (cellText(value) === '') return {}
   const parsed = parseNumber(value)
   if (parsed == null) return { error: 'Nabavna cena mora biti broj' }
-  if (parsed < 0) return { error: 'Nabavna cena ne može biti negativna' }
-  if (parsed > 99999999.99) return { error: 'Nabavna cena je van podržanog opsega' }
-  if (!Number.isInteger(parsed * 100)) return { error: 'Nabavna cena može imati najviše 2 decimale' }
-  return { value: parsed }
+  const result = optionalCostPriceSchema.safeParse(parsed)
+  if (!result.success) {
+    return { error: result.error.issues[0]?.message ?? 'Nabavna cena mora biti broj' }
+  }
+  if (result.data == null) return {}
+  if (result.data === 0) {
+    return { error: 'Nabavna cena 0 zahteva razlog — unesite ga u formi proizvoda, ne u CSV-u' }
+  }
+  return { value: result.data }
 }
 
 export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows: AssortmentPreviewRow[] } {
@@ -176,12 +183,15 @@ export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows:
     }
 
     const price = parseNumber(row[3])
-    if (cenaText === '' || price == null) {
+    if (cenaText !== '' && price == null) {
       issues.push({ field: 'cena', message: 'Cena mora biti broj' })
-    } else if (price < 0) {
+    } else if (price != null && price < 0) {
       issues.push({ field: 'cena', message: 'Cena ne može biti negativna' })
     }
 
+    if (nabavnaText === '') {
+      issues.push({ field: 'nabavna_cena', message: 'Nabavna cena je obavezna' })
+    }
     const cost = costPriceFromCell(row[4])
     if (cost.error) issues.push({ field: 'nabavna_cena', message: cost.error })
 
@@ -191,7 +201,7 @@ export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows:
           name: naziv,
           sku,
           quantity: quantity as number,
-          price: price as number,
+          price: price ?? 0,
           ...(cost.value !== undefined ? { costPrice: cost.value } : {}),
           ...(kategorija ? { categoryName: kategorija } : {}),
         }

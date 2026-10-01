@@ -53,6 +53,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
   })
   const [clientName, setClientName] = useState('')
   const [clientAddress, setClientAddress] = useState('')
+  const [clientPib, setClientPib] = useState('')
   const [items, setItems] = useState<InvoiceItemRow[]>([
     { id: '1', productId: null, productName: '', quantity: 1, unitPrice: 0, discount: 0, total: 0 },
   ])
@@ -65,6 +66,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       setDueDate(initialData.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : '')
       setClientName(initialData.clientName || '')
       setClientAddress(initialData.clientAddress || '')
+      setClientPib(initialData.clientPib || '')
       
       if (initialData.items && initialData.items.length > 0) {
         setItems(
@@ -168,7 +170,9 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
           const selectedProduct = products.find((p) => p.id === value)
           if (selectedProduct) {
             updated.productName = selectedProduct.name
-            updated.unitPrice = Number(selectedProduct.price)
+            const productSalePrice = Number(selectedProduct.price)
+            updated.unitPrice =
+              Number.isFinite(productSalePrice) && productSalePrice > 0 ? productSalePrice : 0
           } else {
             updated.productName = ''
             updated.unitPrice = 0
@@ -196,6 +200,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       dueDate,
       clientName: clientName.trim(),
       clientAddress: clientAddress.trim() || undefined,
+      clientPib: clientPib.trim() || undefined,
       items: items.map((item) => ({
         productId: item.productId || null,
         productName: item.productName.trim(),
@@ -230,6 +235,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       dueDate: validation.data.dueDate,
       clientName: validation.data.clientName,
       clientAddress: validation.data.clientAddress || undefined,
+      clientPib: validation.data.clientPib || undefined,
       ...(initialData ? {} : { status: InvoiceStatus.UNPAID }),
       items: validation.data.items.map((item) => ({
         productId: item.productId ?? null,
@@ -249,8 +255,8 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
       {/* Header Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Invoice Details</CardTitle>
-          <CardDescription>Enter invoice and client information</CardDescription>
+          <CardTitle>Podaci o fakturi</CardTitle>
+          <CardDescription>Broj, rok i podaci o kupcu</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
@@ -264,7 +270,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
             </div>
             <div className="space-y-2">
               <Label htmlFor="dueDate">
-                Due Date <span className="text-destructive">*</span>
+                Rok plaćanja <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="dueDate"
@@ -275,27 +281,38 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="clientName">
-              Client Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="clientName"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Enter client name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="clientAddress">Client Address</Label>
-            <Input
-              id="clientAddress"
-              value={clientAddress}
-              onChange={(e) => setClientAddress(e.target.value)}
-              placeholder="Enter client address (optional)"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientName">
+                Naziv kupca <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="clientName"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="Unesite naziv kupca"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientPib">PIB kupca</Label>
+              <Input
+                id="clientPib"
+                value={clientPib}
+                onChange={(e) => setClientPib(e.target.value)}
+                placeholder="9 cifara"
+                inputMode="numeric"
+                maxLength={9}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientAddress">Adresa kupca</Label>
+              <Input
+                id="clientAddress"
+                value={clientAddress}
+                onChange={(e) => setClientAddress(e.target.value)}
+                placeholder="Unesite adresu kupca (opciono)"
+              />
+            </div>
         </CardContent>
       </Card>
 

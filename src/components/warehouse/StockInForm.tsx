@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -23,20 +22,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, AlertTriangle, ScanBarcode } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Product } from '@/types/product'
-import { optionalCostPriceSchema } from '@/lib/validations'
+import {
+  costPriceZeroReasonSchema,
+  normalizePurchasePrice,
+  optionalCostPriceSchema,
+  refineZeroPurchasePriceReason,
+} from '@/lib/validations'
 import { sr } from '@/lib/ui-copy'
 
-const baseStockInSchema = z.object({
-  productId: z.string().min(1, 'Izaberite proizvod'),
-  quantity: z.coerce.number().int().positive('Količina mora biti pozitivan broj'),
-  reason: z.string().min(1, 'Unesite razlog').max(200, 'Razlog je predugačak'),
-  costPrice: optionalCostPriceSchema,
-})
+const stockInSchema = z
+  .object({
+    productId: z.string().min(1, 'Izaberite proizvod'),
+    quantity: z.coerce.number().int().positive('Količina mora biti pozitivan broj'),
+    reason: z.string().min(1, 'Unesite razlog').max(200, 'Razlog je predugačak'),
+    costPrice: optionalCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
 
-export type StockInFormData = z.infer<typeof baseStockInSchema>
+export type StockInFormData = z.infer<typeof stockInSchema>
 
 interface StockInFormProps {
   open: boolean
@@ -53,28 +60,6 @@ export function StockInForm({
   onSubmit,
   isLoading = false,
 }: StockInFormProps) {
-  const dynamicSchema = useMemo(() => {
-    return baseStockInSchema.refine(
-      (data) => {
-        if (!data.productId) return true
-        const product = products.find((p) => p.id === data.productId)
-        if (!product) return true
-
-        const maxAllowed = product.quantity || 0
-        return data.quantity <= maxAllowed
-      },
-      (data) => {
-        const product = products.find((p) => p.id === data.productId)
-        const maxAllowed = product?.quantity || 0
-
-        return {
-          message: `Ručni limit je prekoračen. Ne možete dodati više od trenutnog stanja (${maxAllowed}). Za veći ulaz koristite skener.`,
-          path: ['quantity'],
-        }
-      }
-    )
-  }, [products])
-
   const {
     register,
     handleSubmit,
@@ -83,18 +68,20 @@ export function StockInForm({
     setValue,
     watch,
   } = useForm<StockInFormData>({
-    resolver: zodResolver(dynamicSchema),
+    resolver: zodResolver(stockInSchema),
     defaultValues: {
       productId: '',
       quantity: 1,
       reason: '',
       costPrice: undefined,
+      costPriceZeroReason: '',
     },
   })
 
   const selectedProductId = watch('productId')
   const selectedProduct = products.find((p) => p.id === selectedProductId)
-  const maxAllowed = selectedProduct?.quantity || 0
+  const currentCostPrice = watch('costPrice')
+  const showZeroCostReason = currentCostPrice === 0
 
   const handleFormSubmit = async (data: StockInFormData) => {
     await onSubmit({
@@ -103,6 +90,7 @@ export function StockInForm({
         data.costPrice === undefined || data.costPrice === null || Number.isNaN(data.costPrice)
           ? undefined
           : data.costPrice,
+      costPriceZeroReason: data.costPriceZeroReason,
     })
     if (!isLoading) {
       reset()
@@ -119,14 +107,6 @@ export function StockInForm({
             Dodajte količinu na stanje. Opciona nabavna cena ažurira trenutnu nabavnu cenu proizvoda.
           </DialogDescription>
         </DialogHeader>
-
-        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
-          <ScanBarcode className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>Prvo skener:</strong> ručni ulaz je ograničen na trenutno stanje. Za veće količine koristite
-            skener asortimana.
-          </AlertDescription>
-        </Alert>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="grid gap-4 py-4">
@@ -156,14 +136,9 @@ export function StockInForm({
                 <p className="text-sm text-destructive">{errors.productId.message}</p>
               )}
               {selectedProduct && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    Trenutno stanje: {selectedProduct.quantity || 0} kom
-                  </Badge>
-                  <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-500">
-                    Ručni limit: {maxAllowed} max
-                  </Badge>
-                </div>
+                <Badge variant="outline" className="w-fit text-xs">
+                  Trenutno stanje: {selectedProduct.quantity || 0} kom
+                </Badge>
               )}
             </div>
 
@@ -175,17 +150,10 @@ export function StockInForm({
                 id="quantity"
                 type="number"
                 min="1"
-                max={maxAllowed || undefined}
                 step="1"
                 placeholder="Unesite količinu"
                 {...register('quantity')}
               />
-              {selectedProduct && (
-                <p className="text-xs text-muted-foreground">
-                  <AlertTriangle className="inline h-3 w-3 mr-1" />
-                  Dostupno za ručni unos: <strong>{maxAllowed}</strong> kom
-                </p>
-              )}
               {errors.quantity && (
                 <p className="text-sm text-destructive">{errors.quantity.message}</p>
               )}
@@ -204,12 +172,31 @@ export function StockInForm({
                 })}
               />
               <p className="text-xs text-muted-foreground">
-                {sr.product.costPriceDescription} Ako ostavite prazno, postojeća nabavna cena se ne menja.
+                Ako ostavite prazno, postojeća nabavna cena se ne menja. 0 zahteva razlog.
               </p>
               {errors.costPrice && (
                 <p className="text-sm text-destructive">{errors.costPrice.message}</p>
               )}
             </div>
+
+            {showZeroCostReason ? (
+              <div className="grid gap-2">
+                <Label htmlFor="costPriceZeroReason">
+                  {sr.product.costPriceZeroReason} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="costPriceZeroReason"
+                  placeholder={sr.product.costPriceZeroReasonDescription}
+                  {...register('costPriceZeroReason')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {sr.product.costPriceZeroReasonDescription}
+                </p>
+                {errors.costPriceZeroReason && (
+                  <p className="text-sm text-destructive">{errors.costPriceZeroReason.message}</p>
+                )}
+              </div>
+            ) : null}
 
             <div className="grid gap-2">
               <Label htmlFor="reason">

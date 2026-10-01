@@ -1,6 +1,8 @@
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
 import {
   addLocalMonths,
+  belgradeMonthIndex,
+  belgradeYear,
   formatLocalYm,
   startOfLocalMonth,
   startOfLocalYear,
@@ -85,6 +87,30 @@ function roundCurrency(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
+export function unitProfit(
+  salePrice: number | string | { toString(): string },
+  purchasePrice: number | string | { toString(): string }
+): number {
+  return roundCurrency(toInvoiceAmount(salePrice) - toInvoiceAmount(purchasePrice))
+}
+
+export function totalProfit(
+  quantity: number,
+  salePrice: number | string | { toString(): string },
+  purchasePrice: number | string | { toString(): string }
+): number {
+  return roundCurrency(quantity * unitProfit(salePrice, purchasePrice))
+}
+
+export function marginPercent(
+  profit: number | string | { toString(): string },
+  revenue: number | string | { toString(): string }
+): number | null {
+  const amount = toInvoiceAmount(revenue)
+  if (amount <= 0) return null
+  return roundCurrency((toInvoiceAmount(profit) / amount) * 100)
+}
+
 export function invoiceProfit(invoice: FinanceInvoiceInput): FinanceInvoiceResult {
   const items = invoice.items ?? []
   const hasCompleteCost =
@@ -104,9 +130,8 @@ export function invoiceProfit(invoice: FinanceInvoiceInput): FinanceInvoiceResul
     items.reduce((total, item) => total + item.quantity * toInvoiceAmount(item.unitCost!), 0)
   )
   const profit = roundCurrency(revenue - costTotal)
-  const marginPercent = revenue > 0 ? roundCurrency((profit / revenue) * 100) : null
 
-  return { ...invoice, costTotal, profit, marginPercent, hasCompleteCost: true }
+  return { ...invoice, costTotal, profit, marginPercent: marginPercent(profit, revenue), hasCompleteCost: true }
 }
 
 function profitPeriod(invoices: FinanceInvoiceResult[]) {
@@ -121,7 +146,7 @@ function profitPeriod(invoices: FinanceInvoiceResult[]) {
   return {
     cost,
     profit,
-    marginPercent: revenue > 0 ? roundCurrency((profit / revenue) * 100) : null,
+    marginPercent: marginPercent(profit, revenue),
     missingCostCount: 0,
   }
 }
@@ -169,7 +194,7 @@ const MONTHS_SR = [
 ]
 
 function formatMonthLabel(date: Date): string {
-  return `${MONTHS_SR[date.getMonth()]} ${date.getFullYear()}.`
+  return `${MONTHS_SR[belgradeMonthIndex(date)]} ${belgradeYear(date)}.`
 }
 
 export function buildFinanceSnapshot(

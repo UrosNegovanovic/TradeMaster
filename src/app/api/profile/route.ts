@@ -1,6 +1,8 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { ZodError } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { profilePutFields } from '@/lib/profile-put'
 import { profileSchema } from '@/lib/validations'
 
 // Force dynamic rendering (uses Clerk auth with headers)
@@ -58,16 +60,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate input
     const validatedData = profileSchema.parse(body)
-
-    // Convert empty strings to null
-    const updateData = {
-      companyName: validatedData.companyName === '' ? null : validatedData.companyName ?? null,
-      contactEmail: validatedData.contactEmail === '' ? null : validatedData.contactEmail ?? null,
-      contactPhone: validatedData.contactPhone === '' ? null : validatedData.contactPhone ?? null,
-      address: validatedData.address === '' ? null : validatedData.address ?? null,
-      pib: validatedData.pib === '' ? null : validatedData.pib ?? null,
-      logoUrl: validatedData.logoUrl === '' ? null : validatedData.logoUrl ?? null,
-    }
+    const updateData = profilePutFields(validatedData, body)
 
     // Update or create profile
     const profile = await prisma.profile.upsert({
@@ -83,10 +76,15 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating profile:', error)
 
-    // Handle validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error },
+        {
+          error: 'Validation error',
+          details: error.errors.map((issue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+          })),
+        },
         { status: 400 }
       )
     }

@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { isSameLocalDay } from '@/lib/local-date'
 
 type StockRow = Product & { totalQuantity: number }
 
@@ -292,14 +293,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
   const dateFilteredProducts = useMemo(() => {
     if (!selectedDate) return products
 
-    return products.filter((product) => {
-      const productDate = new Date(product.createdAt)
-      return (
-        productDate.getFullYear() === selectedDate.getFullYear() &&
-        productDate.getMonth() === selectedDate.getMonth() &&
-        productDate.getDate() === selectedDate.getDate()
-      )
-    })
+    return products.filter((product) => isSameLocalDay(new Date(product.createdAt), selectedDate))
   }, [products, selectedDate])
 
   const aggregatedProducts = useMemo(() => {

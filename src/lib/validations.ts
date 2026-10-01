@@ -22,10 +22,26 @@ function normalizeMoneyInput(value: number | string): string | null {
   return MONEY_INPUT_PATTERN.test(trimmed) || /^-?\d+\.\d+$/.test(trimmed) ? trimmed : null
 }
 
+function moneyMessage(
+  field: 'unitPrice' | 'discount' | 'costPrice',
+  kind: 'invalid' | 'decimals' | 'range' | 'negative'
+) {
+  if (field === 'costPrice') {
+    if (kind === 'invalid') return 'Nabavna cena mora biti broj'
+    if (kind === 'decimals') return 'Nabavna cena može imati najviše 2 decimale'
+    if (kind === 'negative') return 'Nabavna cena ne može biti negativna'
+    return 'Nabavna cena je van podržanog opsega'
+  }
+  if (kind === 'invalid') return `${field} must be a valid decimal`
+  if (kind === 'decimals') return `${field} cannot have more than 2 decimal places`
+  if (kind === 'negative') return 'unitPrice must be greater than or equal to 0'
+  return `${field} is outside the supported range`
+}
+
 function assertMoneyInput(
   value: number | string,
   ctx: z.RefinementCtx,
-  field: 'unitPrice' | 'discount',
+  field: 'unitPrice' | 'discount' | 'costPrice',
   min: number,
   max: number
 ) {
@@ -33,7 +49,7 @@ function assertMoneyInput(
   if (!text) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${field} must be a valid decimal`,
+      message: moneyMessage(field, 'invalid'),
     })
     return
   }
@@ -41,22 +57,22 @@ function assertMoneyInput(
   if (!MONEY_INPUT_PATTERN.test(text)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${field} cannot have more than 2 decimal places`,
+      message: moneyMessage(field, 'decimals'),
     })
     return
   }
 
   const amount = Number(text)
-  if (field === 'unitPrice' && amount < 0) {
+  if ((field === 'unitPrice' || field === 'costPrice') && amount < 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'unitPrice must be greater than or equal to 0',
+      message: moneyMessage(field, 'negative'),
     })
   }
   if (amount < min || amount > max) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `${field} is outside the supported range`,
+      message: moneyMessage(field, 'range'),
     })
   }
 }
@@ -100,11 +116,40 @@ export const invoiceItemWriteSchema = z.object({
   discount: discountSchema,
 })
 
+function normalizeClientPib(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+function assertClientPib(value: string | null | undefined, ctx: z.RefinementCtx) {
+  if (value === undefined || value === null) return
+  if (!/^\d{9}$/.test(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'PIB kupca mora imati tačno 9 cifara',
+    })
+  }
+}
+
+const clientPibWriteSchema = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => normalizeClientPib(value) ?? null)
+  .superRefine((value, ctx) => assertClientPib(value, ctx))
+
+const clientPibPatchSchema = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((value) => (value === undefined ? undefined : normalizeClientPib(value)))
+  .superRefine((value, ctx) => assertClientPib(value, ctx))
+
 export const invoiceWriteSchema = z.object({
   invoiceNumber: z.string().trim().min(1, 'invoiceNumber is required').max(255),
   dueDate: dueDateSchema,
   clientName: z.string().trim().min(1, 'clientName is required').max(255),
   clientAddress: z.string().max(500).nullable().optional(),
+  clientPib: clientPibWriteSchema,
   status: invoiceStatusSchema.optional(),
   items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
 })
@@ -118,6 +163,7 @@ export const invoicePatchSchema = z
     dueDate: dueDateSchema.optional(),
     clientName: z.string().trim().min(1, 'clientName is required').max(255).optional(),
     clientAddress: z.string().max(500).nullable().optional(),
+    clientPib: clientPibPatchSchema,
   })
   .refine(
     (value) =>
@@ -125,7 +171,8 @@ export const invoicePatchSchema = z
       value.invoiceNumber !== undefined ||
       value.dueDate !== undefined ||
       value.clientName !== undefined ||
-      value.clientAddress !== undefined,
+      value.clientAddress !== undefined ||
+      value.clientPib !== undefined,
     { message: 'At least one supported field is required' }
   )
 
@@ -135,11 +182,58 @@ export type InvoicePatchInput = z.infer<typeof invoicePatchSchema>
 
 export const optionalCostPriceSchema = z
   .number({ invalid_type_error: 'Nabavna cena mora biti broj' })
-  .min(0, 'Nabavna cena ne može biti negativna')
-  .max(99999999.99, 'Nabavna cena je van podržanog opsega')
-  .refine((value) => Number.isInteger(value * 100), 'Nabavna cena može imati najviše 2 decimale')
+  .superRefine((value, ctx) => {
+    assertMoneyInput(value, ctx, 'costPrice', 0, MONEY_MAX)
+  })
   .nullable()
   .optional()
+
+export const requiredCostPriceSchema = z
+  .number({
+    required_error: 'Nabavna cena je obavezna',
+    invalid_type_error: 'Nabavna cena mora biti broj',
+  })
+  .superRefine((value, ctx) => {
+    assertMoneyInput(value, ctx, 'costPrice', 0, MONEY_MAX)
+  })
+
+export const costPriceZeroReasonSchema = z
+  .string()
+  .max(200, 'Razlog je predugačak')
+  .nullable()
+  .optional()
+
+type PurchasePriceFields = {
+  costPrice?: number | null
+  costPriceZeroReason?: string | null
+}
+
+export function refineZeroPurchasePriceReason(data: PurchasePriceFields, ctx: z.RefinementCtx) {
+  if (data.costPrice !== 0) {
+    return
+  }
+  const reason = data.costPriceZeroReason?.trim() ?? ''
+  if (!reason) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['costPriceZeroReason'],
+      message: 'Unesite razlog za nabavnu cenu 0',
+    })
+  }
+}
+
+export function normalizePurchasePrice<T extends PurchasePriceFields>(data: T): T {
+  if (data.costPrice === undefined) {
+    return data
+  }
+  if (data.costPrice === null) {
+    return { ...data, costPriceZeroReason: null }
+  }
+  return {
+    ...data,
+    costPriceZeroReason: data.costPrice === 0 ? data.costPriceZeroReason?.trim() || null : null,
+  }
+}
 
 export const bulkAdjustItemSchema = z.object({
   sku: z.string().trim().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
@@ -152,7 +246,6 @@ export type BulkAdjustItem = z.infer<typeof bulkAdjustItemSchema>
 const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
-  costPrice: optionalCostPriceSchema,
   quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([
@@ -166,17 +259,33 @@ const productFields = {
   categoryId: z.string().optional().nullable(),
 }
 
-/** Warehouse / Quick Scan POST /api/products — price 0 is valid (user can update later). */
-export const productIntakeSchema = z.object({
-  ...productFields,
-  price: z.number().min(0, 'Price cannot be negative').default(0),
-})
+const optionalSalePriceSchema = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) return 0
+  if (typeof value === 'number' && Number.isNaN(value)) return 0
+  return value
+}, z.number({ invalid_type_error: 'Cena mora biti broj' }).min(0, 'Cena ne može biti negativna'))
 
-/** Manual ProductForm create/edit — selling price must be > 0. */
-export const productSchema = z.object({
-  ...productFields,
-  price: z.number().positive('Cena mora biti veća od 0'),
-})
+/** Warehouse / Quick Scan POST /api/products — sale price 0 is valid (user can update later). */
+export const productIntakeSchema = z
+  .object({
+    ...productFields,
+    price: optionalSalePriceSchema,
+    costPrice: optionalCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
+
+/** Manual ProductForm create/edit — purchase price required; sale price optional (invoice can set it). */
+export const productSchema = z
+  .object({
+    ...productFields,
+    price: optionalSalePriceSchema,
+    costPrice: requiredCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
 
 export type ProductIntakeData = z.infer<typeof productIntakeSchema>
 export type ProductFormData = z.infer<typeof productSchema>
@@ -204,6 +313,13 @@ export const profileSchema = z.object({
   contactPhone: z.string().max(50).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
   pib: z.string().trim().regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara'),
+  giroAccount: z
+    .string()
+    .trim()
+    .max(80, 'Žiro-račun je predugačak')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   logoUrl: z
     .union([
       z.string().url('Invalid URL'),

@@ -6,6 +6,7 @@ export type Profile = {
   contactPhone: string | null
   address: string | null
   pib: string | null
+  giroAccount: string | null
   logoUrl: string | null
   createdAt: Date
   updatedAt: Date
@@ -17,5 +18,6 @@ export type ProfileUpdateInput = {
   contactPhone?: string | null
   address?: string | null
   pib?: string | null
+  giroAccount?: string | null
   logoUrl?: string | null
 }

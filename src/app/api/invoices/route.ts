@@ -14,6 +14,8 @@ import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { reserveNextInvoiceNumber } from '@/lib/invoice-number'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const { userId } = await auth()
@@ -111,6 +113,7 @@ export async function POST(request: NextRequest) {
           dueDate: new Date(parsed.dueDate),
           clientName: parsed.clientName,
           clientAddress: parsed.clientAddress || null,
+          clientPib: parsed.clientPib || null,
           status,
           paidAt: paidAt ?? null,
           totalAmount,

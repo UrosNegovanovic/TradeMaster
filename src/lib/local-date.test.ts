@@ -1,24 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addLocalMonths,
+  formatLocalYm,
   formatLocalYmd,
   isSameLocalDay,
   parseLocalYmd,
   startOfLocalDay,
-  startOfLocalTomorrow,
   startOfLocalMonth,
+  startOfLocalTomorrow,
   startOfLocalYear,
-  addLocalMonths,
-  formatLocalYm,
 } from './local-date'
 
-describe('local-date', () => {
-  it('parses and formats a calendar day without UTC shift', () => {
+describe('local-date (Europe/Belgrade)', () => {
+  it('parses a calendar day as Belgrade midnight, not UTC midnight', () => {
     const parsed = parseLocalYmd('2026-09-21')
     expect(parsed).not.toBeNull()
-    expect(parsed?.getFullYear()).toBe(2026)
-    expect(parsed?.getMonth()).toBe(8)
-    expect(parsed?.getDate()).toBe(21)
     expect(formatLocalYmd(parsed!)).toBe('2026-09-21')
+    // September is CEST (UTC+2)
+    expect(parsed!.toISOString()).toBe('2026-09-20T22:00:00.000Z')
   })
 
   it('rejects invalid dates and falls back to all dates', () => {
@@ -27,20 +26,31 @@ describe('local-date', () => {
     expect(parseLocalYmd(null)).toBeNull()
   })
 
-  it('uses an inclusive local start of today and exclusive tomorrow', () => {
-    const today = startOfLocalDay(new Date(2026, 8, 21, 18, 30))
-    const tomorrow = startOfLocalTomorrow(new Date(2026, 8, 21, 18, 30))
-    expect(today.getHours()).toBe(0)
-    expect(tomorrow.getDate()).toBe(22)
-    expect(isSameLocalDay(today, new Date(2026, 8, 21, 23, 59))).toBe(true)
-    expect(isSameLocalDay(today, tomorrow)).toBe(false)
+  it('keeps a UTC evening after midnight as the next Serbian calendar day', () => {
+    const utcLate = new Date('2026-09-21T22:30:00.000Z')
+    expect(formatLocalYmd(utcLate)).toBe('2026-09-22')
+    expect(startOfLocalDay(utcLate).toISOString()).toBe('2026-09-21T22:00:00.000Z')
+    expect(startOfLocalTomorrow(utcLate).toISOString()).toBe('2026-09-22T22:00:00.000Z')
   })
 
-  it('opens a local calendar month on the first day', () => {
-    const start = startOfLocalMonth(new Date(2026, 8, 21, 18, 30))
+  it('keeps a UTC evening before Belgrade midnight on the same Serbian day', () => {
+    const utcEvening = new Date('2026-09-21T21:30:00.000Z')
+    expect(formatLocalYmd(utcEvening)).toBe('2026-09-21')
+    expect(isSameLocalDay(utcEvening, new Date('2026-09-21T10:00:00.000Z'))).toBe(true)
+    expect(isSameLocalDay(utcEvening, new Date('2026-09-21T22:30:00.000Z'))).toBe(false)
+  })
+
+  it('uses CET offset in winter', () => {
+    const winter = parseLocalYmd('2026-12-21')
+    expect(winter?.toISOString()).toBe('2026-12-20T23:00:00.000Z')
+    expect(formatLocalYmd(new Date('2026-12-21T22:30:00.000Z'))).toBe('2026-12-21')
+  })
+
+  it('opens a Belgrade calendar month on the first day', () => {
+    const start = startOfLocalMonth(new Date('2026-09-21T18:30:00.000Z'))
     expect(formatLocalYm(start)).toBe('2026-09')
-    expect(start.getDate()).toBe(1)
-    expect(addLocalMonths(start, 1).getMonth()).toBe(9)
-    expect(startOfLocalYear(start).getMonth()).toBe(0)
+    expect(start.toISOString()).toBe('2026-08-31T22:00:00.000Z')
+    expect(formatLocalYm(addLocalMonths(start, 1))).toBe('2026-10')
+    expect(formatLocalYm(startOfLocalYear(start))).toBe('2026-01')
   })
 })

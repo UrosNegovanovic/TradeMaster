@@ -70,7 +70,7 @@ describe('POST /api/stock-movements', () => {
     expect(response.status).toBe(201)
     expect(mocks.product.update).toHaveBeenCalledWith({
       where: { id: 'product-a' },
-      data: { quantity: 12, costPrice: 18.5 },
+      data: { quantity: 12, costPrice: 18.5, costPriceZeroReason: null },
     })
     expect(mocks.stockMovement.create).toHaveBeenCalled()
   })
@@ -89,6 +89,20 @@ describe('POST /api/stock-movements', () => {
       where: { id: 'product-a' },
       data: { quantity: 12 },
     })
+  })
+
+  it('rejects stock-in costPrice 0 without a zero-reason', async () => {
+    const response = await POST(
+      postRequest({
+        productId: 'product-a',
+        type: MovementType.IN,
+        quantity: 2,
+        reason: 'Nabavka',
+        costPrice: 0,
+      })
+    )
+    expect(response.status).toBe(400)
+    expect(mocks.product.update).not.toHaveBeenCalled()
   })
 
   it('does not write costPrice on stock-out even if a client sends one', async () => {

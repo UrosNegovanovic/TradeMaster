@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "sonner"
+import { AFTER_AUTH_PATH } from "@/lib/after-auth"
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] })
 
@@ -139,7 +140,11 @@ export default function RootLayout({
   }
 
   return (
-    <ClerkProvider appearance={{ variables: { colorPrimary: '#1a6e5c' } }}>
+    <ClerkProvider
+      appearance={{ variables: { colorPrimary: '#1a6e5c' } }}
+      signInFallbackRedirectUrl={AFTER_AUTH_PATH}
+      signUpFallbackRedirectUrl={AFTER_AUTH_PATH}
+    >
       {tree}
     </ClerkProvider>
   )

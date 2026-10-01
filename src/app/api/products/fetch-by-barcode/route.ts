@@ -1,6 +1,14 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import {
+  EXTERNAL_LOOKUP_BUDGET_MS,
+  firstExternalBarcodeMatch,
+  notFoundBarcode,
+  type BarcodeLookupResult,
+} from '@/lib/barcode-lookup'
+import { MIN_INTAKE_BARCODE_DIGITS } from '@/lib/barcode'
+import { rateLimitedResponse, rateLimits } from '@/lib/rate-limit'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -20,15 +28,7 @@ export const dynamic = 'force-dynamic'
  * GET /api/products/fetch-by-barcode?barcode={barcode}
  */
 
-interface ProductMetadata {
-  name: string
-  description: string
-  imageUrl: string | null
-  found: boolean
-  barcode: string
-  source?: 'local' | 'food' | 'beauty' | 'pet' | 'products' // 'local' = from our DB, others = external APIs
-  categoryId?: string | null // Only present if found in local DB
-}
+type ProductMetadata = BarcodeLookupResult
 
 interface OpenFoodFactsResponse {
   status: number
@@ -61,12 +61,12 @@ interface UPCItemDBResponse {
 /**
  * Fetch from OpenFoodFacts (Food & Beverages)
  */
-async function fetchFromOpenFoodFacts(barcode: string): Promise<ProductMetadata | null> {
+async function fetchFromOpenFoodFacts(barcode: string, timeoutMs = 1500): Promise<ProductMetadata | null> {
   try {
     const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(Math.max(200, timeoutMs)),
     })
 
     if (!response.ok) return null
@@ -99,12 +99,12 @@ async function fetchFromOpenFoodFacts(barcode: string): Promise<ProductMetadata 
 /**
  * Fetch from Open Beauty Facts (Cosmetics & Personal Care)
  */
-async function fetchFromOpenBeautyFacts(barcode: string): Promise<ProductMetadata | null> {
+async function fetchFromOpenBeautyFacts(barcode: string, timeoutMs = 1500): Promise<ProductMetadata | null> {
   try {
     const url = `https://world.openbeautyfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(Math.max(200, timeoutMs)),
     })
 
     if (!response.ok) return null
@@ -136,12 +136,12 @@ async function fetchFromOpenBeautyFacts(barcode: string): Promise<ProductMetadat
 /**
  * Fetch from Open Pet Food Facts (Pet Food & Supplies)
  */
-async function fetchFromOpenPetFoodFacts(barcode: string): Promise<ProductMetadata | null> {
+async function fetchFromOpenPetFoodFacts(barcode: string, timeoutMs = 1500): Promise<ProductMetadata | null> {
   try {
     const url = `https://world.openpetfoodfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(Math.max(200, timeoutMs)),
     })
 
     if (!response.ok) return null
@@ -174,12 +174,12 @@ async function fetchFromOpenPetFoodFacts(barcode: string): Promise<ProductMetada
 /**
  * Fetch from Open Products Facts (Household products)
  */
-async function fetchFromOpenProductsFacts(barcode: string): Promise<ProductMetadata | null> {
+async function fetchFromOpenProductsFacts(barcode: string, timeoutMs = 1500): Promise<ProductMetadata | null> {
   try {
     const url = `https://world.openproductsfacts.org/api/v0/product/${barcode}.json`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(Math.max(200, timeoutMs)),
     })
 
     if (!response.ok) return null
@@ -212,12 +212,12 @@ async function fetchFromOpenProductsFacts(barcode: string): Promise<ProductMetad
 /**
  * Fetch from UPCitemdb.com (Global database - 30M+ products)
  */
-async function fetchFromUPCItemDB(barcode: string): Promise<ProductMetadata | null> {
+async function fetchFromUPCItemDB(barcode: string, timeoutMs = 1500): Promise<ProductMetadata | null> {
   try {
     const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`
     const response = await fetch(url, {
       headers: { 'User-Agent': 'TradeMaster/1.0.0 (Inventory Management)' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(Math.max(200, timeoutMs)),
     })
 
     if (!response.ok) return null
@@ -256,6 +256,9 @@ async function fetchFromUPCItemDB(barcode: string): Promise<ProductMetadata | nu
  * 3. Return standardized ProductMetadata
  */
 export async function GET(request: NextRequest) {
+  const limited = rateLimitedResponse(request, rateLimits.barcodeLookup)
+  if (limited) return limited
+
   try {
     const { userId } = await auth()
 
@@ -292,7 +295,7 @@ export async function GET(request: NextRequest) {
     // Clean barcode (remove spaces, non-numeric characters)
     const cleanBarcode = barcode.replace(/\D/g, '')
     
-    if (!cleanBarcode || cleanBarcode.length < 8) {
+    if (!cleanBarcode || cleanBarcode.length < MIN_INTAKE_BARCODE_DIGITS) {
       return NextResponse.json(
         { error: 'Invalid barcode format' },
         { status: 400 }
@@ -335,61 +338,28 @@ export async function GET(request: NextRequest) {
       } as ProductMetadata)
     }
 
-    // ✅ STEP 2: Not found locally - query external APIs in waterfall order
-    console.log(`[Fetch By Barcode] Not in local DB, querying external APIs (waterfall)...`)
+    // STEP 2: Not found locally — query external APIs until found or the budget is spent.
+    // Five 5s fetches used to exceed Vercel's ~10s limit and 500 the scan client.
+    console.log(`[Fetch By Barcode] Not in local DB, querying external APIs (waterfall, ${EXTERNAL_LOOKUP_BUDGET_MS}ms)...`)
 
-    // Waterfall strategy: Check each API sequentially until we find a match
-    // This is more efficient than parallel calls when we expect early success
-    
-    // Step 2.1: Check OpenFoodFacts (Food & Beverages)
-    const foodResult = await fetchFromOpenFoodFacts(cleanBarcode)
-    if (foodResult?.found) {
-      console.log(`[Fetch By Barcode] Found in OpenFoodFacts`)
-      return NextResponse.json(foodResult)
+    const external = await firstExternalBarcodeMatch(cleanBarcode, [
+      fetchFromOpenFoodFacts,
+      fetchFromOpenBeautyFacts,
+      fetchFromOpenPetFoodFacts,
+      fetchFromOpenProductsFacts,
+      fetchFromUPCItemDB,
+    ])
+    if (external?.found) {
+      console.log(`[Fetch By Barcode] Found in ${external.source}`)
+      return NextResponse.json(external)
     }
 
-    // Step 2.2: Check OpenBeautyFacts (Cosmetics & Personal Care)
-    const beautyResult = await fetchFromOpenBeautyFacts(cleanBarcode)
-    if (beautyResult?.found) {
-      console.log(`[Fetch By Barcode] Found in Open Beauty Facts`)
-      return NextResponse.json(beautyResult)
-    }
-
-    // Step 2.3: Check OpenPetFoodFacts (Pet Food & Supplies)
-    const petResult = await fetchFromOpenPetFoodFacts(cleanBarcode)
-    if (petResult?.found) {
-      console.log(`[Fetch By Barcode] Found in Open Pet Food Facts`)
-      return NextResponse.json(petResult)
-    }
-
-    // Step 2.4: Check OpenProductsFacts (Household products)
-    const productsResult = await fetchFromOpenProductsFacts(cleanBarcode)
-    if (productsResult?.found) {
-      console.log(`[Fetch By Barcode] Found in Open Products Facts`)
-      return NextResponse.json(productsResult)
-    }
-
-    // Step 2.5: Check UPCitemdb (Global database - fallback)
-    const upcResult = await fetchFromUPCItemDB(cleanBarcode)
-    if (upcResult?.found) {
-      console.log(`[Fetch By Barcode] Found in UPCitemdb`)
-      return NextResponse.json(upcResult)
-    }
-
-    // Not found in any database (local or external)
     console.log(`[Fetch By Barcode] Not found in any database`)
-    return NextResponse.json({
-      name: '',
-      description: '',
-      imageUrl: null,
-      found: false,
-      barcode: cleanBarcode,
-    } as ProductMetadata)
+    return NextResponse.json(notFoundBarcode(cleanBarcode))
   } catch (error) {
     console.error('[Fetch By Barcode] Error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    const barcode = request.nextUrl.searchParams.get('barcode')?.replace(/\D/g, '') || ''
+    // Unknown/slow catalogs must not surface as "Greška pri skeniranju".
+    return NextResponse.json(notFoundBarcode(barcode), { status: 200 })
   }
 }

@@ -5,6 +5,10 @@ export const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/',
+  '/privatnost',
+  '/uslovi',
+  '/privacy',
+  '/terms',
   '/shared/catalog/(.*)', // Public catalog preview
   '/api/public/catalogs/(.*)', // Unlisted catalog JSON for that preview
   '/api/shared/catalog/(.*)', // Revocable token-based catalog JSON

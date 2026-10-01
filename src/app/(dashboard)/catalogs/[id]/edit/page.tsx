@@ -9,6 +9,8 @@ import { CatalogWithItems } from '@/types/catalog'
 import { CatalogFormData } from '@/lib/validations'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -26,8 +28,8 @@ async function fetchCatalog(id: string): Promise<CatalogWithItems> {
   return response.json()
 }
 
-async function updateCatalog(id: string, data: CatalogFormData) {
-  const response = await fetch(`/api/catalogs/${id}`, {
+async function updateCatalog(id: string, data: CatalogFormData, request: SessionFetch) {
+  const response = await request(`/api/catalogs/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -46,6 +48,7 @@ async function updateCatalog(id: string, data: CatalogFormData) {
 export default function EditCatalogPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const request = useAuthorizedFetch()
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -61,7 +64,7 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
 
   // Update catalog mutation
   const updateMutation = useMutation({
-    mutationFn: (data: CatalogFormData) => updateCatalog(params.id, data),
+    mutationFn: (data: CatalogFormData) => updateCatalog(params.id, data, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['catalogs'] })
       queryClient.invalidateQueries({ queryKey: ['catalog', params.id] })

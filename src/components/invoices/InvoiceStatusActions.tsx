@@ -9,9 +9,11 @@ import { notify } from '@/lib/notify'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import type { SessionFetch } from '@/lib/authorized-fetch'
 
-async function patchInvoiceStatus(id: string, status: InvoiceStatus) {
-  const response = await fetch(`/api/invoices/${id}`, {
+async function patchInvoiceStatus(id: string, status: InvoiceStatus, request: SessionFetch) {
+  const response = await request(`/api/invoices/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -42,10 +44,11 @@ export function InvoiceStatusActions({
   const queryClient = useQueryClient()
   const router = useRouter()
   const pathname = usePathname()
+  const request = useAuthorizedFetch()
   const isPaid = isPaidInvoiceStatus(status)
 
   const mutation = useMutation({
-    mutationFn: (nextStatus: InvoiceStatus) => patchInvoiceStatus(invoiceId, nextStatus),
+    mutationFn: (nextStatus: InvoiceStatus) => patchInvoiceStatus(invoiceId, nextStatus, request),
     onSuccess: (updated, nextStatus) => {
       queryClient.setQueryData(['invoices'], (current: Array<{ id: string; status: string }> | undefined) => {
         if (!Array.isArray(current)) {

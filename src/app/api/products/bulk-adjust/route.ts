@@ -1,8 +1,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { adjustStockToQuantity, SKU_MISSING_ERROR } from '@/lib/stock-adjust'
+import { adjustStockToQuantity } from '@/lib/stock-adjust'
 import { bulkAdjustItemSchema } from '@/lib/validations'
+
+export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/products/bulk-adjust
@@ -39,8 +41,7 @@ export async function POST(request: NextRequest) {
     const result = await adjustStockToQuantity(profile.id, sku, quantity)
 
     if (!result.ok) {
-      const status = result.error === SKU_MISSING_ERROR ? 404 : 409
-      return NextResponse.json(result, { status })
+      return NextResponse.json(result, { status: 404 })
     }
 
     return NextResponse.json(result)

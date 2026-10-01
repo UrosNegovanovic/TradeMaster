@@ -12,6 +12,10 @@ import {
  * Cash-basis finance for a wholesale SaaS: the invoice is the ledger.
  * Open invoices are receivables. Marking paid books revenue on paidAt
  * (not issue date). Reopening reverses the booking. No second books.
+ *
+ * PDV is not revenue: `totalAmount` is the amount payable (osnovica + PDV). Receivables stay
+ * gross (that is what the customer owes), while revenue, cost and profit use the osnovica.
+ * Historical invoices have vatAmount 0, so their numbers are unchanged.
  */
 
 export const FINANCE_MONTHS = 12
@@ -22,6 +26,7 @@ export type FinanceInvoiceInput = {
   clientName: string
   status: string
   totalAmount: number | string | { toString(): string }
+  vatAmount?: number | string | { toString(): string } | null
   createdAt: Date | string
   paidAt?: Date | string | null
   items?: Array<{
@@ -77,6 +82,25 @@ export function formatRsd(value: number): string {
   }).format(value)
 }
 
+/** Osnovica: the amount payable without PDV. Equals totalAmount for invoices without PDV. */
+export function invoiceBaseAmount(invoice: {
+  totalAmount: number | string | { toString(): string }
+  vatAmount?: number | string | { toString(): string } | null
+}): number {
+  const base =
+    toInvoiceAmount(invoice.totalAmount) - toInvoiceAmount(invoice.vatAmount ?? 0)
+  return roundCurrency(base)
+}
+
+export function sumInvoiceBaseAmounts(
+  invoices: Array<{
+    totalAmount: number | string | { toString(): string }
+    vatAmount?: number | string | { toString(): string } | null
+  }>
+): number {
+  return roundCurrency(invoices.reduce((total, invoice) => total + invoiceBaseAmount(invoice), 0))
+}
+
 export function sumInvoiceAmounts(
   invoices: Array<{ totalAmount: number | string | { toString(): string } }>
 ): number {
@@ -125,7 +149,7 @@ export function invoiceProfit(invoice: FinanceInvoiceInput): FinanceInvoiceResul
     return { ...invoice, costTotal: null, profit: null, marginPercent: null, hasCompleteCost: false }
   }
 
-  const revenue = toInvoiceAmount(invoice.totalAmount)
+  const revenue = invoiceBaseAmount(invoice)
   const costTotal = roundCurrency(
     items.reduce((total, item) => total + item.quantity * toInvoiceAmount(item.unitCost!), 0)
   )
@@ -140,7 +164,7 @@ function profitPeriod(invoices: FinanceInvoiceResult[]) {
     return { cost: null, profit: null, marginPercent: null, missingCostCount }
   }
 
-  const revenue = sumInvoiceAmounts(invoices)
+  const revenue = sumInvoiceBaseAmounts(invoices)
   const cost = roundCurrency(invoices.reduce((total, invoice) => total + (invoice.costTotal ?? 0), 0))
   const profit = roundCurrency(revenue - cost)
   return {
@@ -222,7 +246,7 @@ export function buildFinanceSnapshot(
       key: formatLocalYm(start),
       label: formatMonthLabel(start),
       start,
-      total: sumInvoiceAmounts(monthInvoices),
+      total: sumInvoiceBaseAmounts(monthInvoices),
       count: monthInvoices.length,
       invoices: monthInvoices,
     })
@@ -240,10 +264,8 @@ export function buildFinanceSnapshot(
     receivables: sumInvoiceAmounts(open),
     openCount: open.length,
     monthRevenue: thisMonth?.total ?? 0,
-    yearRevenue: sumInvoiceAmounts(
-      yearInvoices
-    ),
-    allTimePaid: sumInvoiceAmounts(paid),
+    yearRevenue: sumInvoiceBaseAmounts(yearInvoices),
+    allTimePaid: sumInvoiceBaseAmounts(paid),
     monthCost: thisMonthProfit.cost,
     monthProfit: thisMonthProfit.profit,
     monthMarginPercent: thisMonthProfit.marginPercent,

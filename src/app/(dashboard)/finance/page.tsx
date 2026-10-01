@@ -5,7 +5,12 @@ import { prisma } from '@/lib/prisma'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, ArrowRight, FileText, Wallet } from 'lucide-react'
-import { buildFinanceSnapshot, formatRsd, type FinanceInvoiceInput } from '@/lib/invoice-finance'
+import {
+  buildFinanceSnapshot,
+  formatRsd,
+  invoiceBaseAmount,
+  type FinanceInvoiceInput,
+} from '@/lib/invoice-finance'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { sr } from '@/lib/ui-copy'
 
@@ -32,6 +37,7 @@ export default async function FinancePage() {
       clientName: true,
       status: true,
       totalAmount: true,
+      vatAmount: true,
       createdAt: true,
       paidAt: true,
       items: {
@@ -52,6 +58,7 @@ export default async function FinancePage() {
         clientName: invoice.clientName,
         status: invoice.status,
         totalAmount: invoice.totalAmount.toString(),
+        vatAmount: invoice.vatAmount.toString(),
         createdAt: invoice.createdAt,
         paidAt: invoice.paidAt,
         items: invoice.items.map((item) => ({
@@ -69,7 +76,7 @@ export default async function FinancePage() {
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
         title="Finansije"
-        description="Potraživanja su otvorene fakture. Prihod se knjiži na dan kada fakturu obeležite kao plaćenu."
+        description="Potraživanja su otvorene fakture. Prihod se knjiži na dan kada fakturu obeležite kao plaćenu. Prihod i profit su bez PDV-a."
       />
 
       {!hasAnyInvoices ? (
@@ -258,7 +265,7 @@ export default async function FinancePage() {
                         </span>
                         <span className="ml-3 shrink-0 text-right">
                           <span className="block font-medium">
-                            {formatRsd(Number(invoice.totalAmount))}
+                            {formatRsd(invoiceBaseAmount(invoice))}
                           </span>
                           {invoice.hasCompleteCost ? (
                             <span className="block text-xs text-muted-foreground">

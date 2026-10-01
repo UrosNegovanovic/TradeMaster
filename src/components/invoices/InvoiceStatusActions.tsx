@@ -6,6 +6,7 @@ import { Check, RotateCcw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InvoiceStatus } from '@/types/invoice'
 import { notify } from '@/lib/notify'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -96,10 +97,13 @@ export function InvoiceStatusActions({
         size={size}
         className={className}
         disabled={mutation.isPending}
-        onClick={() => {
-          const confirmed = window.confirm(
-            'Vratiti plaćenu fakturu među otvorene? Posle toga mogu ponovo da se menjaju proizvodi i cene.'
-          )
+        onClick={async () => {
+          const confirmed = await confirmDialog({
+            title: 'Vratiti plaćenu fakturu među otvorene?',
+            description: 'Posle toga mogu ponovo da se menjaju proizvodi i cene.',
+            confirmLabel: 'Vrati',
+            cancelLabel: 'Otkaži',
+          })
           if (!confirmed) {
             return
           }

@@ -160,3 +160,53 @@ describe('invoice-finance', () => {
     })
   })
 })
+
+describe('invoice-finance with PDV', () => {
+  it('books revenue and profit on the osnovica while receivables stay gross', () => {
+    const snapshot = buildFinanceSnapshot(
+      [
+        {
+          ...invoice({
+            id: 'paid-vat',
+            status: 'PAID',
+            totalAmount: 120,
+            paidAt: new Date(2026, 8, 10),
+            items: [{ quantity: 2, unitCost: 30 }],
+          }),
+          vatAmount: 20,
+        },
+        {
+          ...invoice({ id: 'open-vat', status: 'UNPAID', totalAmount: 60 }),
+          vatAmount: 10,
+        },
+      ],
+      now
+    )
+
+    expect(snapshot.receivables).toBe(60)
+    expect(snapshot.monthRevenue).toBe(100)
+    expect(snapshot.yearRevenue).toBe(100)
+    expect(snapshot.allTimePaid).toBe(100)
+    expect(snapshot.monthCost).toBe(60)
+    expect(snapshot.monthProfit).toBe(40)
+    expect(snapshot.monthMarginPercent).toBe(40)
+  })
+
+  it('leaves historical invoices (no vatAmount) unchanged', () => {
+    const snapshot = buildFinanceSnapshot(
+      [
+        invoice({
+          id: 'old',
+          status: 'PAID',
+          totalAmount: 100,
+          paidAt: new Date(2026, 8, 10),
+          items: [{ quantity: 1, unitCost: 60 }],
+        }),
+      ],
+      now
+    )
+
+    expect(snapshot.monthRevenue).toBe(100)
+    expect(snapshot.monthProfit).toBe(40)
+  })
+})

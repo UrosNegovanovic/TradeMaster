@@ -14,7 +14,7 @@ Read this file before any change. Prefer the smallest PR that fits the current a
   Quick Scan is a fast intake path and may save without `costPrice` (the column is nullable for that reason); the user fills it later in ProductForm. Do not "fix" this in the scanner.
 - **Magacin**: Ulaz / Izlaz, CSV/XLSX import. Day boundaries use `Europe/Belgrade` (`src/lib/local-date.ts`). Stock rules: `docs/stock-invoice-rules.md`.
 - **Katalog**: PDF + revocable share token. Public catalog by CUID returns 410 unless `shareEnabled`. Never expose `costPrice`, stock or owner ids in public DTOs.
-- **Faktura**: internal invoices (not SEF, not fiscal). Lines snapshot `unitPrice`, `unitCost`, `quantity`, `productName`; historical invoices never follow later product edits. Profit uses snapshots (`src/lib/invoice-finance.ts`). Stock leaves on DRAFT → UNPAID/PAID only.
+- **Faktura**: internal invoices (not SEF, not fiscal). Lines snapshot `unitPrice`, `unitCost`, `quantity`, `productName`; historical invoices never follow later product edits. Profit uses snapshots (`src/lib/invoice-finance.ts`). PDV: `Profile.inVatSystem` is the company setting; each issued invoice snapshots `vatEnabled`, `vatAmount` and per-line `vatRate` (0/10/20). `unitPrice`/`total` are excluding PDV, `totalAmount` is the amount payable (osnovica + PDV), osnovica = `totalAmount - vatAmount`. Receivables are gross; revenue and profit use the osnovica. Old invoices have vatEnabled false / vatAmount 0. Stock leaves on DRAFT → UNPAID/PAID only.
 - **Podešavanja**: firma, PIB, žiro-račun, logo.
 
 ## Stack
@@ -46,7 +46,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 - Never ship an API route without auth unless it is listed in `isPublicRoute` (`src/lib/route-access.ts`). No debug endpoints, no unauthenticated barcode proxy.
 - Never reopen anon INSERT on Supabase Storage. Uploads go Clerk session → `POST /api/uploads` (magic-byte sniff) → service role.
 - Never fetch user-supplied URLs without `src/lib/safe-remote-url.ts` (blocks private IPs, SSRF).
-- Never run `prisma migrate deploy` against production (no baseline). Schema changes are new SQL files in `supabase/migrations/`, applied via the Supabase dashboard/MCP, plus the matching `prisma/schema.prisma` edit.
+- Never run `prisma migrate deploy` (or apply any migration to production) without asking the owner first; once the owner approves, you may run it. Production has no Prisma baseline, so check `prisma migrate status` first and report the result before deploying. Schema changes are new SQL files in `supabase/migrations/` (applied via the Supabase dashboard/MCP after approval), plus the matching `prisma/schema.prisma` edit.
 - Never backfill `costPrice = 0` or fabricate historical `unitCost`.
 - Never add date filters to the intake SKU lookup in `src/lib/product-intake.ts`. `(profileId, sku)` is not unique in the schema: old "daily batch" rows still exist, so intake updates the latest row for the SKU and Magacin sums quantities per SKU. Do not add the unique index or delete batch rows without an explicit migration plan.
 - Never add global mutable lists. Everything is tenant-scoped by `profileId` (from the Clerk user); categories are per tenant.

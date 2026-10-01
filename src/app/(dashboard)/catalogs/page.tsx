@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Catalog } from '@/types/catalog'
 import { notify } from '@/lib/notify'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { sr } from '@/lib/ui-copy'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -61,8 +62,14 @@ export default function CatalogsPage() {
     },
   })
 
-  const handleDelete = (id: string) => {
-    if (confirm(sr.catalog.confirmDelete)) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDialog({
+      title: sr.catalog.confirmDelete,
+      confirmLabel: 'Obriši',
+      cancelLabel: 'Otkaži',
+      variant: 'destructive',
+    })
+    if (confirmed) {
       deleteMutation.mutate(id)
     }
   }

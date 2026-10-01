@@ -78,7 +78,9 @@ export function getServiceStorageClient(): SupabaseClient | null {
   if (storageClient !== undefined) return storageClient
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // Never fall back to the browser anon key — Phase 0 locked storage.objects INSERT.
+  if (!url || !key || (anonKey && key === anonKey)) {
     storageClient = null
     return null
   }

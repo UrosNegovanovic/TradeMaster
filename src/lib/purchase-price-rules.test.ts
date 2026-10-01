@@ -70,8 +70,11 @@ describe('purchase price rules (12 spec cases)', () => {
     expect(productPutFields(raised).costPriceZeroReason).toBeNull()
   })
 
-  it('9. Default sale price stays required on the product; invoice item sale price stays required', () => {
-    expect(productSchema.safeParse({ ...product, price: 0, costPrice: 10 }).success).toBe(false)
+  it('9. Product sale price is optional; invoice item sale price stays required', () => {
+    expect(productSchema.safeParse({ ...product, price: 0, costPrice: 10 }).success).toBe(true)
+    expect(productSchema.safeParse({ name: product.name, sku: product.sku, quantity: 1, costPrice: 10 }).success).toBe(
+      true
+    )
     expect(productSchema.safeParse({ ...product, price: 0.01, costPrice: 10 }).success).toBe(true)
 
     expect(invoiceItemWriteSchema.safeParse({ productName: 'Sok', quantity: 1 }).success).toBe(false)

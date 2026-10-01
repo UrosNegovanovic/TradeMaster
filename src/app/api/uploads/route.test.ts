@@ -71,6 +71,23 @@ describe('POST /api/uploads', () => {
     expect(mocks.uploadPublicImage).not.toHaveBeenCalled()
   })
 
+  it('uploads a product jpeg for the signed-in profile', async () => {
+    const form = new FormData()
+    form.set('bucket', 'product-images')
+    form.set('file', new File([jpegBytes], 'photo.jpg', { type: 'image/jpeg' }))
+    const response = await POST(postRequest(form))
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      url: expect.stringContaining('/storage/v1/object/public/product-images/'),
+      bucket: 'product-images',
+    })
+    expect(mocks.uploadPublicImage).toHaveBeenCalledTimes(1)
+    const [options] = mocks.uploadPublicImage.mock.calls[0]
+    expect(options.bucket).toBe('product-images')
+    expect(options.path).toMatch(/^profile-a\/.+\.jpg$/)
+    expect(options.contentType).toBe('image/jpeg')
+  })
+
   it('uploads a jpeg for the signed-in profile', async () => {
     const form = new FormData()
     form.set('bucket', 'merchant-logos')

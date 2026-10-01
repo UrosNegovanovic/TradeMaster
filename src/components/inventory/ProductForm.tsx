@@ -59,7 +59,9 @@ export function ProductForm({
     defaultValues: {
       name: initialData?.name ?? product?.name ?? '',
       sku: initialData?.sku ?? product?.sku ?? '',
-      price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+      price:
+        initialData?.price ??
+        (product?.price !== null && product?.price !== undefined ? Number(product.price) : undefined),
       costPrice:
         initialData?.costPrice ??
         (product?.costPrice !== null && product?.costPrice !== undefined
@@ -93,7 +95,9 @@ export function ProductForm({
       reset({
         name: initialData?.name ?? product?.name ?? '',
         sku: initialData?.sku ?? product?.sku ?? '',
-        price: initialData?.price ?? (product?.price ? Number(product.price) : 0),
+        price:
+          initialData?.price ??
+          (product?.price !== null && product?.price !== undefined ? Number(product.price) : undefined),
         costPrice:
           initialData?.costPrice ??
           (product?.costPrice !== null && product?.costPrice !== undefined
@@ -390,18 +394,18 @@ export function ProductForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="price">
-                Cena <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="price">{sr.product.salePriceOptional}</Label>
               <Input
                 id="price"
                 type="number"
                 step="0.01"
-                min="0.01"
+                min="0"
                 placeholder="0,00"
-                required
-                {...register('price', { valueAsNumber: true })}
+                {...register('price', {
+                  setValueAs: (value) => (value === '' || value === undefined ? 0 : Number(value)),
+                })}
               />
+              <p className="text-xs text-muted-foreground">{sr.product.salePriceDescription}</p>
               {errors.price && (
                 <p className="text-sm text-destructive">{errors.price.message}</p>
               )}

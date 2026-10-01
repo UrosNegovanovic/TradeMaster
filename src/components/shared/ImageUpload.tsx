@@ -8,8 +8,8 @@ import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { sr } from '@/lib/ui-copy'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
-import { readApiErrorMessage } from '@/lib/api-error'
-import { isDisplayableImageSrc, persistableImageUrl } from '@/lib/image-src'
+import { uploadImageViaApi } from '@/lib/client-image-upload'
+import { isDisplayableImageSrc } from '@/lib/image-src'
 
 interface ImageUploadProps {
   value?: string | null
@@ -90,23 +90,7 @@ export function ImageUpload({
     try {
       markUploading(true)
 
-      const form = new FormData()
-      form.set('bucket', bucket)
-      form.set('file', file)
-
-      const response = await authorizedFetch('/api/uploads', {
-        method: 'POST',
-        body: form,
-      })
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, sr.image.uploadFailed))
-      }
-
-      const data = (await response.json()) as { url?: string }
-      const storedUrl = persistableImageUrl(data.url)
-      if (!storedUrl) {
-        throw new Error('Javna adresa slike nije dostupna')
-      }
+      const storedUrl = await uploadImageViaApi(file, bucket, authorizedFetch)
 
       onChange(storedUrl)
       setPreview(storedUrl)

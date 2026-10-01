@@ -25,8 +25,11 @@ export const sr = {
     nameEditableHint: 'Naziv iz skenirane baze je samo predlog — izmenite ga pre čuvanja ako je potrebno.',
     skuPlaceholder: 'Unesite SKU ili skenirajte barkod',
     quantityTip: 'Skenirajte isti barkod više puta da automatski povećate količinu.',
+    salePrice: 'Cena',
+    salePriceOptional: 'Cena (opciono)',
+    salePriceDescription: 'Opciono. Možete je uneti sada ili kasnije na fakturi.',
     costPrice: 'Nabavna cena',
-    costPriceDescription: 'Obavezna. Koristi se za obračun profita i ne prikazuje se kupcu.',
+    costPriceDescription: 'Obavezna. Već je poznata pri ulazu robe i ne prikazuje se kupcu.',
     costPriceZeroReason: 'Razlog za nabavnu cenu 0',
     costPriceZeroReasonDescription:
       'npr. Promotivna roba, Besplatna zaliha dobavljača, Početni lager, Kompenzacija, Poklon/uzorak',

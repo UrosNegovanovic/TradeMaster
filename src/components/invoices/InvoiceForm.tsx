@@ -170,7 +170,9 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
           const selectedProduct = products.find((p) => p.id === value)
           if (selectedProduct) {
             updated.productName = selectedProduct.name
-            updated.unitPrice = Number(selectedProduct.price)
+            const productSalePrice = Number(selectedProduct.price)
+            updated.unitPrice =
+              Number.isFinite(productSalePrice) && productSalePrice > 0 ? productSalePrice : 0
           } else {
             updated.productName = ''
             updated.unitPrice = 0

@@ -42,6 +42,8 @@ export default defineConfig({
       'src/lib/invoice-number.test.ts',
       'src/lib/pwa-install.test.ts',
       'src/lib/rate-limit.test.ts',
+      'src/lib/after-auth.test.ts',
+      'src/lib/landing-copy.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',
       'src/app/api/public/catalogs/[id]/route.test.ts',

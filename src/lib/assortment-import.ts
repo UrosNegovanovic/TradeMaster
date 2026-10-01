@@ -183,12 +183,15 @@ export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows:
     }
 
     const price = parseNumber(row[3])
-    if (cenaText === '' || price == null) {
+    if (cenaText !== '' && price == null) {
       issues.push({ field: 'cena', message: 'Cena mora biti broj' })
-    } else if (price < 0) {
+    } else if (price != null && price < 0) {
       issues.push({ field: 'cena', message: 'Cena ne može biti negativna' })
     }
 
+    if (nabavnaText === '') {
+      issues.push({ field: 'nabavna_cena', message: 'Nabavna cena je obavezna' })
+    }
     const cost = costPriceFromCell(row[4])
     if (cost.error) issues.push({ field: 'nabavna_cena', message: cost.error })
 
@@ -198,7 +201,7 @@ export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows:
           name: naziv,
           sku,
           quantity: quantity as number,
-          price: price as number,
+          price: price ?? 0,
           ...(cost.value !== undefined ? { costPrice: cost.value } : {}),
           ...(kategorija ? { categoryName: kategorija } : {}),
         }

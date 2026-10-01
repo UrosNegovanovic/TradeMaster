@@ -237,7 +237,8 @@ export function AssortmentImportDialog({
               Preuzmi template
             </Button>
             <p className="text-xs text-muted-foreground">
-              Kolone: naziv, sku, kolicina, cena, nabavna_cena, kategorija. Poslednje dve su opcione.
+              Kolone: naziv, sku, kolicina, cena, nabavna_cena, kategorija. Cena i kategorija su
+              opcione; nabavna cena je obavezna (0 samo u formi proizvoda, uz razlog).
             </p>
           </div>
 

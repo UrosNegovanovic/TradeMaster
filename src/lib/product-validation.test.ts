@@ -36,10 +36,20 @@ describe('productIntakeSchema price', () => {
 })
 
 describe('productSchema price', () => {
-  it('requires a positive selling price for product creation and editing', () => {
-    expect(productSchema.safeParse({ ...base, price: 0, costPrice: 10 }).success).toBe(false)
+  it('saves a product without a sale price when purchase price is present', () => {
+    expect(productSchema.safeParse({ ...base, costPrice: 10 }).success).toBe(true)
+    expect(productSchema.safeParse({ ...base, price: 0, costPrice: 10 }).success).toBe(true)
+    expect(productSchema.safeParse({ ...base, price: '', costPrice: 10 }).success).toBe(true)
+    const parsed = productSchema.parse({ ...base, costPrice: 10 })
+    expect(parsed.price).toBe(0)
     expect(productSchema.safeParse({ ...base, price: -1, costPrice: 10 }).success).toBe(false)
     expect(productSchema.safeParse({ ...base, price: 0.01, costPrice: 10 }).success).toBe(true)
+  })
+
+  it('fails to save a product without a purchase price', () => {
+    expect(productSchema.safeParse(base).success).toBe(false)
+    expect(productSchema.safeParse({ ...base, price: 120 }).success).toBe(false)
+    expect(productSchema.safeParse({ ...base, price: 120, costPrice: null }).success).toBe(false)
   })
 
   it('requires a non-negative purchase price and a note only when that price is 0', () => {

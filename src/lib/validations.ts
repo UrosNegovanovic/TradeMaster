@@ -259,22 +259,28 @@ const productFields = {
   categoryId: z.string().optional().nullable(),
 }
 
-/** Warehouse / Quick Scan POST /api/products — price 0 is valid (user can update later). */
+const optionalSalePriceSchema = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) return 0
+  if (typeof value === 'number' && Number.isNaN(value)) return 0
+  return value
+}, z.number({ invalid_type_error: 'Cena mora biti broj' }).min(0, 'Cena ne može biti negativna'))
+
+/** Warehouse / Quick Scan POST /api/products — sale price 0 is valid (user can update later). */
 export const productIntakeSchema = z
   .object({
     ...productFields,
-    price: z.number().min(0, 'Price cannot be negative').default(0),
+    price: optionalSalePriceSchema,
     costPrice: optionalCostPriceSchema,
     costPriceZeroReason: costPriceZeroReasonSchema,
   })
   .superRefine(refineZeroPurchasePriceReason)
   .transform(normalizePurchasePrice)
 
-/** Manual ProductForm create/edit — selling price must be > 0; purchase price is required. */
+/** Manual ProductForm create/edit — purchase price required; sale price optional (invoice can set it). */
 export const productSchema = z
   .object({
     ...productFields,
-    price: z.number().positive('Cena mora biti veća od 0'),
+    price: optionalSalePriceSchema,
     costPrice: requiredCostPriceSchema,
     costPriceZeroReason: costPriceZeroReasonSchema,
   })

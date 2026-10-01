@@ -36,6 +36,7 @@ export default defineConfig({
       'src/lib/purchase-price-rules.test.ts',
       'src/lib/profile-put.test.ts',
       'src/lib/image-src.test.ts',
+      'src/lib/client-image-upload.test.ts',
       'src/lib/assortment-import.test.ts',
       'src/lib/camera-access.test.ts',
       'src/lib/invoice-number.test.ts',

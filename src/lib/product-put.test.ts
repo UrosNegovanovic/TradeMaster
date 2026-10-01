@@ -45,7 +45,15 @@ describe('productPutFields', () => {
     })
   })
 
-  it('rejects a selling price of 0 on the ProductForm update path', () => {
-    expect(productSchema.safeParse({ ...priced, price: 0 }).success).toBe(false)
+  it('keeps a missing or zero selling price on the ProductForm update path', () => {
+    expect(productSchema.safeParse({ ...priced, price: 0 }).success).toBe(true)
+    const omitted = productSchema.parse({
+      name: priced.name,
+      sku: priced.sku,
+      costPrice: priced.costPrice,
+      quantity: priced.quantity,
+    })
+    expect(omitted.price).toBe(0)
+    expect(productPutFields(omitted).price).toBe(0)
   })
 })

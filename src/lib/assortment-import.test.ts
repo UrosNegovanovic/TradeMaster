@@ -30,11 +30,16 @@ describe('parseAssortmentGrid', () => {
       ['', '86002', '2', '10', '', ''],
       ['Kafa', '', '2', '10', '', ''],
       ['Čaj', '86003', 'nije-broj', '10', '', ''],
-      ['Voda', '86004', '1', '50', '', ''],
+      ['Voda', '86004', '1', '50', '20', ''],
+      ['Čips', '86005', '1', '', '15', ''],
     ])
     if ('error' in parsed) throw new Error(parsed.error)
-    expect(parsed.rows).toHaveLength(5)
-    expect(parsed.rows.filter((row) => row.valid).map((row) => row.payload?.sku)).toEqual(['86001', '86004'])
+    expect(parsed.rows).toHaveLength(6)
+    expect(parsed.rows.filter((row) => row.valid).map((row) => row.payload?.sku)).toEqual([
+      '86001',
+      '86004',
+      '86005',
+    ])
     expect(parsed.rows.find((row) => row.display.sku === '86002')?.valid).toBe(false)
     expect(parsed.rows.find((row) => row.display.naziv === 'Kafa')?.valid).toBe(false)
     expect(parsed.rows.find((row) => row.display.sku === '86003')?.valid).toBe(false)
@@ -51,18 +56,28 @@ describe('parseAssortmentGrid', () => {
       sku: '86004',
       quantity: 1,
       price: 50,
+      costPrice: 20,
+    })
+    expect(parsed.rows[5].payload).toEqual({
+      name: 'Čips',
+      sku: '86005',
+      quantity: 1,
+      price: 0,
+      costPrice: 15,
     })
   })
 
-  it('accepts comma decimals and omits empty optional cost', () => {
+  it('accepts comma-decimal sale price and rejects a missing purchase price', () => {
     const parsed = parseAssortmentGrid([
       header,
-      ['Sok', '1', '2', '12,5', '', ''],
+      ['Sok', '1', '2', '12,5', '8', ''],
+      ['Voda', '2', '1', '50', '', ''],
     ])
     if ('error' in parsed) throw new Error(parsed.error)
     expect(parsed.rows[0].valid).toBe(true)
-    expect(parsed.rows[0].payload).toMatchObject({ price: 12.5 })
-    expect(parsed.rows[0].payload).not.toHaveProperty('costPrice')
+    expect(parsed.rows[0].payload).toMatchObject({ price: 12.5, costPrice: 8 })
+    expect(parsed.rows[1].valid).toBe(false)
+    expect(parsed.rows[1].issues[0]?.message).toBe('Nabavna cena je obavezna')
   })
 
   it('accepts two-decimal nabavna_cena values that fail Number.isInteger(value * 100)', () => {

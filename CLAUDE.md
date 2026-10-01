@@ -46,7 +46,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 - Never ship an API route without auth unless it is listed in `isPublicRoute` (`src/lib/route-access.ts`). No debug endpoints, no unauthenticated barcode proxy.
 - Never reopen anon INSERT on Supabase Storage. Uploads go Clerk session → `POST /api/uploads` (magic-byte sniff) → service role.
 - Never fetch user-supplied URLs without `src/lib/safe-remote-url.ts` (blocks private IPs, SSRF).
-- Never run `prisma migrate deploy` against production (no baseline). Schema changes are new SQL files in `supabase/migrations/`, applied via the Supabase dashboard/MCP, plus the matching `prisma/schema.prisma` edit.
+- Never run `prisma migrate deploy` (or apply any migration to production) without asking the owner first; once the owner approves, you may run it. Production has no Prisma baseline, so check `prisma migrate status` first and report the result before deploying. Schema changes are new SQL files in `supabase/migrations/` (applied via the Supabase dashboard/MCP after approval), plus the matching `prisma/schema.prisma` edit.
 - Never backfill `costPrice = 0` or fabricate historical `unitCost`.
 - Never add date filters to the intake SKU lookup in `src/lib/product-intake.ts`. `(profileId, sku)` is not unique in the schema: old "daily batch" rows still exist, so intake updates the latest row for the SKU and Magacin sums quantities per SKU. Do not add the unique index or delete batch rows without an explicit migration plan.
 - Never add global mutable lists. Everything is tenant-scoped by `profileId` (from the Clerk user); categories are per tenant.

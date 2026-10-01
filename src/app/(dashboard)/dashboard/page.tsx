@@ -20,6 +20,7 @@ import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
 import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/local-date'
 import { formatRsd } from '@/lib/invoice-finance'
 import { fetchLowStockProducts } from '@/lib/low-stock'
+import { sr } from '@/lib/ui-copy'
 import {
   DASHBOARD_LOW_STOCK_PREVIEW,
   DASHBOARD_OPEN_INVOICE_PREVIEW,
@@ -220,6 +221,7 @@ export default async function DashboardPage() {
         </div>
         <div className="w-full sm:max-w-sm">
           <QuickScanButton presentation="hero" />
+          <p className="mt-1.5 text-xs text-muted-foreground">{sr.scan.missingCostNote}</p>
         </div>
       </div>
 

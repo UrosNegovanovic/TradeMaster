@@ -24,15 +24,24 @@ import {
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { Product } from '@/types/product'
-import { optionalCostPriceSchema } from '@/lib/validations'
+import {
+  costPriceZeroReasonSchema,
+  normalizePurchasePrice,
+  optionalCostPriceSchema,
+  refineZeroPurchasePriceReason,
+} from '@/lib/validations'
 import { sr } from '@/lib/ui-copy'
 
-const stockInSchema = z.object({
-  productId: z.string().min(1, 'Izaberite proizvod'),
-  quantity: z.coerce.number().int().positive('Količina mora biti pozitivan broj'),
-  reason: z.string().min(1, 'Unesite razlog').max(200, 'Razlog je predugačak'),
-  costPrice: optionalCostPriceSchema,
-})
+const stockInSchema = z
+  .object({
+    productId: z.string().min(1, 'Izaberite proizvod'),
+    quantity: z.coerce.number().int().positive('Količina mora biti pozitivan broj'),
+    reason: z.string().min(1, 'Unesite razlog').max(200, 'Razlog je predugačak'),
+    costPrice: optionalCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
 
 export type StockInFormData = z.infer<typeof stockInSchema>
 
@@ -65,11 +74,14 @@ export function StockInForm({
       quantity: 1,
       reason: '',
       costPrice: undefined,
+      costPriceZeroReason: '',
     },
   })
 
   const selectedProductId = watch('productId')
   const selectedProduct = products.find((p) => p.id === selectedProductId)
+  const currentCostPrice = watch('costPrice')
+  const showZeroCostReason = currentCostPrice === 0
 
   const handleFormSubmit = async (data: StockInFormData) => {
     await onSubmit({
@@ -78,6 +90,7 @@ export function StockInForm({
         data.costPrice === undefined || data.costPrice === null || Number.isNaN(data.costPrice)
           ? undefined
           : data.costPrice,
+      costPriceZeroReason: data.costPriceZeroReason,
     })
     if (!isLoading) {
       reset()
@@ -159,12 +172,31 @@ export function StockInForm({
                 })}
               />
               <p className="text-xs text-muted-foreground">
-                {sr.product.costPriceDescription} Ako ostavite prazno, postojeća nabavna cena se ne menja.
+                Ako ostavite prazno, postojeća nabavna cena se ne menja. 0 zahteva razlog.
               </p>
               {errors.costPrice && (
                 <p className="text-sm text-destructive">{errors.costPrice.message}</p>
               )}
             </div>
+
+            {showZeroCostReason ? (
+              <div className="grid gap-2">
+                <Label htmlFor="costPriceZeroReason">
+                  {sr.product.costPriceZeroReason} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="costPriceZeroReason"
+                  placeholder={sr.product.costPriceZeroReasonDescription}
+                  {...register('costPriceZeroReason')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {sr.product.costPriceZeroReasonDescription}
+                </p>
+                {errors.costPriceZeroReason && (
+                  <p className="text-sm text-destructive">{errors.costPriceZeroReason.message}</p>
+                )}
+              </div>
+            ) : null}
 
             <div className="grid gap-2">
               <Label htmlFor="reason">

@@ -33,6 +33,7 @@ export default defineConfig({
       'src/lib/barcode-lookup.test.ts',
       'src/lib/authorized-fetch.test.ts',
       'src/lib/product-put.test.ts',
+      'src/lib/purchase-price-rules.test.ts',
       'src/lib/profile-put.test.ts',
       'src/lib/image-src.test.ts',
       'src/lib/assortment-import.test.ts',

@@ -3,19 +3,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { MovementType, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { parseStockMovementListParams } from '@/lib/stock-movement-query'
-import { optionalCostPriceSchema } from '@/lib/validations'
+import { productCostWriteFields } from '@/lib/product-cost'
+import {
+  costPriceZeroReasonSchema,
+  normalizePurchasePrice,
+  optionalCostPriceSchema,
+  refineZeroPurchasePriceReason,
+} from '@/lib/validations'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
 // Validation schema for stock movement creation
-const stockMovementSchema = z.object({
-  productId: z.string().min(1, 'Product ID is required'),
-  type: z.nativeEnum(MovementType, { errorMap: () => ({ message: 'Type must be IN or OUT' }) }),
-  quantity: z.number().int().positive('Quantity must be a positive integer'),
-  reason: z.string().min(1, 'Reason is required').max(200, 'Reason is too long'),
-  costPrice: optionalCostPriceSchema,
-})
+const stockMovementSchema = z
+  .object({
+    productId: z.string().min(1, 'Product ID is required'),
+    type: z.nativeEnum(MovementType, { errorMap: () => ({ message: 'Type must be IN or OUT' }) }),
+    quantity: z.number().int().positive('Quantity must be a positive integer'),
+    reason: z.string().min(1, 'Reason is required').max(200, 'Reason is too long'),
+    costPrice: optionalCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
 
 /**
  * GET /api/stock-movements
@@ -122,7 +132,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { productId, type, quantity, reason, costPrice } = validationResult.data
+    const { productId, type, quantity, reason, costPrice, costPriceZeroReason } = validationResult.data
 
     // Verify product belongs to user
     const product = await prisma.product.findUnique({
@@ -186,7 +196,7 @@ export async function POST(request: NextRequest) {
         data: {
           quantity: newQuantity,
           ...(type === MovementType.IN && costPrice !== undefined && costPrice !== null
-            ? { costPrice }
+            ? productCostWriteFields({ costPrice, costPriceZeroReason })
             : {}),
         },
       })

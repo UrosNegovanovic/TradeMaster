@@ -80,6 +80,16 @@ describe('parseAssortmentGrid', () => {
     expect(parsed.rows[3].valid).toBe(false)
     expect(parsed.rows[3].issues[0]?.message).toBe('Nabavna cena može imati najviše 2 decimale')
   })
+
+  it('rejects nabavna_cena 0 because CSV cannot carry the required zero-reason', () => {
+    const parsed = parseAssortmentGrid([
+      header,
+      ['Uzorke', '9', '1', '20', '0', ''],
+    ])
+    if ('error' in parsed) throw new Error(parsed.error)
+    expect(parsed.rows[0].valid).toBe(false)
+    expect(parsed.rows[0].issues[0]?.message).toMatch(/razlog/i)
+  })
 })
 
 describe('parseStockAdjustGrid', () => {

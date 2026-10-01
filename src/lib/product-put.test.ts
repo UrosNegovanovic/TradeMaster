@@ -6,6 +6,7 @@ const priced = {
   name: 'TIC TAC Fresh Mint',
   sku: '80052043',
   price: 120,
+  costPrice: 80,
   quantity: 10,
   description: '',
   imageUrl: '',
@@ -13,16 +14,35 @@ const priced = {
 }
 
 describe('productPutFields', () => {
-  it('omits costPrice when the add-price form does not send one', () => {
+  it('writes the required purchase price and keeps the selling price', () => {
     const validated = productSchema.parse(priced)
-    expect(validated.costPrice).toBeUndefined()
-    expect(productPutFields(validated)).not.toHaveProperty('costPrice')
-    expect(productPutFields(validated).price).toBe(120)
+    expect(validated.costPrice).toBe(80)
+    expect(productPutFields(validated)).toMatchObject({
+      price: 120,
+      costPrice: 80,
+      costPriceZeroReason: null,
+    })
   })
 
-  it('writes an explicit null costPrice without inventing a selling price', () => {
-    const validated = productSchema.parse({ ...priced, costPrice: null })
-    expect(productPutFields(validated).costPrice).toBeNull()
+  it('clears a leftover zero-reason when the purchase price is above 0', () => {
+    const validated = productSchema.parse({
+      ...priced,
+      costPrice: 19.99,
+      costPriceZeroReason: 'Gift/sample',
+    })
+    expect(productPutFields(validated).costPriceZeroReason).toBeNull()
+  })
+
+  it('stores the free-text zero-reason when purchase price is 0', () => {
+    const validated = productSchema.parse({
+      ...priced,
+      costPrice: 0,
+      costPriceZeroReason: 'Compensation',
+    })
+    expect(productPutFields(validated)).toMatchObject({
+      costPrice: 0,
+      costPriceZeroReason: 'Compensation',
+    })
   })
 
   it('rejects a selling price of 0 on the ProductForm update path', () => {

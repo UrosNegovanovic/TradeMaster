@@ -188,6 +188,53 @@ export const optionalCostPriceSchema = z
   .nullable()
   .optional()
 
+export const requiredCostPriceSchema = z
+  .number({
+    required_error: 'Nabavna cena je obavezna',
+    invalid_type_error: 'Nabavna cena mora biti broj',
+  })
+  .superRefine((value, ctx) => {
+    assertMoneyInput(value, ctx, 'costPrice', 0, MONEY_MAX)
+  })
+
+export const costPriceZeroReasonSchema = z
+  .string()
+  .max(200, 'Razlog je predugačak')
+  .nullable()
+  .optional()
+
+type PurchasePriceFields = {
+  costPrice?: number | null
+  costPriceZeroReason?: string | null
+}
+
+export function refineZeroPurchasePriceReason(data: PurchasePriceFields, ctx: z.RefinementCtx) {
+  if (data.costPrice !== 0) {
+    return
+  }
+  const reason = data.costPriceZeroReason?.trim() ?? ''
+  if (!reason) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['costPriceZeroReason'],
+      message: 'Unesite razlog za nabavnu cenu 0',
+    })
+  }
+}
+
+export function normalizePurchasePrice<T extends PurchasePriceFields>(data: T): T {
+  if (data.costPrice === undefined) {
+    return data
+  }
+  if (data.costPrice === null) {
+    return { ...data, costPriceZeroReason: null }
+  }
+  return {
+    ...data,
+    costPriceZeroReason: data.costPrice === 0 ? data.costPriceZeroReason?.trim() || null : null,
+  }
+}
+
 export const bulkAdjustItemSchema = z.object({
   sku: z.string().trim().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
   quantity: z.number({ invalid_type_error: 'Količina mora biti broj' }).int().min(0, 'Količina ne može biti negativna'),
@@ -199,7 +246,6 @@ export type BulkAdjustItem = z.infer<typeof bulkAdjustItemSchema>
 const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
-  costPrice: optionalCostPriceSchema,
   quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
   imageUrl: z
     .union([
@@ -214,16 +260,26 @@ const productFields = {
 }
 
 /** Warehouse / Quick Scan POST /api/products — price 0 is valid (user can update later). */
-export const productIntakeSchema = z.object({
-  ...productFields,
-  price: z.number().min(0, 'Price cannot be negative').default(0),
-})
+export const productIntakeSchema = z
+  .object({
+    ...productFields,
+    price: z.number().min(0, 'Price cannot be negative').default(0),
+    costPrice: optionalCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
 
-/** Manual ProductForm create/edit — selling price must be > 0. */
-export const productSchema = z.object({
-  ...productFields,
-  price: z.number().positive('Cena mora biti veća od 0'),
-})
+/** Manual ProductForm create/edit — selling price must be > 0; purchase price is required. */
+export const productSchema = z
+  .object({
+    ...productFields,
+    price: z.number().positive('Cena mora biti veća od 0'),
+    costPrice: requiredCostPriceSchema,
+    costPriceZeroReason: costPriceZeroReasonSchema,
+  })
+  .superRefine(refineZeroPurchasePriceReason)
+  .transform(normalizePurchasePrice)
 
 export type ProductIntakeData = z.infer<typeof productIntakeSchema>
 export type ProductFormData = z.infer<typeof productSchema>

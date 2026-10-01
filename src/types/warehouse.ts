@@ -21,6 +21,7 @@ export type StockMovementCreateInput = {
   quantity: number
   reason: string
   costPrice?: number | null
+  costPriceZeroReason?: string | null
 }
 
 export type LowStockProduct = {

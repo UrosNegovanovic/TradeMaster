@@ -141,6 +141,9 @@ function costPriceFromCell(value: unknown): { value?: number; error?: string } {
     return { error: result.error.issues[0]?.message ?? 'Nabavna cena mora biti broj' }
   }
   if (result.data == null) return {}
+  if (result.data === 0) {
+    return { error: 'Nabavna cena 0 zahteva razlog — unesite ga u formi proizvoda, ne u CSV-u' }
+  }
   return { value: result.data }
 }
 

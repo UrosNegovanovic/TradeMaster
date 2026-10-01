@@ -41,9 +41,15 @@ B2B web application for managing inventory and creating professional PDF catalog
    # Database
    DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
 
-   # Clerk Authentication
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-   CLERK_SECRET_KEY=sk_test_...
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+# In-app fallback after sign-in/up. Also set these in Clerk Dashboard → Paths
+# (After sign-in / After sign-up = /dashboard) and in Vercel env if they still point at /.
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
+NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
 
    # Supabase
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co

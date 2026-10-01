@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { CatalogPDF } from '@/components/catalogs/CatalogPDF'
 import type { CatalogWithItems } from '@/types/catalog'
 import type { Profile } from '@/types/profile'
+import { sr } from '@/lib/ui-copy'
 
 type CatalogPdfDownloadProps = {
   catalog: CatalogWithItems & { profile: Profile }
@@ -55,12 +56,12 @@ export default function CatalogPdfDownload({
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                {sr.pdf.generating}
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Download PDF
+                {sr.pdf.download}
               </>
             )}
           </Button>

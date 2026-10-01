@@ -8,6 +8,7 @@ import { LandingInstall } from './LandingInstall'
 import { LandingStickyCta } from './LandingStickyCta'
 import { landingShell } from './landing-shell'
 import { AssortmentLaptop, FeatureShot, PhoneScanner } from './mocks'
+import { paymentFaq, pricingFxNote, pricingIncludes, pricingNote } from '@/lib/landing-copy'
 
 const navLink =
   'inline-flex min-h-11 items-center rounded-md px-2.5 text-[15px] text-neutral-700 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -98,13 +99,7 @@ const faqs = [
     q: 'Mogu li da uvezem postojeći asortiman odjednom (Excel/CSV)?',
     a: 'Da. Na Magacinu postoje dva odvojena uvoza: „Uvezi iz CSV/Excel“ za nove proizvode i „Ažuriraj stanje“ koje po SKU-u postavlja količinu postojećih artikala (uz kretanje u magacinu). Pregled prikaže neispravne redove i oni se ne šalju.',
   },
-] as const
-
-const pricingIncludes = [
-  'Neograničen broj proizvoda',
-  'Skener, magacin, katalozi, fakture i finansije',
-  '60 dana besplatno, bez kartice',
-  'Otkažite kad god želite',
+  paymentFaq,
 ] as const
 
 function HeroActions({ className }: { className?: string }) {
@@ -324,8 +319,8 @@ export function LandingPage() {
               Cena
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
-              Jedna cena, sve uključeno. Bez skrivenih troškova, bez posebne naplate po
-              proizvodu.
+              Rani pristup: 30 € za 60 dana, sve uključeno. Naplata je ručna dok ne bude
+              checkout.
             </p>
             <article className="mx-auto mt-8 max-w-[420px] rounded-[16px] border border-neutral-200/80 bg-white p-6 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)] sm:p-7">
               <p className="text-[16px] font-semibold text-neutral-900">TradeMaster</p>
@@ -333,7 +328,7 @@ export function LandingPage() {
                 <span className="text-[2.5rem] font-bold leading-none tracking-tight text-neutral-950">
                   30 €
                 </span>
-                <span className="text-[15px] text-neutral-600">mesečno</span>
+                <span className="text-[15px] text-neutral-600">za 60 dana</span>
               </p>
               <ul className="mt-6 space-y-2.5">
                 {pricingIncludes.map((item) => (
@@ -355,10 +350,10 @@ export function LandingPage() {
               </Button>
             </article>
             <p className="mt-4 text-center text-[14px] text-neutral-600">
-              Nema ugovorne obaveze.
+              {pricingNote}
             </p>
             <p className="mt-1 text-center text-[12px] leading-relaxed text-neutral-500">
-              Naplata u dinarima po važećem kursu NBS na dan fakturisanja.
+              {pricingFxNote}
             </p>
           </div>
         </section>
@@ -423,8 +418,9 @@ export function LandingPage() {
               Rani pristup
             </h2>
             <p className="mx-auto max-w-2xl text-center text-[16px] leading-relaxed text-neutral-800">
-              Gradimo TradeMaster zajedno sa prvim trgovcima u Srbiji. Prijavite se i
-              pomozite da alat oblikujemo prema vašim potrebama.
+              Gradimo TradeMaster zajedno sa prvim trgovcima u Srbiji. Rani pristup je
+              30 € za 60 dana, naplata ručno. Prijavite se i pomozite da alat oblikujemo
+              prema vašim potrebama.
             </p>
           </div>
         </section>

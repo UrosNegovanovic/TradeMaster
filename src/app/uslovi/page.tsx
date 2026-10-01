@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function UsloviPage() {
   return (
-    <LegalDocument title="Uslovi korišćenja" updated="Ažurirano 29. septembra 2026.">
+    <LegalDocument title="Uslovi korišćenja" updated="Ažurirano 1. oktobra 2026.">
       <LegalSection title="Usluga">
         <p>
           TradeMaster je veb usluga za trgovce i malu veleprodaju: skeniranje
@@ -46,9 +46,10 @@ export default function UsloviPage() {
 
       <LegalSection title="Naknada">
         <p>
-          Aktuelna naknada, probni period i uslovi otkazivanja navedeni su na
-          početnoj stranici, u odeljku Cena. Ovde ih ne ponavljamo. Nema druge,
-          skrivene cene pored te objavljene.
+          Aktuelna naknada je 30 € za 60 dana, navedena na početnoj stranici.
+          Nema pretplate ni checkout-a u aplikaciji — naplata je ručna,
+          dogovorom. Nema skrivene cene pored te objavljene. Otkaz pretplate ne
+          postoji dok nema pretplate.
         </p>
       </LegalSection>
 

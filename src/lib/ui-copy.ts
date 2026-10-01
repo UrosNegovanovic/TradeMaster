@@ -8,6 +8,14 @@ export const sr = {
     home: 'Početna',
     dashboard: 'Početna tabla',
   },
+  pdf: {
+    download: 'Preuzmi PDF',
+    generating: 'Priprema PDF-a…',
+  },
+  scan: {
+    missingCostNote:
+      'Brzi sken ne unosi nabavnu cenu. Dopunite je u asortimanu ili na Ulazu.',
+  },
   route: {
     errorTitle: 'Nešto nije u redu',
     errorDescription: 'Stranica nije učitana. Pokušajte ponovo.',

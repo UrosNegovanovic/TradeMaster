@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { InvoicePDF } from '@/components/invoices/InvoicePDF'
 import type { InvoiceWithItems } from '@/types/invoice'
 import type { Profile } from '@/types/profile'
+import { sr } from '@/lib/ui-copy'
 
 type InvoicePdfDownloadProps = {
   invoice: InvoiceWithItems & { profile: Profile }
@@ -39,12 +40,12 @@ export default function InvoicePdfDownload({ invoice }: InvoicePdfDownloadProps)
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
+              {sr.pdf.generating}
             </>
           ) : (
             <>
               <Download className="mr-2 h-4 w-4" />
-              Download PDF
+              {sr.pdf.download}
             </>
           )}
         </Button>

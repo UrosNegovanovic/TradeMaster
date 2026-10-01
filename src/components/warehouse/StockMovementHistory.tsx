@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
 import { ArrowDown, ArrowUp, CalendarIcon, ChevronDown, Package, Search, X } from 'lucide-react'
 import { MovementType } from '@prisma/client'
 import { StockMovement } from '@/types/warehouse'
@@ -55,6 +54,14 @@ function formatDate(date: Date | string): string {
   }).format(new Date(date))
 }
 
+function formatDay(date: Date): string {
+  return new Intl.DateTimeFormat('sr-RS', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
 function MovementFilters({
   searchQuery,
   onSearchQueryChange,
@@ -101,7 +108,7 @@ function MovementFilters({
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, 'PPP') : <span>Filter po datumu</span>}
+                {selectedDate ? formatDay(selectedDate) : <span>Filter po datumu</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="z-[70] w-auto p-0" align="start">
@@ -126,7 +133,7 @@ function MovementFilters({
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground">
           Pronađeno {resultCount} od {sourceCount} kretanja
-          {selectedDate ? ` on ${format(selectedDate, 'PPP')}` : ''}
+          {selectedDate ? ` za ${formatDay(selectedDate)}` : ''}
         </p>
       )}
     </div>
@@ -265,13 +272,12 @@ export function StockMovementHistory({
   return (
     <>
       {isLoading ? (
-        <p className="py-8 text-center text-muted-foreground">Loading movements...</p>
+        <p className="py-8 text-center text-muted-foreground">Učitavanje kretanja…</p>
       ) : movements.length === 0 ? (
         <div className="py-12 text-center">
           <Package className="mx-auto mb-3 h-12 w-12 opacity-50 text-muted-foreground" />
           <p className="text-muted-foreground">
-            No stock movements yet. Use the Inventory Scanner to add products, or register stock out
-            movements above.
+            Još nema kretanja. Skenirajte proizvode ili evidentirajte izlaz iznad.
           </p>
         </div>
       ) : (
@@ -286,8 +292,8 @@ export function StockMovementHistory({
               <Package className="mx-auto mb-3 h-12 w-12 opacity-50 text-muted-foreground" />
               <p className="text-muted-foreground">
                 Nema kretanja
-                {searchQuery ? ` matching "${searchQuery}"` : ''}
-                {selectedDate ? ` on ${format(selectedDate, 'PPP')}` : ''}
+                {searchQuery ? ` za „${searchQuery}“` : ''}
+                {selectedDate ? ` na dan ${formatDay(selectedDate)}` : ''}
               </p>
               <Button variant="link" onClick={clearFilters} className="mt-2">
                 Obriši filtere

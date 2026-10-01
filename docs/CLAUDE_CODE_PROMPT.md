@@ -4,11 +4,11 @@ Nalepi sve ispod linije u novu Claude Code sesiju u korenu repoa.
 
 ---
 
-Radiš na TradeMaster-u (B2B SaaS za srpske veletrgovce i male magacine). Prvo pročitaj `CLAUDE.md`, `docs/STATUS.md` i `docs/ROADMAP.md`, pa `docs/stock-invoice-rules.md` i `docs/scanner-ux-rules.md`. Pravila iz `CLAUDE.md` važe bez izuzetka. Cilj je javno lansiranje 1. novembra 2026.
+Radiš na TradeMaster-u (B2B SaaS za srpske veletrgovce i male magacine). Prvo pročitaj `CLAUDE.md`, `docs/STATUS.md` i `docs/ROADMAP.md`, pa `docs/stock-invoice-rules.md` i `docs/scanner-ux-rules.md`. Pravila iz `CLAUDE.md` važe bez izuzetka. Prvo prođi ceo projekat (`src/lib`, `src/app/api`, `supabase/migrations`, `prisma/schema.prisma`, testovi) i potvrdi da `CLAUDE.md` i `docs/STATUS.md` odgovaraju kodu; ako ne odgovaraju, ispravi dokument u zasebnom malom PR-u pre funkcija. Poznate zamke: `(profileId, sku)` nije unique (stari dnevni batch redovi), profil se kreira lenjo preko `GET /api/profile`, `test:db` traži `TEST_DATABASE_URL`, rate limit je u memoriji. Cilj je javno lansiranje 1. novembra 2026.
 
 ## Način rada
 
-- Implementiraj tačke iz `docs/ROADMAP.md` redom: 2, 5, 8, 1, 4, 3, 6, 7, 9. Jedna tačka = jedna grana (`feat/<kratak-naziv>`) = jedan draft PR. Ne spajaj tačke i ne merguj.
+- Implementiraj tačke iz `docs/ROADMAP.md` redom: 11 (higijena), 2, 5, 8, 1, 4, 3, 6, 7, 9. Jedna tačka = jedna grana (`feat/<kratak-naziv>`) = jedan draft PR. Ne spajaj tačke i ne merguj.
 - Pre svake tačke: pročitaj relevantan kod, napiši kratak plan (fajlovi, migracija, testovi), pa implementiraj. Ako nešto zavisi od vlasnika (domen, PIB, naplata), preskoči i navedi u PR opisu.
 - UI tekstovi na srpskom (latinica), kod, komentari i commit poruke na engleskom, conventional commits.
 - Pre svakog push-a: `npm run typecheck && npm run lint && npm run test:run`. Za promenjeno ponašanje dodaj testove pored postojećih `*.test.ts`.

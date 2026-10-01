@@ -22,7 +22,8 @@ Skener barkodova, asortiman sa nabavnom cenom, magacin (ulaz/izlaz, uvoz, istori
 | 8 | **Analitika i praćenje grešaka** (Vercel Analytics + Sentry, bez ličnih podataka u događajima) | Srednja | S | Bez toga ne znate gde korisnici odustaju posle lansiranja. |
 | 9 | **Naplata** (ručna: zahtev za fakturu + datum isteka u profilu; Stripe tek kasnije) | Srednja | M | Landing obećava 30 EUR / 60 dana. Potrebni su bar datum isteka probnog perioda i baner. Ne obećavati otkazivanje dok ne postoji. |
 | 10 | **Landing i SEO za domen** (kanonski URL, sitemap, 3 stranice po industriji, FAQ, demo video) | Srednja | M | Posle kupovine domena. `SEO_DEVOPS_AUDIT.md` je zastareo. |
-| 11 | **Višekorisnički pristup** (zaposleni sa ulogom magacioner/prodaja) | Visoka | L | Traže ga firme sa 2+ zaposlena, ali menja tenant model. Posle lansiranja. |
+| 11 | **Higijena pred lansiranje** (godina broja fakture po Europe/Belgrade; trajni rate limit, npr. Upstash ili Vercel KV; test na pravom telefonu: kamera, zvuk, instalacija PWA) | Srednja | S | Sitni, ali ozbiljni rizici nađeni u kodu: vidi `docs/STATUS.md`. |
+| 12 | **Višekorisnički pristup** (zaposleni sa ulogom magacioner/prodaja) | Visoka | L | Traže ga firme sa 2+ zaposlena, ali menja tenant model. Posle lansiranja. |
 
 Namerno van plana: SEF i fiskalna kasa, nativne aplikacije, javna prodavnica, korpa, AI.
 
@@ -30,7 +31,7 @@ Namerno van plana: SEF i fiskalna kasa, nativne aplikacije, javna prodavnica, ko
 
 **Nedelja 1 (1-7. okt): temelj i brze pobede**
 - Vlasnik: kupovina domena, stvarni podaci firme, odluka o naplati.
-- Kod: #2 onboarding, #5 izvoz faktura, #8 analitika/greške.
+- Kod: #2 onboarding, #5 izvoz faktura, #8 analitika/greške, #11 higijena (godina fakture, rate limit).
 
 **Nedelja 2 (8-14. okt): faktura kao proizvod**
 - Kod: #1 PDV (migracija + PDF + finansije + testovi), #4 kupci.

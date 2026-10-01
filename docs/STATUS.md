@@ -28,4 +28,10 @@ No paid ads until the first three are done.
 - Invoices have no VAT (PDV) fields; totals are plain sums in RSD.
 - No transactional email (invoice delivery, password-less onboarding mails).
 - No product analytics or error monitoring.
-- `README.md` and `SEO_DEVOPS_AUDIT.md` are partly outdated (January 2026).
+- `README.md` and `SEO_DEVOPS_AUDIT.md` are partly outdated (January 2026); the 2026-09-23 launch-readiness doc predates the catalog-share and debug-ingest fixes.
+- No team access: one Clerk user = one company (`Profile.clerkUserId` is unique). Do not advertise multi-user.
+- Rate limiting is in-memory per instance, so it does not hold on Vercel serverless; fine as a speed bump, not as abuse protection.
+- `(profileId, sku)` is not unique: legacy daily-batch product rows remain (see `prisma/schema.prisma`). Needs a consolidation migration before a unique index.
+- `reserveNextInvoiceNumber` uses the server-clock year (`getFullYear()`), not Europe/Belgrade, so invoices issued just after midnight on 1 Jan can get the wrong year prefix.
+- Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening.
+- Baseline verified 2026-10-01: typecheck clean, lint 3 warnings, 254/254 unit tests.

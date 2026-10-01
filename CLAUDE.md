@@ -31,19 +31,24 @@ npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main: 50 test files / 254 tests pass, lint shows 3 known warnings (BarcodeScanner hook deps, InvoicePDF image alt) that are not yours to fix.
+`test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
+
+## Data model in one paragraph
+
+`Profile` (one per Clerk user, created lazily by `GET /api/profile`; every other API returns 404 "Profile not found" until then; there is no multi-user company membership) owns `Product`, `Category`, `Catalog`/`CatalogItem`, `Invoice`/`InvoiceItem`, `StockMovement`, `ProductIntake` (idempotency receipts). Invoice status is `DRAFT | UNPAID | PAID` (UI: Nacrt / Otvoreno / Plaćeno). Finance is cash-basis: revenue books on `paidAt`, open invoices are receivables. Invoice numbers are `YYYY-NNN` per company, reserved under an advisory lock in the same transaction. Stock moves are idempotent via `StockMovement.sourceKey` (`intake:<key>`, `invoice:<invoiceId>:<productId>`).
 
 ## Rules (never)
 
 - Never invent parallel price fields. Use the existing names: `price`, `costPrice`, `unitPrice`, `unitCost`.
-- Never validate money with `Number.isInteger(value * 100)`. Use `assertMoneyInput` / `MONEY_INPUT_PATTERN` from `src/lib/validations.ts`. DB money is `Decimal(10,2)`.
+- Never validate money with `Number.isInteger(value * 100)` (fails for 19.99). Reuse the Zod schemas in `src/lib/validations.ts` (`requiredCostPriceSchema`, `optionalCostPriceSchema`, invoice item schemas); they share the internal `assertMoneyInput` (string/decimal check, max 2 decimals). DB money is `Decimal(10,2)`.
 - Never trust UI-only checks: validate with Zod on client and server.
 - Never ship an API route without auth unless it is listed in `isPublicRoute` (`src/lib/route-access.ts`). No debug endpoints, no unauthenticated barcode proxy.
 - Never reopen anon INSERT on Supabase Storage. Uploads go Clerk session → `POST /api/uploads` (magic-byte sniff) → service role.
 - Never fetch user-supplied URLs without `src/lib/safe-remote-url.ts` (blocks private IPs, SSRF).
 - Never run `prisma migrate deploy` against production (no baseline). Schema changes are new SQL files in `supabase/migrations/`, applied via the Supabase dashboard/MCP, plus the matching `prisma/schema.prisma` edit.
 - Never backfill `costPrice = 0` or fabricate historical `unitCost`.
-- Never add date filters to the intake SKU lookup in `src/lib/product-intake.ts`: a repeat scan must find the existing product however old it is.
+- Never add date filters to the intake SKU lookup in `src/lib/product-intake.ts`. `(profileId, sku)` is not unique in the schema: old "daily batch" rows still exist, so intake updates the latest row for the SKU and Magacin sums quantities per SKU. Do not add the unique index or delete batch rows without an explicit migration plan.
 - Never add global mutable lists. Everything is tenant-scoped by `profileId` (from the Clerk user); categories are per tenant.
 - Never commit secrets (`sk_`, service role keys) or real personal/tax data.
 - Never do drive-by refactors or "cleanup" of BarcodeScanner.
@@ -56,6 +61,8 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 - Pure logic goes in `src/lib/*.ts` with a colocated `*.test.ts`. Add tests for the behavior you change.
 - Conventional commits: `feat|fix|chore|docs|refactor|test: ...`.
 - Work on a branch, open a draft PR, merge only when the owner says "merge".
+- `src/lib/rate-limit.ts` is an in-memory per-instance limiter: best-effort only, not a real quota on serverless.
+- Clerk middleware is skipped (public routes only) when `CLERK_SECRET_KEY` is missing; keep `route-access.ts` as the single list of public routes.
 - Landing copy must stay honest: do not promise checkout, cancellation or features that do not exist yet.
 
 ## Where to look
@@ -73,7 +80,10 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 | Auth / routing | `src/middleware.ts`, `src/lib/route-access.ts`, `src/lib/after-auth.ts` (→ `/dashboard`) |
 | Auth fetch | `src/lib/authorized-fetch.ts` |
 | Landing / legal | `src/components/landing/`, `src/lib/landing-copy.ts`, `src/lib/operator.ts`, `src/app/privatnost`, `src/app/uslovi` |
-| Schema | `prisma/schema.prisma`, `supabase/migrations/` |
+| Schema | `prisma/schema.prisma`, `supabase/migrations/` (7 files; all hand-applied, never auto) |
+| Rate limits / headers / images | `src/lib/rate-limit.ts`, `next.config.js` (security headers, allowed image hosts) |
+| PWA | `src/app/manifest.ts`, `public/sw.js` (network-only worker, no caching), `src/lib/pwa-install.ts` |
+| Older docs | `docs/mobile-launch-readiness-2026-09-23.md` is a dated snapshot (its P0 catalog-access and debug-ingest items are since fixed); `SEO_DEVOPS_AUDIT.md` and `README.md` are partly outdated |
 
 ## Out of scope until the owner says otherwise
 

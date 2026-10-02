@@ -7,11 +7,15 @@ import {
   Text,
   View,
   Image,
+  Svg,
+  Path,
   StyleSheet,
 } from '@react-pdf/renderer'
 import type { Profile } from '@/types/profile'
 import { summarizeVat } from '@/lib/invoice-vat'
 import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
+import { buildIpsQrPayload, ipsQrMatrix } from '@/lib/ips-qr'
+import { isPaidInvoiceStatus } from '@/lib/invoice-status'
 
 registerPdfFonts()
 
@@ -271,6 +275,31 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#6b7280',
   },
+  paymentQr: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 20,
+  },
+  paymentQrText: {
+    maxWidth: 180,
+    gap: 3,
+  },
+  paymentQrTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  paymentQrHint: {
+    fontSize: 9,
+    color: '#6b7280',
+  },
+  paymentQrBox: {
+    padding: 6,
+    backgroundColor: '#ffffff',
+    border: '1 solid #e5e7eb',
+  },
 })
 
 type Amount = number | string | { toString(): string }
@@ -316,6 +345,18 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         total: { width: '27%' },
       }
     : { item: {}, qty: {}, price: {}, discount: {}, total: {} }
+
+  // IPS QR only for invoices still awaiting payment, and only when the account/amount form a valid request.
+  const ipsPayload = isPaidInvoiceStatus(invoice.status)
+    ? null
+    : buildIpsQrPayload({
+        giroAccount: profile.giroAccount,
+        companyName: profile.companyName,
+        address: profile.address,
+        amount: Number(invoice.totalAmount),
+        invoiceNumber: invoice.invoiceNumber,
+      })
+  const ipsQr = ipsPayload ? ipsQrMatrix(ipsPayload) : null
 
   // Check if URL is valid
   const isValidImageUrl = (url: string | null | undefined): boolean => {
@@ -487,6 +528,22 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
             </View>
           </View>
         </View>
+
+        {ipsQr ? (
+          <View style={styles.paymentQr} wrap={false}>
+            <View style={styles.paymentQrText}>
+              <Text style={styles.paymentQrTitle}>Plati QR kodom</Text>
+              <Text style={styles.paymentQrHint}>
+                Skenirajte u mobilnom bankarstvu (NBS IPS QR). Iznos i broj fakture su već popunjeni.
+              </Text>
+            </View>
+            <View style={styles.paymentQrBox}>
+              <Svg width={84} height={84} viewBox={`0 0 ${ipsQr.size} ${ipsQr.size}`}>
+                <Path d={ipsQr.path} fill="#000000" />
+              </Svg>
+            </View>
+          </View>
+        ) : null}
 
         {/* Footer - Fixed position on every page */}
         <View style={styles.footer} fixed>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isIosDevice, isStandaloneDisplay, resolveInstallClick } from './pwa-install'
+import { installButtonLabel, isAndroidDevice, isIosDevice, isStandaloneDisplay, resolveInstallClick } from './pwa-install'
 
 describe('pwa-install', () => {
   it('treats standalone display as already on the home screen', () => {
@@ -23,5 +23,21 @@ describe('pwa-install', () => {
     expect(resolveInstallClick({ installed: true, ios: false, hasPrompt: true })).toBe('installed')
     expect(resolveInstallClick({ installed: false, ios: true, hasPrompt: false })).toBe('ios-guide')
     expect(resolveInstallClick({ installed: false, ios: false, hasPrompt: false })).toBe('open-chrome')
+  })
+
+  it('names the exact Chrome menu item on Android when the prompt is unavailable', () => {
+    expect(resolveInstallClick({ installed: false, ios: false, android: true, hasPrompt: false })).toBe('android-menu')
+    expect(resolveInstallClick({ installed: false, ios: false, android: true, hasPrompt: true })).toBe('prompt')
+    expect(resolveInstallClick({ installed: true, ios: false, android: true, hasPrompt: false })).toBe('installed')
+  })
+
+  it('detects Android', () => {
+    expect(isAndroidDevice('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/128.0 Mobile Safari/537.36')).toBe(true)
+    expect(isAndroidDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)')).toBe(false)
+  })
+
+  it('labels the button "Instaliraj aplikaciju" except on iPhone, where Add to Home Screen is the real wording', () => {
+    expect(installButtonLabel(false)).toBe('Instaliraj aplikaciju')
+    expect(installButtonLabel(true)).toBe('Dodaj na početni ekran')
   })
 })

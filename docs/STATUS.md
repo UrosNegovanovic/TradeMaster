@@ -41,5 +41,6 @@ No paid ads until the first three are done.
 - No team access: one Clerk user = one company (`Profile.clerkUserId` is unique). Do not advertise multi-user.
 - Rate limiting is shared across instances only when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (or Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN`) are set in Vercel; without them it is the in-memory per-instance speed bump. A store outage never blocks users (falls back to memory).
 - `(profileId, sku)` is not unique: legacy daily-batch product rows remain (see `prisma/schema.prisma`). Needs a consolidation migration before a unique index.
+- PWA install (2026-10-02): the site is installable (Chromium reports no installability errors). Android's menu item "Dodaj na početni ekran" can create only a shortcut, so the in-app button is "Instaliraj aplikaciju" (native prompt, confirmation, menu guide) and the dashboard shows an install card on mobile (`src/lib/use-pwa-install.ts`).
 - Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening. Run `docs/device-checklist.md` on both phones before launch.
 - Baseline verified 2026-10-02 (catalog PR): typecheck clean, lint 5 warnings, 316/316 unit tests.

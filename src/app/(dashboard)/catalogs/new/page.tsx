@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { CatalogForm } from '@/components/catalogs/CatalogForm'
+import { BackLink } from '@/components/layout/BackLink'
 import { Product } from '@/types/product'
 import { CatalogFormData } from '@/lib/validations'
 import { Loader2 } from 'lucide-react'
@@ -105,6 +106,7 @@ export default function NewCatalogPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
+        <BackLink href="/catalogs">{sr.catalog.backToList}</BackLink>
         <h1 className="text-2xl font-bold lg:text-3xl">{sr.catalog.newTitle}</h1>
         <p className="text-muted-foreground mt-2">
           {sr.catalog.newDescription}
@@ -115,6 +117,7 @@ export default function NewCatalogPage() {
         products={products}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}
+        cancelHref="/catalogs"
       />
     </div>
   )

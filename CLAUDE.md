@@ -57,6 +57,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 ## Conventions
 
 - Mutations from the client use `authorizedFetch` / `useAuthorizedFetch` (Bearer + credentials).
+- PWA has no browser back button: every new/edit/detail page shows `BackLink` (`src/components/layout/BackLink.tsx`) to its explicit parent route (not `history.back()`), and forms take `cancelHref` for a bottom "Otkaži" button.
 - Toasts via `notify` (`src/lib/notify.ts`, Sonner). Shared Serbian UI strings in `src/lib/ui-copy.ts`; landing copy in `src/lib/landing-copy.ts`.
 - PDFs: load `@react-pdf/renderer` components with `next/dynamic(..., { ssr: false })`, Serbian labels. Use `PDF_FONT_FAMILY` and call `registerPdfFonts()` from `src/lib/pdf-fonts.ts` (Liberation Sans in `public/fonts`); built-in Helvetica/Courier drop č, ć, đ.
 - Pure logic goes in `src/lib/*.ts` with a colocated `*.test.ts`. Add tests for the behavior you change.

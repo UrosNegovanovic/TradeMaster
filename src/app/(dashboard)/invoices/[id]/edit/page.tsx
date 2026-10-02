@@ -13,6 +13,7 @@ import { readApiErrorMessage } from '@/lib/api-error'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { BackLink } from '@/components/layout/BackLink'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 
@@ -121,17 +122,15 @@ export default function EditInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold lg:text-3xl">Edit Invoice</h1>
-          <p className="text-muted-foreground mt-2">
-            Update invoice details
-          </p>
+          <BackLink href={`/invoices/${invoiceId}`}>Nazad na fakturu</BackLink>
+          <h1 className="text-2xl font-bold lg:text-3xl">Izmena fakture</h1>
         </div>
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
-            You need to add products to your inventory first.
+            Prvo dodajte proizvode u asortiman.
           </p>
           <a href="/inventory" className="text-primary hover:underline">
-            Go to Inventory
+            Otvori asortiman
           </a>
         </div>
       </div>
@@ -142,14 +141,12 @@ export default function EditInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold lg:text-3xl">Invoice Not Found</h1>
+          <BackLink href="/invoices">Nazad na fakture</BackLink>
+          <h1 className="text-2xl font-bold lg:text-3xl">Faktura nije pronađena</h1>
           <p className="text-muted-foreground mt-2">
-            The invoice you&apos;re looking for doesn&apos;t exist.
+            Faktura koju tražite ne postoji.
           </p>
         </div>
-        <a href="/invoices" className="text-primary hover:underline">
-          Back to Invoices
-        </a>
       </div>
     )
   }
@@ -158,10 +155,8 @@ export default function EditInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={invoicesListHref(invoice.status)}>Nazad na plaćene</Link>
-          </Button>
-          <h1 className="text-2xl font-bold lg:text-3xl mt-4">Faktura je zaključana</h1>
+          <BackLink href={invoicesListHref(invoice.status)}>Nazad na plaćene</BackLink>
+          <h1 className="text-2xl font-bold lg:text-3xl">Faktura je zaključana</h1>
           <p className="text-muted-foreground mt-2">
             Plaćena faktura #{invoice.invoiceNumber} ne može da se menja.
           </p>
@@ -187,9 +182,10 @@ export default function EditInvoicePage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold lg:text-3xl">Edit Invoice</h1>
+        <BackLink href={`/invoices/${invoice.id}`}>Nazad na fakturu</BackLink>
+        <h1 className="text-2xl font-bold lg:text-3xl">Izmena fakture</h1>
         <p className="text-muted-foreground mt-2">
-          Update invoice #{invoice.invoiceNumber}
+          Faktura #{invoice.invoiceNumber}
         </p>
       </div>
 
@@ -199,6 +195,7 @@ export default function EditInvoicePage() {
         onSubmit={handleSubmit}
         isLoading={updateMutation.isPending}
         initialData={invoice}
+        cancelHref={`/invoices/${invoice.id}`}
       />
     </div>
   )

@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { InvoiceForm } from '@/components/invoices/InvoiceForm'
+import { BackLink } from '@/components/layout/BackLink'
 import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
@@ -113,6 +114,7 @@ export default function NewInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
+          <BackLink href="/invoices">Nazad na fakture</BackLink>
           <h1 className="text-2xl font-bold lg:text-3xl">Nova faktura</h1>
         </div>
         <FirstRunEmptyState kind="invoice" />
@@ -123,9 +125,10 @@ export default function NewInvoicePage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold lg:text-3xl">New Invoice</h1>
+        <BackLink href="/invoices">Nazad na fakture</BackLink>
+        <h1 className="text-2xl font-bold lg:text-3xl">Nova faktura</h1>
         <p className="text-muted-foreground mt-2">
-          Create a new invoice with selected products
+          Izaberite proizvode i kupca, pa sačuvajte fakturu.
         </p>
       </div>
 
@@ -135,6 +138,7 @@ export default function NewInvoicePage() {
         inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}
+        cancelHref="/invoices"
       />
     </div>
   )

@@ -28,7 +28,7 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 | Domain name (buy and point to Vercel) | Clerk Production, canonical URL, sitemap, email | Vercel domains, `NEXT_PUBLIC_APP_URL` |
 | Clerk Production (`pk_live_`) | Needs the domain; Development keys cannot be used for real customers | Clerk dashboard, Vercel env |
 | Real operator data (legal name, 9-digit PIB, address) | `src/lib/operator.ts` still has placeholder values; required for legal pages | `src/lib/operator.ts` |
-| Billing decision (manual vs Stripe/other) | Landing says manual payment, 30 EUR / 60 days; no checkout exists | `src/lib/landing-copy.ts` |
+| Billing decision (manual vs Stripe/other) | Landing says manual payment, introductory price 20 EUR / 60 days (single source: `EARLY_ACCESS_*` in `src/lib/landing-copy.ts`); no checkout exists | `src/lib/landing-copy.ts` |
 
 No paid ads until the first three are done.
 
@@ -41,7 +41,7 @@ No paid ads until the first three are done.
 - No team access: one Clerk user = one company (`Profile.clerkUserId` is unique). Do not advertise multi-user.
 - Rate limiting is shared across instances only when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (or Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN`) are set in Vercel; without them it is the in-memory per-instance speed bump. A store outage never blocks users (falls back to memory).
 - `(profileId, sku)` is not unique: legacy daily-batch product rows remain (see `prisma/schema.prisma`). Needs a consolidation migration before a unique index.
-- Manual billing (ROADMAP #9): `profiles.accessExpiresAt` (migration `20261002150000_profile_access_expiry.sql`, must be applied before deploy). New companies get 60 days (`INITIAL_ACCESS_DAYS` in `src/lib/access-period.ts`); NULL = no limit (existing companies). A banner shows in the last 14 days and after expiry; nothing is locked. The owner extends access by hand after a paid invoice, e.g. `UPDATE profiles SET "accessExpiresAt" = '2026-12-31 23:00' WHERE "companyName" = '...';` (timestamps are UTC: 23:00 UTC in winter is Belgrade midnight of the next day, so this example gives access through 1 Jan). No checkout, no cancellation (landing stays honest).
+- Manual billing (ROADMAP #9): `profiles.accessExpiresAt` (migration `20261002150000_profile_access_expiry.sql`, applied in production 2026-10-02). New companies get 60 days (`INITIAL_ACCESS_DAYS` in `src/lib/access-period.ts`); NULL = no limit (existing companies). A banner shows in the last 14 days and after expiry; nothing is locked. The owner extends access by hand after a paid invoice, e.g. `UPDATE profiles SET "accessExpiresAt" = '2026-12-31 23:00' WHERE "companyName" = '...';` (timestamps are UTC: 23:00 UTC in winter is Belgrade midnight of the next day, so this example gives access through 1 Jan). No checkout, no cancellation (landing stays honest).
 - PWA install (2026-10-02): the site is installable (Chromium reports no installability errors). Android's menu item "Dodaj na početni ekran" can create only a shortcut, so the in-app button is "Instaliraj aplikaciju" (native prompt, confirmation, menu guide) and the dashboard shows an install card on mobile (`src/lib/use-pwa-install.ts`).
 - Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening. Run `docs/device-checklist.md` on both phones before launch.
 - Baseline verified 2026-10-02 (catalog PR): typecheck clean, lint 5 warnings, 316/316 unit tests.

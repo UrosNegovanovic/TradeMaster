@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Clock } from 'lucide-react'
 import { operator } from '@/lib/operator'
+import { EARLY_ACCESS_OFFER } from '@/lib/landing-copy'
 import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 import { cn } from '@/lib/utils'
 
@@ -50,7 +51,7 @@ export function AccessBanner() {
             <a className="underline underline-offset-2" href={`mailto:${operator.email}`}>
               {operator.email}
             </a>{' '}
-            ili {operator.phone}. Račun šaljemo ručno (30 € za 60 dana).
+            ili {operator.phone}. Račun šaljemo ručno ({EARLY_ACCESS_OFFER}).
           </p>
         </div>
       </div>

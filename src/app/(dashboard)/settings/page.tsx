@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
+import { EARLY_ACCESS_OFFER } from '@/lib/landing-copy'
 import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 
 async function fetchProfile() {
@@ -121,7 +122,7 @@ export default function SettingsPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Pristup</CardTitle>
-          <CardDescription>Rani pristup se naplaćuje ručno: 30 € za 60 dana.</CardDescription>
+          <CardDescription>Rani pristup se naplaćuje ručno: {EARLY_ACCESS_OFFER}.</CardDescription>
         </CardHeader>
         <CardContent className="text-sm">
           {(() => {

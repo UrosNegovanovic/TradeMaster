@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
 import { operator } from '@/lib/operator'
+import { EARLY_ACCESS_OFFER } from '@/lib/landing-copy'
 
 export const metadata: Metadata = {
   title: 'Uslovi',
@@ -46,7 +47,7 @@ export default function UsloviPage() {
 
       <LegalSection title="Naknada">
         <p>
-          Aktuelna naknada je 30 € za 60 dana, navedena na početnoj stranici.
+          Aktuelna naknada je {EARLY_ACCESS_OFFER} (uvodna cena), navedena na početnoj stranici.
           Nema pretplate ni checkout-a u aplikaciji — naplata je ručna,
           dogovorom. Nema skrivene cene pored te objavljene. Otkaz pretplate ne
           postoji dok nema pretplate.

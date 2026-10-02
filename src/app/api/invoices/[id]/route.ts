@@ -13,6 +13,7 @@ import {
 } from '@/lib/invoice-service'
 import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,6 +112,8 @@ export async function PUT(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     const { id } = await context.params
     const body = await parseJsonBody(request)
@@ -215,6 +218,8 @@ export async function PATCH(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     const { id } = await context.params
     const body = await parseJsonBody(request)
@@ -338,6 +343,8 @@ export async function DELETE(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     const { id } = await context.params
 

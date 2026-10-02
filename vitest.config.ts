@@ -50,6 +50,8 @@ export default defineConfig({
       'src/lib/catalog-picker.test.ts',
       'src/lib/unsaved-changes.test.ts',
       'src/lib/access-period.test.ts',
+      'src/lib/access-guard.test.ts',
+      'src/app/api/access-expired.test.ts',
       'src/lib/pdf-fonts.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',

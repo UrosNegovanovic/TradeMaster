@@ -9,9 +9,9 @@ import { LandingStickyCta } from './LandingStickyCta'
 import { landingShell } from './landing-shell'
 import { AssortmentLaptop, FeatureShot, PhoneScanner } from './mocks'
 import {
-  EARLY_ACCESS_OFFER,
-  EARLY_ACCESS_PERIOD,
-  EARLY_ACCESS_PRICE,
+  FREE_PERIOD,
+  MONTHLY_PRICE,
+  PRICING_OFFER,
   paymentFaq,
   pricingFxNote,
   pricingIncludes,
@@ -327,16 +327,16 @@ export function LandingPage() {
               Cena
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
-              Rani pristup: {EARLY_ACCESS_OFFER}, sve uključeno (uvodna cena). Naplata je ručna dok ne bude
+              {PRICING_OFFER}, sve uključeno. Naplata je ručna dok ne bude
               checkout.
             </p>
             <article className="mx-auto mt-8 max-w-[420px] rounded-[16px] border border-neutral-200/80 bg-white p-6 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)] sm:p-7">
               <p className="text-[16px] font-semibold text-neutral-900">TradeMaster</p>
               <p className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-[2.5rem] font-bold leading-none tracking-tight text-neutral-950">
-                  {EARLY_ACCESS_PRICE}
+                  Besplatno
                 </span>
-                <span className="text-[15px] text-neutral-600">za {EARLY_ACCESS_PERIOD}</span>
+                <span className="text-[15px] text-neutral-600">prvih {FREE_PERIOD}, zatim {MONTHLY_PRICE} mesečno</span>
               </p>
               <ul className="mt-6 space-y-2.5">
                 {pricingIncludes.map((item) => (
@@ -426,8 +426,7 @@ export function LandingPage() {
               Rani pristup
             </h2>
             <p className="mx-auto max-w-2xl text-center text-[16px] leading-relaxed text-neutral-800">
-              Gradimo TradeMaster zajedno sa prvim trgovcima u Srbiji. Rani pristup je
-              {EARLY_ACCESS_OFFER} (uvodna cena), naplata ručno. Prijavite se i pomozite da alat oblikujemo
+              Gradimo TradeMaster zajedno sa prvim trgovcima u Srbiji. {PRICING_OFFER}; naplata ručno. Prijavite se i pomozite da alat oblikujemo
               prema vašim potrebama.
             </p>
           </div>

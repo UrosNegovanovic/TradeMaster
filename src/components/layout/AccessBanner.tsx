@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Clock } from 'lucide-react'
 import { operator } from '@/lib/operator'
-import { EARLY_ACCESS_OFFER } from '@/lib/landing-copy'
+import { MONTHLY_PRICE } from '@/lib/landing-copy'
 import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +15,7 @@ async function fetchProfile(): Promise<{ accessExpiresAt?: string | null }> {
 
 /**
  * Manual billing notice: appears in the last 14 days of the access period and after it ended.
- * It only informs; the app keeps working so a customer is never locked out of their own invoices.
+ * After expiry the account is read-only (the API refuses writes with 402) until the owner extends it.
  */
 export function AccessBanner() {
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: fetchProfile })
@@ -43,15 +43,18 @@ export function AccessBanner() {
         <div className="min-w-0 space-y-0.5">
           <p className="font-medium">
             {expired
-              ? `Period pristupa je istekao ${date}`
+              ? `Pristup je istekao ${date}. Aplikacija je u režimu samo za pregled.`
               : `Pristup ističe ${formatDaysLeft(status.daysLeft ?? 0)} (${date})`}
           </p>
           <p className="text-muted-foreground">
-            Da produžite, javite se na{' '}
+            {expired
+              ? 'Podaci su vidljivi i mogu da se izvezu, ali ne mogu da se dodaju ni menjaju. '
+              : 'Posle isteka aplikacija prelazi u režim samo za pregled. '}
+            Za produženje ({MONTHLY_PRICE} mesečno, račun ručno) javite se na{' '}
             <a className="underline underline-offset-2" href={`mailto:${operator.email}`}>
               {operator.email}
             </a>{' '}
-            ili {operator.phone}. Račun šaljemo ručno ({EARLY_ACCESS_OFFER}).
+            ili {operator.phone}.
           </p>
         </div>
       </div>

@@ -2,16 +2,19 @@ import { randomBytes } from 'node:crypto'
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 type Context = { params: { id: string } }
 const headers = { 'Cache-Control': 'private, no-store' }
 
-async function ownedCatalog(id: string) {
+async function ownedCatalog(id: string, write = false) {
   const { userId } = await auth()
   if (!userId) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }) }
   const profile = await prisma.profile.findUnique({ where: { clerkUserId: userId } })
   if (!profile) return { error: NextResponse.json({ error: 'Not found' }, { status: 404, headers }) }
+  const expired = write ? accessExpiredResponse(profile) : null
+  if (expired) return { error: expired }
   const catalog = await prisma.catalog.findFirst({ where: { id, profileId: profile.id } })
   if (!catalog) return { error: NextResponse.json({ error: 'Not found' }, { status: 404, headers }) }
   return { catalog }
@@ -26,7 +29,7 @@ export async function GET(_request: NextRequest, { params }: Context) {
 
 // Every deliberate enable/renew action issues a fresh link and invalidates the old one.
 export async function POST(_request: NextRequest, { params }: Context) {
-  const result = await ownedCatalog(params.id)
+  const result = await ownedCatalog(params.id, true)
   if (result.error) return result.error
   const token = randomBytes(32).toString('hex')
   await prisma.catalog.update({ where: { id: result.catalog!.id }, data: { shareToken: token, shareEnabled: true } })

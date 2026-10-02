@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { catalogSchema } from '@/lib/validations'
 import { orderBySelection } from '@/lib/catalog-layout'
 import { ZodError } from 'zod'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -116,6 +117,8 @@ export async function PATCH(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     // Check if catalog exists and belongs to this user
     const existingCatalog = await prisma.catalog.findUnique({
@@ -270,6 +273,8 @@ export async function DELETE(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     // Check if catalog exists and belongs to this user
     const existingCatalog = await prisma.catalog.findUnique({

@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { clientWriteSchema } from '@/lib/validations'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,8 @@ async function requireOwnedClient(id: string) {
   if (!profile) {
     return { error: NextResponse.json({ error: 'Profile not found' }, { status: 404 }) }
   }
+  const expired = accessExpiredResponse(profile)
+  if (expired) return { error: expired }
 
   // Scoping by profileId makes another tenant's client indistinguishable from a missing one.
   const client = await prisma.client.findFirst({ where: { id, profileId: profile.id } })

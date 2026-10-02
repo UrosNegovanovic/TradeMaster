@@ -94,6 +94,12 @@ export function addLocalMonths(date: Date, months: number): Date {
   return zonedDateTimeToUtc(nextYear, nextMonth, 1, 0, 0, 0)
 }
 
+/** Belgrade midnight `days` calendar days after the day of `date` (DST-safe: counts days, not 24h blocks). */
+export function addLocalDays(date: Date, days: number): Date {
+  const { year, month, day } = zonedParts(date)
+  return zonedDateTimeToUtc(year, month, day + days, 0, 0, 0)
+}
+
 export function formatLocalYm(date: Date): string {
   const { year, month } = zonedParts(date)
   return `${year}-${String(month).padStart(2, '0')}`

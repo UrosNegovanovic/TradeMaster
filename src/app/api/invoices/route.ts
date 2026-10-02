@@ -13,6 +13,7 @@ import { OPEN_INVOICE_STATUS } from '@/lib/invoice-status'
 import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { reserveNextInvoiceNumber } from '@/lib/invoice-number'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,6 +90,8 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     if (!profile.pib || !/^\d{9}$/.test(profile.pib)) {
       return NextResponse.json(

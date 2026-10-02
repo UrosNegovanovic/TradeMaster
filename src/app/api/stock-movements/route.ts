@@ -11,6 +11,7 @@ import {
   refineZeroPurchasePriceReason,
 } from '@/lib/validations'
 import { z } from 'zod'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -120,6 +121,8 @@ export async function POST(request: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     // Parse and validate request body
     const body = await request.json()

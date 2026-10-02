@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addLocalDays,
   addLocalMonths,
   formatLocalYm,
   formatLocalYmd,
@@ -52,5 +53,16 @@ describe('local-date (Europe/Belgrade)', () => {
     expect(start.toISOString()).toBe('2026-08-31T22:00:00.000Z')
     expect(formatLocalYm(addLocalMonths(start, 1))).toBe('2026-10')
     expect(formatLocalYm(startOfLocalYear(start))).toBe('2026-01')
+  })
+})
+
+describe('addLocalDays', () => {
+  it('lands on Belgrade midnight N calendar days later, across DST', () => {
+    // 20 Oct 2026 (CEST, UTC+2) + 30 days = 19 Nov 2026 (CET, UTC+1) at 00:00 Belgrade
+    expect(addLocalDays(new Date('2026-10-20T10:00:00.000Z'), 30).toISOString()).toBe('2026-11-18T23:00:00.000Z')
+  })
+
+  it('rolls over month and year ends', () => {
+    expect(addLocalDays(new Date('2026-12-31T10:00:00.000Z'), 1).toISOString()).toBe('2026-12-31T23:00:00.000Z')
   })
 })

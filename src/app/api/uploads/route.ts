@@ -9,6 +9,7 @@ import {
   type StorageBucket,
   uploadPublicImage,
 } from '@/lib/server-storage'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,11 +26,13 @@ export async function POST(request: NextRequest) {
 
     const profile = await prisma.profile.findUnique({
       where: { clerkUserId: userId },
-      select: { id: true },
+      select: { id: true, accessExpiresAt: true },
     })
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     const form = await request.formData()
     const bucketValue = form.get('bucket')

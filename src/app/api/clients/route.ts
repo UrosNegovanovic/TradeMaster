@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { clientWriteSchema } from '@/lib/validations'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     const body = await request.json().catch(() => null)
     const parsed = clientWriteSchema.safeParse(body)

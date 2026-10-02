@@ -2,17 +2,20 @@ import { randomBytes } from 'node:crypto'
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { accessExpiredResponse } from '@/lib/access-guard'
 import { invoiceSharePath, isShareableInvoiceStatus } from '@/lib/public-invoice'
 
 export const dynamic = 'force-dynamic'
 type Context = { params: { id: string } }
 const headers = { 'Cache-Control': 'private, no-store' }
 
-async function ownedInvoice(id: string) {
+async function ownedInvoice(id: string, write = false) {
   const { userId } = await auth()
   if (!userId) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers }) }
   const profile = await prisma.profile.findUnique({ where: { clerkUserId: userId } })
   if (!profile) return { error: NextResponse.json({ error: 'Not found' }, { status: 404, headers }) }
+  const expired = write ? accessExpiredResponse(profile) : null
+  if (expired) return { error: expired }
   const invoice = await prisma.invoice.findFirst({
     where: { id, profileId: profile.id },
     select: { id: true, status: true, shareToken: true, shareEnabled: true },
@@ -31,7 +34,7 @@ export async function GET(_request: NextRequest, { params }: Context) {
 
 // Every deliberate enable/renew action issues a fresh link and invalidates the old one.
 export async function POST(_request: NextRequest, { params }: Context) {
-  const result = await ownedInvoice(params.id)
+  const result = await ownedInvoice(params.id, true)
   if (result.error) return result.error
   if (!isShareableInvoiceStatus(result.invoice!.status)) {
     return NextResponse.json({ error: 'Nacrt fakture se ne može podeliti. Prvo izdajte fakturu.' }, { status: 409, headers })

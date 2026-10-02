@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { persistProductImage, scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
 import { productPutFields } from '@/lib/product-put'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,8 @@ export async function PUT(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     // Check if product exists and belongs to this user
     const existingProduct = await prisma.product.findUnique({
@@ -151,6 +154,8 @@ export async function DELETE(
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     // Check if product exists and belongs to this user
     const existingProduct = await prisma.product.findUnique({

@@ -14,7 +14,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { auth } from '@clerk/nextjs/server'
-import { PUT } from './route'
+import { GET, PUT } from './route'
 
 function putRequest(body: unknown) {
   return new NextRequest('http://localhost/api/profile', {
@@ -108,5 +108,43 @@ describe('PUT /api/profile', () => {
     expect(response.status).toBe(200)
     const arg = mocks.profile.upsert.mock.calls[0][0]
     expect(arg.update).not.toHaveProperty('logoUrl')
+  })
+})
+
+describe('access period (manual billing)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
+  })
+
+  it('gives a company created by GET about 60 days of access', async () => {
+    mocks.profile.findUnique.mockResolvedValue(null)
+    mocks.profile.create.mockResolvedValue({ id: 'p1' })
+
+    expect((await GET()).status).toBe(200)
+
+    const { data } = mocks.profile.create.mock.calls[0][0]
+    const days = (new Date(data.accessExpiresAt).getTime() - Date.now()) / 86_400_000
+    expect(days).toBeGreaterThan(58.9)
+    expect(days).toBeLessThan(60.1)
+  })
+
+  it('does not touch the access period of an existing company', async () => {
+    mocks.profile.findUnique.mockResolvedValue({ id: 'p1', accessExpiresAt: null })
+    expect((await GET()).status).toBe(200)
+    expect(mocks.profile.create).not.toHaveBeenCalled()
+  })
+
+  it('sets the period only when PUT creates the profile, and never lets the client change it', async () => {
+    mocks.profile.upsert.mockResolvedValue({ id: 'p1' })
+
+    const response = await PUT(
+      putRequest({ companyName: 'Firma', pib: '123124121', accessExpiresAt: '2099-01-01T00:00:00.000Z' })
+    )
+
+    expect(response.status).toBe(200)
+    const arg = mocks.profile.upsert.mock.calls[0][0]
+    expect(arg.update).not.toHaveProperty('accessExpiresAt')
+    expect(new Date(arg.create.accessExpiresAt).getFullYear()).toBeLessThan(2099)
   })
 })

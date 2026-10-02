@@ -22,6 +22,7 @@ model Profile {
   giroAccount  String? // Merchant žiro-račun printed on invoices
   logoUrl      String? // URL to uploaded logo (stored in Supabase Storage)
   inVatSystem  Boolean  @default(false) // Company is in the PDV system; new invoices carry VAT
+  accessExpiresAt DateTime? // Manual billing: access until this day (Belgrade midnight); NULL = no limit
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

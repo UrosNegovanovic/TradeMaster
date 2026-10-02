@@ -9,6 +9,8 @@ export type Profile = {
   giroAccount: string | null
   inVatSystem: boolean
   logoUrl: string | null
+  /** Manual billing: access until this day; null = no limit. Set by the owner, never by the user. */
+  accessExpiresAt: Date | string | null
   createdAt: Date
   updatedAt: Date
 }

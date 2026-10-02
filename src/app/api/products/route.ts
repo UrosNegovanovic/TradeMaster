@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productIntakeSchema } from '@/lib/validations'
 import { IntakeConflictError, saveProductIntake } from '@/lib/product-intake'
+import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,6 +81,8 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+    const expired = accessExpiredResponse(profile)
+    if (expired) return expired
 
     const body = await request.json()
 

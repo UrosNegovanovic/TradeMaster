@@ -11,6 +11,7 @@ import { ProductPicker } from './ProductPicker'
 import { Product } from '@/types/product'
 import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react'
 import React from 'react'
+import Link from 'next/link'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { notify } from '@/lib/notify'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -50,6 +51,8 @@ type DisplayToggle = 'groupByCategory' | 'showSku' | 'showDescription' | 'showOr
 interface CatalogFormProps {
   products: Product[]
   onSubmit: (data: CatalogFormData) => Promise<void>
+  /** Where "Otkaži" goes; the page's parent route. */
+  cancelHref?: string
   isLoading?: boolean
   initialData?: {
     name?: string
@@ -65,6 +68,7 @@ export function CatalogForm({
   onSubmit,
   isLoading = false,
   initialData,
+  cancelHref,
 }: CatalogFormProps) {
   // Get initial productIds - use empty array if not provided
   const initialProductIds = initialData?.productIds || []
@@ -476,8 +480,13 @@ export function CatalogForm({
         </Card>
       )}
 
-      <div className="flex justify-end gap-4">
-        <Button type="submit" disabled={isLoading}>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
+        {cancelHref ? (
+          <Button type="button" variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+            <Link href={cancelHref}>{sr.common.cancel}</Link>
+          </Button>
+        ) : null}
+        <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {initialData ? sr.catalog.update : sr.catalog.create}
         </Button>

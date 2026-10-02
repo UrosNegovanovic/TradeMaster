@@ -4,6 +4,8 @@ import { useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { CatalogForm } from '@/components/catalogs/CatalogForm'
+import { BackLink } from '@/components/layout/BackLink'
+import { sr } from '@/lib/ui-copy'
 import { Product } from '@/types/product'
 import { CatalogWithItems } from '@/types/catalog'
 import { CatalogFormData } from '@/lib/validations'
@@ -130,8 +132,9 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
   if (!catalog) {
     return (
       <div className="max-w-4xl mx-auto">
+        <BackLink href="/catalogs">{sr.catalog.backToList}</BackLink>
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Catalog not found</p>
+          <p className="text-muted-foreground">Katalog nije pronađen</p>
         </div>
       </div>
     )
@@ -140,9 +143,10 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold lg:text-3xl">Edit Catalog</h1>
+        <BackLink href={`/catalogs/${params.id}`}>{sr.catalog.backToCatalog}</BackLink>
+        <h1 className="text-2xl font-bold lg:text-3xl">{sr.catalog.editTitle}</h1>
         <p className="text-muted-foreground mt-2">
-          Update catalog information and products
+          {sr.catalog.editDescription}
         </p>
       </div>
 
@@ -151,6 +155,7 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
         onSubmit={handleSubmit}
         isLoading={updateMutation.isPending}
         initialData={initialData}
+        cancelHref={`/catalogs/${params.id}`}
       />
     </div>
   )

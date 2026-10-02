@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +31,8 @@ interface InvoiceFormProps {
   /** Company is in the PDV system (new invoices and drafts). Issued invoices keep their own snapshot. */
   inVatSystem?: boolean
   onSubmit: (data: InvoiceCreateInput) => Promise<void>
+  /** Where "Otkaži" goes; the page's parent route. */
+  cancelHref?: string
   isLoading?: boolean
   initialData?: any // Invoice data for edit mode
 }
@@ -59,6 +62,7 @@ export function InvoiceForm({
   onSubmit,
   isLoading = false,
   initialData,
+  cancelHref,
 }: InvoiceFormProps) {
   // An issued invoice keeps the PDV setting it was issued with; a draft/new invoice follows the company.
   const vatEnabled =
@@ -616,7 +620,12 @@ export function InvoiceForm({
       )}
 
       {/* Submit Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        {cancelHref ? (
+          <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" asChild>
+            <Link href={cancelHref}>Otkaži</Link>
+          </Button>
+        ) : null}
         <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isLoading || hasShortage}>
           {isLoading ? (
             <>

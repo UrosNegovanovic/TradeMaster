@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowRight,
   ArrowUp,
@@ -22,6 +23,7 @@ import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/loc
 import { formatRsd } from '@/lib/invoice-finance'
 import { fetchLowStockProducts } from '@/lib/low-stock'
 import { sr } from '@/lib/ui-copy'
+import { DASHBOARD_OVERDUE_PREVIEW, daysOverdue, formatDaysOverdue } from '@/lib/overdue-invoices'
 import {
   DASHBOARD_LOW_STOCK_PREVIEW,
   DASHBOARD_OPEN_INVOICE_PREVIEW,
@@ -62,6 +64,8 @@ async function getDashboardData(profileId: string) {
     openAgg,
     openInvoices,
     overdueCount,
+    overdueAgg,
+    overdueInvoices,
     productCount,
     invoiceCount,
     missingPriceCount,
@@ -110,6 +114,18 @@ async function getDashboardData(profileId: string) {
         status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] },
         dueDate: { lt: startOfToday },
       },
+    }),
+    // Kasni naplata: issued (UNPAID) invoices past the due day. Drafts were never sent, so they are not receivables.
+    prisma.invoice.aggregate({
+      where: { profileId, status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
+      _count: true,
+      _sum: { totalAmount: true },
+    }),
+    prisma.invoice.findMany({
+      where: { profileId, status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
+      select: { id: true, invoiceNumber: true, clientName: true, totalAmount: true, dueDate: true },
+      orderBy: { dueDate: 'asc' },
+      take: DASHBOARD_OVERDUE_PREVIEW,
     }),
     prisma.product.count({
       where: { profileId },
@@ -169,6 +185,9 @@ async function getDashboardData(profileId: string) {
     openReceivables: Number(openAgg._sum.totalAmount ?? 0),
     openInvoices,
     overdueCount,
+    overdueTotal: Number(overdueAgg._sum.totalAmount ?? 0),
+    overdueLateCount: overdueAgg._count,
+    overdueInvoices,
     productCount,
     invoiceCount,
     missingPriceCount,
@@ -204,6 +223,9 @@ export default async function DashboardPage() {
     openReceivables,
     openInvoices,
     overdueCount,
+    overdueTotal,
+    overdueLateCount,
+    overdueInvoices,
     productCount,
     invoiceCount,
     missingPriceCount,
@@ -221,6 +243,7 @@ export default async function DashboardPage() {
   })
   const hiddenLowStock = Math.max(0, lowStock.length - DASHBOARD_LOW_STOCK_PREVIEW)
   const hiddenOpenInvoices = Math.max(0, openCount - openInvoices.length)
+  const hiddenOverdue = Math.max(0, overdueLateCount - overdueInvoices.length)
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -238,6 +261,54 @@ export default async function DashboardPage() {
       </div>
 
       <OnboardingChecklist progress={onboarding} />
+
+      {overdueLateCount > 0 ? (
+        <Card className="min-w-0 border-destructive/40">
+          <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+              Kasni naplata
+            </CardTitle>
+            <CardDescription>
+              {overdueLateCount} {overdueLateCount === 1 ? 'faktura je' : 'faktura su'} van roka, ukupno{' '}
+              <span className="font-semibold text-foreground">{formatRsd(overdueTotal)}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
+            <ul className="space-y-2">
+              {overdueInvoices.map((invoice) => (
+                <li key={invoice.id}>
+                  <Link
+                    href={`/invoices/${invoice.id}`}
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
+                  >
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="break-words font-medium [overflow-wrap:anywhere]">
+                        {invoice.invoiceNumber} · {invoice.clientName}
+                      </span>
+                      <span className="text-xs text-destructive">
+                        Kasni {formatDaysOverdue(daysOverdue(invoice.dueDate))} (rok {formatDashboardDate(invoice.dueDate)})
+                      </span>
+                    </span>
+                    <span className="min-w-0 font-medium tabular-nums [overflow-wrap:anywhere]">
+                      {formatRsd(Number(invoice.totalAmount))}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {hiddenOverdue > 0 ? (
+              <p className="text-xs text-muted-foreground">Još {hiddenOverdue} van roka na listi faktura</p>
+            ) : null}
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/invoices">
+                <FileText className="mr-2 h-4 w-4" />
+                Otvori fakture
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-3">
         <Card className="min-w-0">

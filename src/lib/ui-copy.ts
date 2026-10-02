@@ -94,6 +94,27 @@ export const sr = {
     remove: 'Ukloni sliku',
     productPlaceholder: (name: string) => `Nema slike za proizvod ${name}`,
   },
+  onboarding: {
+    addProduct: 'Dodaj proizvod',
+    companyMissing: 'Naziv firme i PIB se štampaju na fakturi.',
+    openSettings: 'Popuni podatke firme',
+    empty: {
+      catalog: {
+        title: 'Još nema kataloga',
+        needProducts: 'Katalog se pravi od proizvoda iz asortimana. Prvo dodajte ili skenirajte proizvode.',
+        ready: 'Izaberite proizvode, dodajte popust i pošaljite PDF kupcu.',
+        createHref: '/catalogs/new',
+        createLabel: 'Novi katalog',
+      },
+      invoice: {
+        title: 'Još nema faktura',
+        needProducts: 'Faktura se pravi od proizvoda iz asortimana. Prvo dodajte ili skenirajte proizvode.',
+        ready: 'Izaberite proizvode iz asortimana i izdajte prvu fakturu kupcu.',
+        createHref: '/invoices/new',
+        createLabel: 'Nova faktura',
+      },
+    },
+  },
   catalog: {
     newTitle: 'Novi katalog',
     newDescription: 'Kreirajte katalog od izabranih proizvoda i primenite popust.',

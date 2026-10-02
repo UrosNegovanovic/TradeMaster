@@ -6,11 +6,12 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Plus, FileText, Trash2, Download, Loader2, Edit, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Download, Loader2, Edit, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { Invoice, InvoiceStatus } from '@/types/invoice'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { cn } from '@/lib/utils'
 import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
@@ -343,21 +344,7 @@ export default function InvoicesPage() {
       ) : null}
 
       {!hasAnyInvoices ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Još nema faktura</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Napravite prvu fakturu za klijenta.
-            </p>
-            <Button asChild>
-              <Link href="/invoices/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova faktura
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <FirstRunEmptyState kind="invoice" />
       ) : isEmptyView && view === 'paid' ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

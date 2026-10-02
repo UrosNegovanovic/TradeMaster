@@ -11,12 +11,13 @@ import {
   ArrowUp,
   FileText,
   Package,
-  Plus,
   Warehouse,
 } from 'lucide-react'
 import Link from 'next/link'
 import { Decimal } from '@prisma/client/runtime/library'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
+import { getOnboardingProgress } from '@/lib/onboarding'
 import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/local-date'
 import { formatRsd } from '@/lib/invoice-finance'
 import { fetchLowStockProducts } from '@/lib/low-stock'
@@ -62,6 +63,7 @@ async function getDashboardData(profileId: string) {
     openInvoices,
     overdueCount,
     productCount,
+    invoiceCount,
     missingPriceCount,
     lowStock,
     todayMovementGroups,
@@ -110,6 +112,9 @@ async function getDashboardData(profileId: string) {
       },
     }),
     prisma.product.count({
+      where: { profileId },
+    }),
+    prisma.invoice.count({
       where: { profileId },
     }),
     prisma.product.count({
@@ -165,6 +170,7 @@ async function getDashboardData(profileId: string) {
     openInvoices,
     overdueCount,
     productCount,
+    invoiceCount,
     missingPriceCount,
     lowStock,
     todayTotals,
@@ -199,6 +205,7 @@ export default async function DashboardPage() {
     openInvoices,
     overdueCount,
     productCount,
+    invoiceCount,
     missingPriceCount,
     lowStock,
     todayTotals,
@@ -206,7 +213,12 @@ export default async function DashboardPage() {
     todayMovementPreview,
   } = await getDashboardData(profile.id)
 
-  const showEmptyCta = productCount === 0 && openCount === 0
+  const onboarding = getOnboardingProgress({
+    companyName: profile.companyName,
+    pib: profile.pib,
+    productCount,
+    invoiceCount,
+  })
   const hiddenLowStock = Math.max(0, lowStock.length - DASHBOARD_LOW_STOCK_PREVIEW)
   const hiddenOpenInvoices = Math.max(0, openCount - openInvoices.length)
 
@@ -225,24 +237,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {showEmptyCta ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Još nema asortimana</CardTitle>
-            <CardDescription>
-              Skenirajte prvi proizvod ili ga dodajte ručno da biste videli lager.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2 sm:flex-row">
-            <Button asChild variant="outline" className="w-full sm:w-auto">
-              <Link href="/inventory">
-                <Plus className="mr-2 h-4 w-4" />
-                Dodaj ručno
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      <OnboardingChecklist progress={onboarding} />
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 lg:grid-cols-3">
         <Card className="min-w-0">

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
@@ -399,12 +400,15 @@ export default function InventoryPage() {
         <div className="text-center py-12">
           <p className="font-medium">Asortiman je prazan</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Dodajte prvi proizvod ili ga skenirajte.
+            Skenirajte barkod ili dodajte proizvod ručno. Postojeći spisak možete uvesti iz CSV/XLSX fajla na Magacinu.
           </p>
-          <Button className="mt-4" onClick={() => setIsFormOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Dodaj proizvod
-          </Button>
+          <div className="mx-auto mt-4 flex max-w-sm flex-col gap-2">
+            <QuickScanButton presentation="hero" />
+            <Button variant="outline" onClick={() => setIsFormOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Dodaj ručno
+            </Button>
+          </div>
         </div>
       ) : isEmptyFilterResults ? (
         <div className="text-center py-12">

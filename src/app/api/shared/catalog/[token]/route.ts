@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { publicCatalogSelect, toPublicCatalogBody } from '@/lib/public-catalog'
-import { rateLimitedResponse, rateLimits } from '@/lib/rate-limit'
+import { enforceRateLimit, rateLimits } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' }
 
 export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
-  const limited = rateLimitedResponse(request, rateLimits.sharedCatalog)
+  const limited = await enforceRateLimit(request, rateLimits.sharedCatalog)
   if (limited) return limited
 
   if (!/^[a-f0-9]{64}$/.test(params.token)) {

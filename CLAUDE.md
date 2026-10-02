@@ -31,7 +31,7 @@ npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 68 test files / 377 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 68 test files / 383 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
 `vitest.config.ts` has an explicit `include` list: a new `*.test.ts` file does not run until you add it there.
 `test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
 
@@ -63,7 +63,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 - Pure logic goes in `src/lib/*.ts` with a colocated `*.test.ts`. Add tests for the behavior you change.
 - Conventional commits: `feat|fix|chore|docs|refactor|test: ...`.
 - Work on a branch, open a draft PR, merge only when the owner says "merge".
-- `src/lib/rate-limit.ts` is an in-memory per-instance limiter: best-effort only, not a real quota on serverless.
+- `src/lib/rate-limit.ts`: routes call `await enforceRateLimit(request, spec)`. It uses a shared Upstash/Vercel KV counter when `UPSTASH_REDIS_REST_URL`/`_TOKEN` (or `KV_REST_API_URL`/`_TOKEN`) are set, otherwise an in-memory per-instance limiter (best-effort only on serverless). A store failure falls back to memory, never blocks users.
 - Clerk middleware is skipped (public routes only) when `CLERK_SECRET_KEY` is missing; keep `route-access.ts` as the single list of public routes.
 - Landing copy must stay honest: do not promise checkout, cancellation or features that do not exist yet.
 

@@ -16,6 +16,7 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 - Advanced catalog (#56): saved layout (grid 4/12 or list), category grouping, sort, visible fields, public-link search and category filter, "Cena na upit", PDF font with č/ć/đ (catalog and invoice). Migration `catalog_display_settings` applied 2026-10-02.
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
 - Saved buyers (`Client`, ROADMAP #4): merged in #57, migration `20261002140000_clients.sql` applied in production.
+- Analytics + errors (ROADMAP #8), both off until env vars are set in Vercel: `NEXT_PUBLIC_ANALYTICS=on` (Vercel Analytics script + milestone events signup/first_product/first_invoice/catalog_shared/invoice_shared, sent once per browser from the dashboard, no properties) and `NEXT_PUBLIC_SENTRY_DSN` (Sentry, scrubbed: no user, cookies, bodies, breadcrumbs, only first line of messages). Optional `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` upload source maps. Web Analytics must also be enabled in the Vercel project.
 - Dashboard "Kasni naplata" card (ROADMAP #7): UNPAID invoices past due, oldest first, with total and days late (`src/lib/overdue-invoices.ts`). Low stock card already existed.
 - IPS QR on the invoice PDF (ROADMAP #6): `src/lib/ips-qr.ts`; shown for unpaid invoices when the company giro account has valid control digits. Needs a real scan with a Serbian banking app before launch.
 - Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed.

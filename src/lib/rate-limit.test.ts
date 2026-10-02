@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   applyRateLimit,
   consumeRateLimit,
+  enforceRateLimit,
   getClientIp,
   rateLimitedResponse,
   rateLimits,
@@ -72,5 +73,65 @@ describe('rateLimitedResponse', () => {
   it('uses the launch-plan public catalog quota', () => {
     expect(rateLimits.publicCatalog.limit).toBe(60)
     expect(rateLimits.barcodeLookup.limit).toBe(40)
+  })
+})
+
+describe('shared rate limit store', () => {
+  const spec = { name: 'shared-catalog', limit: 2, windowMs: 60_000 }
+  const request = () => new Request('http://localhost/x', { headers: { 'x-forwarded-for': '203.0.113.7' } })
+  const pipeline = (count: number, ttl = 45_000) =>
+    new Response(JSON.stringify([{ result: count }, { result: count === 1 ? 1 : 0 }, { result: ttl }]), { status: 200 })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('falls back to the in-memory limiter when the store is not configured', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await enforceRateLimit(request(), spec)).toBeNull()
+    expect(await enforceRateLimit(request(), spec)).toBeNull()
+    expect((await enforceRateLimit(request(), spec))?.status).toBe(429)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('counts in the shared store and blocks over the limit with the remaining window', async () => {
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://redis.example/')
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'secret')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(pipeline(1))
+      .mockResolvedValueOnce(pipeline(3, 30_500))
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await enforceRateLimit(request(), spec)).toBeNull()
+    const blocked = await enforceRateLimit(request(), spec)
+    expect(blocked?.status).toBe(429)
+    expect(blocked?.headers.get('Retry-After')).toBe('31')
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('https://redis.example/pipeline')
+    expect(init.headers.Authorization).toBe('Bearer secret')
+    expect(JSON.parse(init.body)[0]).toEqual(['INCR', 'tm:rl:shared-catalog:203.0.113.7'])
+  })
+
+  it('never blocks users when the store fails: it degrades to the in-memory limiter', async () => {
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://redis.example')
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'secret')
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('timeout')))
+
+    expect(await enforceRateLimit(request(), spec)).toBeNull()
+    expect(await enforceRateLimit(request(), spec)).toBeNull()
+    expect((await enforceRateLimit(request(), spec))?.status).toBe(429)
+  })
+
+  it('degrades on a non-OK store response too', async () => {
+    vi.stubEnv('KV_REST_API_URL', 'https://kv.example')
+    vi.stubEnv('KV_REST_API_TOKEN', 'secret')
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('nope', { status: 500 })))
+    expect(await enforceRateLimit(request(), spec)).toBeNull()
   })
 })

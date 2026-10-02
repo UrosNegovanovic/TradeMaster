@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import { belgradeYear } from '@/lib/local-date'
 
 /**
  * Invoice numbers follow the merchant-facing "NN/YYYY" format that predates
@@ -35,7 +36,9 @@ export async function reserveNextInvoiceNumber(
   profileId: string,
   now = new Date()
 ): Promise<string> {
-  const year = now.getFullYear()
+  // The invoice year is the Belgrade calendar year, not the server (UTC) clock: just after midnight on
+  // 1 Jan a UTC server still reports the old year.
+  const year = belgradeYear(now)
   const lockKey = `invoice-number:${profileId}:${year}`
   await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`)
   const invoices = await tx.invoice.findMany({

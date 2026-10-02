@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { publicCatalogSelect, toPublicCatalog } from '@/lib/public-catalog'
-import { rateLimitedResponse, rateLimits } from '@/lib/rate-limit'
+import { enforceRateLimit, rateLimits } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +16,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const limited = rateLimitedResponse(request, rateLimits.publicCatalog)
+  const limited = await enforceRateLimit(request, rateLimits.publicCatalog)
   if (limited) return limited
 
   try {

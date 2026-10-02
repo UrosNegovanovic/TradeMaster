@@ -73,9 +73,7 @@ export function applyRateLimit(request: Request, spec: RateLimitSpec): RateLimit
   return consumeRateLimit(rateLimitKey(spec.name, request), spec.limit, spec.windowMs)
 }
 
-export function rateLimitedResponse(request: Request, spec: RateLimitSpec): NextResponse | null {
-  const result = applyRateLimit(request, spec)
-  if (result.ok) return null
+function tooManyRequests(spec: RateLimitSpec, result: RateLimitResult): NextResponse {
   return NextResponse.json(
     { error: 'Too many requests' },
     {
@@ -87,6 +85,80 @@ export function rateLimitedResponse(request: Request, spec: RateLimitSpec): Next
       },
     }
   )
+}
+
+export function rateLimitedResponse(request: Request, spec: RateLimitSpec): NextResponse | null {
+  const result = applyRateLimit(request, spec)
+  return result.ok ? null : tooManyRequests(spec, result)
+}
+
+/**
+ * Shared counter on Upstash Redis (REST, no extra package) so the limit holds across serverless instances.
+ * Active only when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set; Vercel KV exposes the same
+ * REST API under KV_REST_API_URL / KV_REST_API_TOKEN.
+ */
+const SHARED_TIMEOUT_MS = 1500
+
+function sharedStoreConfig(): { url: string; token: string } | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+  return url && token ? { url: url.replace(/\/+$/, ''), token } : null
+}
+
+async function consumeSharedRateLimit(
+  config: { url: string; token: string },
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  const redisKey = `tm:rl:${key}`
+  const response = await fetch(`${config.url}/pipeline`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${config.token}`, 'Content-Type': 'application/json' },
+    // Fixed window: INCR, set the expiry only on the first hit (NX), read what is left.
+    body: JSON.stringify([
+      ['INCR', redisKey],
+      ['PEXPIRE', redisKey, windowMs, 'NX'],
+      ['PTTL', redisKey],
+    ]),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(SHARED_TIMEOUT_MS),
+  })
+  if (!response.ok) throw new Error(`Rate limit store responded ${response.status}`)
+
+  const data = (await response.json()) as Array<{ result?: unknown; error?: string }>
+  const count = Number(data[0]?.result)
+  if (!Number.isFinite(count)) throw new Error('Rate limit store returned no count')
+  const ttlMs = Number(data[2]?.result)
+
+  if (count > limit) {
+    const remainingMs = Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : windowMs
+    return { ok: false, remaining: 0, retryAfterSec: Math.max(1, Math.ceil(remainingMs / 1000)) }
+  }
+  return { ok: true, remaining: Math.max(0, limit - count), retryAfterSec: 0 }
+}
+
+/** Shared limit when configured; on any store failure it degrades to the per-instance limiter (never blocks users). */
+export async function consumeRateLimitShared(
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<RateLimitResult> {
+  const config = sharedStoreConfig()
+  if (config) {
+    try {
+      return await consumeSharedRateLimit(config, key, limit, windowMs)
+    } catch (error) {
+      console.error('Shared rate limit unavailable, using in-memory fallback:', (error as Error).message)
+    }
+  }
+  return consumeRateLimit(key, limit, windowMs)
+}
+
+/** Route helper: returns a 429 response when the caller is over the limit, otherwise null. */
+export async function enforceRateLimit(request: Request, spec: RateLimitSpec): Promise<NextResponse | null> {
+  const result = await consumeRateLimitShared(rateLimitKey(spec.name, request), spec.limit, spec.windowMs)
+  return result.ok ? null : tooManyRequests(spec, result)
 }
 
 export function resetRateLimitStore() {

@@ -207,7 +207,7 @@ export function LandingPage() {
           </div>
 
           <div className="order-1 min-w-0 lg:order-2">
-            <figure className="m-0 mx-auto w-[132px] lg:hidden">
+            <figure className="m-0 mx-auto w-[176px] lg:hidden">
               <PhoneScanner compact priority />
               <figcaption className="sr-only">Telefon skenira kesu kafe.</figcaption>
             </figure>

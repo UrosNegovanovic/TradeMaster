@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { Decimal } from '@prisma/client/runtime/library'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
+import { AnalyticsMilestones } from '@/components/analytics/AnalyticsMilestones'
 import { getOnboardingProgress } from '@/lib/onboarding'
 import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/local-date'
 import { formatRsd } from '@/lib/invoice-finance'
@@ -68,6 +69,8 @@ async function getDashboardData(profileId: string) {
     overdueInvoices,
     productCount,
     invoiceCount,
+    sharedCatalogCount,
+    sharedInvoiceCount,
     missingPriceCount,
     lowStock,
     todayMovementGroups,
@@ -133,6 +136,9 @@ async function getDashboardData(profileId: string) {
     prisma.invoice.count({
       where: { profileId },
     }),
+    // Analytics milestones only (no personal data leaves the server).
+    prisma.catalog.count({ where: { profileId, shareEnabled: true } }),
+    prisma.invoice.count({ where: { profileId, shareEnabled: true } }),
     prisma.product.count({
       where: { profileId, price: { lte: 0 } },
     }),
@@ -190,6 +196,8 @@ async function getDashboardData(profileId: string) {
     overdueInvoices,
     productCount,
     invoiceCount,
+    sharedCatalogCount,
+    sharedInvoiceCount,
     missingPriceCount,
     lowStock,
     todayTotals,
@@ -228,6 +236,8 @@ export default async function DashboardPage() {
     overdueInvoices,
     productCount,
     invoiceCount,
+    sharedCatalogCount,
+    sharedInvoiceCount,
     missingPriceCount,
     lowStock,
     todayTotals,
@@ -259,6 +269,14 @@ export default async function DashboardPage() {
           <p className="mt-1.5 text-xs text-muted-foreground">{sr.scan.missingCostNote}</p>
         </div>
       </div>
+
+      <AnalyticsMilestones
+        profileCreatedAt={profile.createdAt.toISOString()}
+        productCount={productCount}
+        invoiceCount={invoiceCount}
+        sharedCatalogCount={sharedCatalogCount}
+        sharedInvoiceCount={sharedInvoiceCount}
+      />
 
       <OnboardingChecklist progress={onboarding} />
 

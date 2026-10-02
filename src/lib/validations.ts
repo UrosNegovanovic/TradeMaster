@@ -349,3 +349,15 @@ export const profileSchema = z.object({
 })
 
 export type ProfileFormData = z.infer<typeof profileSchema>
+
+// Saved buyers (Client). PIB and address are optional; blank strings become null.
+export const clientWriteSchema = z.object({
+  name: z.string().trim().min(1, 'Naziv kupca je obavezan').max(255),
+  pib: clientPibWriteSchema,
+  address: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => normalizeClientPib(value) ?? null)
+    .refine((value) => value === null || value.length <= 500, 'Adresa je predugačka'),
+})
+
+export type ClientWriteInput = z.infer<typeof clientWriteSchema>

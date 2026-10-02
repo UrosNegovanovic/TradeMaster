@@ -15,6 +15,7 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 - Invoice and catalog sharing (roadmap #3, #55): revocable invoice link, WhatsApp/Viber/mail buttons. Migration `invoice_sharing` applied.
 - Advanced catalog (#56): saved layout (grid 4/12 or list), category grouping, sort, visible fields, public-link search and category filter, "Cena na upit", PDF font with č/ć/đ (catalog and invoice). Migration `catalog_display_settings` applied 2026-10-02.
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
+- Saved buyers (`Client`, ROADMAP #4) on branch `feat/clients`: draft PR, migration `20261002140000_clients.sql` must be applied by hand before deploy.
 
 ## Blocked on the owner
 

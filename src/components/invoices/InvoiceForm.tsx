@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react'
 import { Product } from '@/types/product'
+import type { Client } from '@/types/client'
+import { clientToInvoiceFields } from '@/lib/client-fill'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
@@ -24,6 +26,7 @@ import {
 
 interface InvoiceFormProps {
   products: Product[]
+  clients?: Client[]
   /** Company is in the PDV system (new invoices and drafts). Issued invoices keep their own snapshot. */
   inVatSystem?: boolean
   onSubmit: (data: InvoiceCreateInput) => Promise<void>
@@ -51,6 +54,7 @@ const mobileFieldLabelClass = 'mb-1.5 block text-sm leading-snug tracking-normal
 
 export function InvoiceForm({
   products,
+  clients = [],
   inVatSystem = false,
   onSubmit,
   isLoading = false,
@@ -326,6 +330,32 @@ export function InvoiceForm({
               />
             </div>
           </div>
+            {clients.length > 0 ? (
+              <div className="space-y-2">
+                <Label htmlFor="savedClient">Sačuvani kupac</Label>
+                <select
+                  id="savedClient"
+                  defaultValue=""
+                  onChange={(e) => {
+                    const client = clients.find((c) => c.id === e.target.value)
+                    if (!client) return
+                    const fields = clientToInvoiceFields(client)
+                    setClientName(fields.clientName)
+                    setClientPib(fields.clientPib)
+                    setClientAddress(fields.clientAddress)
+                  }}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:h-10"
+                >
+                  <option value="">Izaberite kupca ili unesite ručno</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                      {client.pib ? ` (${client.pib})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="clientName">
                 Naziv kupca <span className="text-destructive">*</span>

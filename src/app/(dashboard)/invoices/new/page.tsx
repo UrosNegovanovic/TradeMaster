@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { InvoiceForm } from '@/components/invoices/InvoiceForm'
 import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { Product } from '@/types/product'
+import type { Client } from '@/types/client'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
@@ -53,6 +54,16 @@ export default function NewInvoicePage() {
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
+  })
+
+  // Saved buyers are optional: a failed fetch just hides the picker.
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients')
+      if (!response.ok) throw new Error('Failed to fetch clients')
+      return response.json()
+    },
   })
 
   // The PDV setting decides which line fields the form shows
@@ -120,6 +131,7 @@ export default function NewInvoicePage() {
 
       <InvoiceForm
         products={products}
+        clients={clients}
         inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}

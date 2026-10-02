@@ -32,6 +32,7 @@ model Profile {
   stockMovements StockMovement[]
   productIntakes ProductIntake[]
   categories     Category[]
+  clients        Client[]
 
   @@map("profiles")
 }
@@ -67,6 +68,22 @@ model Category {
   @@unique([profileId, name])
   @@index([profileId])
   @@map("categories")
+}
+
+// Saved buyers — scoped per merchant. Invoices copy these fields (snapshot), there is no FK.
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  pib       String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, name])
+  @@map("clients")
 }
 
 // Product inventory

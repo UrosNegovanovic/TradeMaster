@@ -19,9 +19,11 @@ import { cn } from '@/lib/utils'
 import { isSameLocalDay, startOfLocalDay } from '@/lib/local-date'
 
 interface InventoryFiltersProps {
-  selectedCategory: string | null
+  selectedCategory?: string | null
   selectedDate: Date | null
-  onCategoryChange: (categoryId: string | null) => void
+  onCategoryChange?: (categoryId: string | null) => void
+  /** The catalog picker renders its own multi-category chips instead of this single select. */
+  hideCategory?: boolean
   onDateChange: (date: Date | null) => void
 }
 
@@ -34,9 +36,10 @@ async function fetchCategories(): Promise<Category[]> {
 }
 
 export function InventoryFilters({
-  selectedCategory,
+  selectedCategory = null,
   selectedDate,
   onCategoryChange,
+  hideCategory = false,
   onDateChange,
 }: InventoryFiltersProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -46,14 +49,16 @@ export function InventoryFilters({
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
+    enabled: !hideCategory,
   })
 
   return (
     <div className="flex flex-col sm:flex-row gap-3">
+      {hideCategory ? null : (
       <div className="flex-1 min-w-[200px]">
         <Select
           value={selectedCategory || 'all'}
-          onValueChange={(value) => onCategoryChange(value === 'all' ? null : value)}
+          onValueChange={(value) => onCategoryChange?.(value === 'all' ? null : value)}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Sve kategorije" />
@@ -68,6 +73,7 @@ export function InventoryFilters({
           </SelectContent>
         </Select>
       </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button

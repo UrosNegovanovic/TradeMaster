@@ -152,7 +152,7 @@ export const sr = {
     layout: 'Raspored',
     sortMode: 'Redosled proizvoda',
     groupByCategory: 'Grupiši po kategorijama',
-    groupByCategoryHelp: 'Svaka kategorija dobija naslov; u PDF mreži počinje na novoj strani.',
+    groupByCategoryHelp: 'Svaka kategorija dobija naslov i u PDF-u počinje na novoj strani. Duga kategorija nastavlja na narednim stranama, a sledeća kategorija počinje tek posle nje.',
     visibleFields: 'Prikaži na proizvodu',
     showSku: 'SKU / šifra',
     showDescription: 'Opis',

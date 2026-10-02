@@ -29,11 +29,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'),
   
   title: {
-    default: "TradeMaster — skeniraj robu, drži lager pod kontrolom",
+    default: "TradeMaster — od barkoda do fakture",
     template: "%s | TradeMaster",
   },
   
-  description: "Skeniraj robu. Drži lager pod kontrolom. Unesi proizvode kamerom, prati zalihe i pripremi kataloge i fakture.",
+  description: "Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za plaćanje. Na telefonu i računaru.",
   
   keywords: [
     'B2B magacin',
@@ -77,23 +77,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'sr_RS',
     url: '/',
-    title: 'TradeMaster — skeniraj robu, drži lager pod kontrolom',
-    description: 'Unesi proizvode kamerom, prati zalihe i pripremi kataloge i fakture. Za trgovce i malu veleprodaju.',
+    title: 'TradeMaster — od barkoda do fakture',
+    description: 'Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za plaćanje. Za trgovce i malu veleprodaju.',
     siteName: 'TradeMaster',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'TradeMaster — skeniraj robu, drži lager pod kontrolom',
+        alt: 'TradeMaster — od barkoda do fakture',
       },
     ],
   },
   
   twitter: {
     card: 'summary_large_image',
-    title: 'TradeMaster — skeniraj robu, drži lager pod kontrolom',
-    description: 'Unesi proizvode kamerom, prati zalihe i pripremi kataloge i fakture.',
+    title: 'TradeMaster — od barkoda do fakture',
+    description: 'Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za plaćanje.',
     images: ['/og-image.png'],
   },
   

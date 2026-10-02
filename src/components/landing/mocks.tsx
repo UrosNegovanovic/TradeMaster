@@ -3,6 +3,8 @@ import Image from 'next/image'
 import { Check, Plus, Search } from 'lucide-react'
 import { TradeMasterMark } from '@/components/brand/TradeMasterMark'
 import { cn } from '@/lib/utils'
+import { DEMO_INVOICE, demoInvoiceQrPayload, demoInvoiceTotals } from '@/lib/landing-invoice-demo'
+import { ipsQrMatrix } from '@/lib/ips-qr'
 
 const assortmentRows = [
   { name: 'Grand kafa 200 g', qty: '128', price: '329,00', img: '/landing/thumb-coffee.png' },
@@ -181,6 +183,89 @@ export function FeatureShot({
   return (
     <div className={cn('relative h-[158px] overflow-hidden rounded-[12px] bg-[#f7f7f8] sm:h-[168px]', className)}>
       <Image src={src} alt={alt} fill sizes="(min-width: 640px) 360px, 100vw" className="object-cover object-left" />
+    </div>
+  )
+}
+
+function formatRsdAmount(value: number): string {
+  return value.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+/** Fictional invoice drawn in HTML: PDV per rate and a real IPS QR built from made-up data. */
+export function InvoiceMock({ className }: { className?: string }) {
+  const totals = demoInvoiceTotals()
+  const payload = demoInvoiceQrPayload()
+  const qr = payload ? ipsQrMatrix(payload) : null
+
+  return (
+    <div
+      className={cn(
+        'overflow-hidden rounded-[16px] border border-neutral-200/80 bg-white p-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)] sm:p-5',
+        className
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-semibold text-neutral-900">{DEMO_INVOICE.company}</p>
+          <p className="text-[11px] text-neutral-500">Kupac: {DEMO_INVOICE.customer}</p>
+        </div>
+        <p className="shrink-0 text-[13px] font-semibold text-brand">Faktura {DEMO_INVOICE.number}</p>
+      </div>
+
+      <table className="mt-3 w-full text-[11px] tabular-nums sm:text-[12px]">
+        <thead>
+          <tr className="border-b border-neutral-200 text-left text-neutral-500">
+            <th className="pb-1 font-medium">Artikal</th>
+            <th className="pb-1 text-right font-medium">Kol.</th>
+            <th className="pb-1 text-right font-medium">PDV</th>
+            <th className="pb-1 text-right font-medium">Iznos</th>
+          </tr>
+        </thead>
+        <tbody className="text-neutral-800">
+          {DEMO_INVOICE.lines.map((line) => (
+            <tr key={line.name} className="border-b border-neutral-100">
+              <td className="py-1 pr-2">{line.name}</td>
+              <td className="py-1 text-right">{line.quantity}</td>
+              <td className="py-1 text-right">{line.vatRate}%</td>
+              <td className="py-1 text-right">{formatRsdAmount(line.quantity * line.unitPrice)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-3 flex items-end justify-between gap-3">
+        {qr ? (
+          <div className="shrink-0 text-center">
+            <svg
+              viewBox={`-2 -2 ${qr.size + 4} ${qr.size + 4}`}
+              className="h-[72px] w-[72px] rounded-md border border-neutral-200 bg-white"
+              role="img"
+              aria-label="Primer QR koda za plaćanje"
+            >
+              <path d={qr.path} fill="#0f172a" />
+            </svg>
+            <p className="mt-1 text-[10px] text-neutral-500">QR za plaćanje</p>
+          </div>
+        ) : null}
+        <dl className="min-w-0 flex-1 space-y-0.5 text-[11px] tabular-nums text-neutral-700 sm:text-[12px]">
+          <div className="flex justify-between gap-3">
+            <dt>Osnovica</dt>
+            <dd>{formatRsdAmount(totals.osnovica)}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt>PDV 20%</dt>
+            <dd>{formatRsdAmount(totals.vat20)}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt>PDV 10%</dt>
+            <dd>{formatRsdAmount(totals.vat10)}</dd>
+          </div>
+          <div className="flex justify-between gap-3 border-t border-neutral-200 pt-1 text-[13px] font-semibold text-neutral-950">
+            <dt>Za uplatu</dt>
+            <dd>{formatRsdAmount(totals.total)} RSD</dd>
+          </div>
+        </dl>
+      </div>
     </div>
   )
 }

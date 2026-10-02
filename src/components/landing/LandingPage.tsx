@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Camera, Check, FileText, Package, Play, Sparkles } from 'lucide-react'
+import { ArrowRight, Camera, Check, FileText, Package, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { LandingDemo } from './LandingDemo'
@@ -7,7 +7,7 @@ import { LandingFooter } from './LandingFooter'
 import { LandingInstall } from './LandingInstall'
 import { LandingStickyCta } from './LandingStickyCta'
 import { landingShell } from './landing-shell'
-import { AssortmentLaptop, FeatureShot, PhoneScanner } from './mocks'
+import { AssortmentLaptop, FeatureShot, InvoiceMock, PhoneScanner } from './mocks'
 import {
   MONTHLY_PRICE,
   PRICING_OFFER,
@@ -72,10 +72,16 @@ const features = [
   },
   {
     title: 'Katalozi i fakture',
-    line: 'Katalog sa cenama i popustom, i faktura u RSD.',
+    line: 'Katalog sa cenama i popustom, pa faktura sa PDV-om.',
     src: '/landing/card-docs.png',
     alt: 'Prikaz: katalog sa popustom pored fakture.',
   },
+] as const
+
+const invoicePoints = [
+  'PDV 20% i 10%, obračunat po stavkama',
+  'QR kod za plaćanje iz m-banking aplikacije',
+  'Izvoz za knjigovođu u Excel',
 ] as const
 
 const faqs = [
@@ -185,13 +191,13 @@ export function LandingPage() {
               Za trgovce i malu veleprodaju
             </p>
             <h1 className="mt-3 text-[2.1rem] font-bold leading-[1.12] tracking-tight text-neutral-950 sm:text-[3rem] lg:text-[3.25rem] lg:leading-[1.08]">
-              Skeniraj robu.
+              Od barkoda
               <br />
-              <span className="text-brand">Drži lager pod kontrolom.</span>
+              <span className="text-brand">do fakture.</span>
             </h1>
             <p className="mt-4 max-w-[36rem] text-[16px] leading-relaxed text-neutral-700 sm:text-[17px]">
-              Unosi proizvode kamerom telefona, prati zalihe i pripremi kataloge i
-              fakture — na telefonu i računaru.
+              Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za
+              plaćanje. Na telefonu i računaru.
             </p>
             <HeroActions className="mt-5 flex flex-wrap items-center gap-3" />
             <p className="mt-3 text-[14px] text-neutral-600">
@@ -315,9 +321,43 @@ export function LandingPage() {
         </section>
 
         <section
+          id="faktura"
+          aria-labelledby="faktura-heading"
+          className="scroll-mt-[80px] pb-10 sm:pb-12"
+        >
+          <div className={`${landingShell} grid items-center gap-6 lg:grid-cols-2 lg:gap-12`}>
+            <div className="min-w-0">
+              <h2
+                id="faktura-heading"
+                className="text-[1.65rem] font-bold tracking-tight text-neutral-950 sm:text-[2rem]"
+              >
+                Faktura koju kupac može odmah da plati
+              </h2>
+              <ul className="mt-5 space-y-3">
+                {invoicePoints.map((point) => (
+                  <li key={point} className="flex items-start gap-2.5 text-[16px] leading-snug text-neutral-700">
+                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" strokeWidth={2.4} aria-hidden />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-[14px] text-neutral-600">
+                Interna faktura, nije fiskalni račun i ne šalje se u SEF.
+              </p>
+            </div>
+            <figure className="m-0 min-w-0">
+              <InvoiceMock />
+              <figcaption className="mt-2 text-center text-[12px] text-neutral-500">
+                Primer sa izmišljenim podacima.
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section
           id="cena"
           aria-labelledby="cena-heading"
-          className="scroll-mt-[80px] pb-6 sm:pb-8"
+          className="scroll-mt-[80px] pb-10 sm:pb-12"
         >
           <div className={landingShell}>
             <h2
@@ -364,24 +404,6 @@ export function LandingPage() {
             </p>
           </div>
         </section>
-
-        <aside
-          aria-label="Najava"
-          className="mb-10 border-y border-neutral-100 bg-brand-tint sm:mb-12"
-        >
-          <div
-            className={`${landingShell} flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 py-3 sm:py-3.5`}
-          >
-            <Sparkles className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} aria-hidden />
-            <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand">
-              Uskoro
-            </span>
-            <p className="max-w-[40rem] text-center text-[14px] leading-snug text-neutral-700 sm:text-left">
-              AI mesečni izveštaj — kratak pregled prodaje, zaliha i profita, automatski
-              pripremljen svakog meseca.
-            </p>
-          </div>
-        </aside>
 
         <section
           id="pitanja"

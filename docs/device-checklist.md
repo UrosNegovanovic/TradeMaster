@@ -3,7 +3,8 @@
 Ovo se ne može automatizovati: radi se ručno na **Android telefonu (Chrome)** i **iPhone-u (Safari)**, na produkcijskom linku. Štikliraj za oba uređaja i upiši problem ako nešto ne radi. Datum probe: ______  Uređaji: ______
 
 ## 1. Instalacija (PWA)
-- [ ] Android: Chrome ponudi „Instaliraj aplikaciju“ ili meni → „Dodaj na početni ekran“; ikona i naziv su ispravni, otvara se bez trake browsera.
+- [ ] Android: dugme **Instaliraj aplikaciju** (početna strana, a u aplikaciji kartica na Početnoj) otvara Chrome-ov dijalog; posle potvrde piše „Instalacija je počela“, pa „TradeMaster je instaliran“. Ako dijalog ne izađe, uputstvo kaže: meni ⋮ → **Instaliraj aplikaciju**.
+- [ ] Pazi: **„Dodaj na početni ekran“ iz Chrome menija može da napravi samo prečicu** (ikonica sa malim Chrome znakom, otvara se u browseru, bez instalacije). Prava instalacija: ikonica bez Chrome znaka, aplikacija je i u listi aplikacija, otvara se bez trake browsera.
 - [ ] iPhone: Safari → Podeli → „Dodaj na početni ekran“; otvara se preko celog ekrana.
 - [ ] Posle instalacije ostaješ prijavljen/a i posle zatvaranja i ponovnog otvaranja.
 

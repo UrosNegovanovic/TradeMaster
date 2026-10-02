@@ -27,5 +27,7 @@ describe('shouldProtectHtmlRoute', () => {
     expect(shouldProtectHtmlRoute(request('/terms'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/api/public/catalogs/abc'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/api/shared/catalog/token'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/shared/invoice/token'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/api/shared/invoice/token'))).toBe(false)
   })
 })

@@ -7,6 +7,7 @@ export type Profile = {
   address: string | null
   pib: string | null
   giroAccount: string | null
+  inVatSystem: boolean
   logoUrl: string | null
   createdAt: Date
   updatedAt: Date
@@ -19,5 +20,6 @@ export type ProfileUpdateInput = {
   address?: string | null
   pib?: string | null
   giroAccount?: string | null
+  inVatSystem?: boolean
   logoUrl?: string | null
 }

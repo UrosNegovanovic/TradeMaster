@@ -115,11 +115,11 @@ export async function PUT(
     const { id } = await context.params
     const body = await parseJsonBody(request)
     const parsed = parseInvoiceWriteBody(body)
-    const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
-
     const updatedInvoice = await prisma.$transaction(async (tx) => {
-      const locked = await tx.$queryRaw<Array<{ id: string; status: string }>>`
-        SELECT id, status FROM invoices WHERE id = ${id} AND "profileId" = ${profile.id} FOR UPDATE
+      const locked = await tx.$queryRaw<
+        Array<{ id: string; status: string; vatEnabled: boolean }>
+      >`
+        SELECT id, status, "vatEnabled" FROM invoices WHERE id = ${id} AND "profileId" = ${profile.id} FOR UPDATE
       `
 
       if (locked.length === 0) {
@@ -130,6 +130,11 @@ export async function PUT(
       }
 
       assertInvoiceContentEditable(locked[0].status)
+
+      // A draft follows the company setting; an issued invoice keeps the setting it was issued with.
+      const vatEnabled =
+        locked[0].status === 'DRAFT' ? profile.inVatSystem : locked[0].vatEnabled
+      const { items, vatAmount, totalAmount } = computeInvoiceAmounts(parsed.items, vatEnabled)
 
       const productCosts = await assertOwnedProducts(profile.id, items, tx)
 
@@ -146,6 +151,8 @@ export async function PUT(
           clientAddress: parsed.clientAddress || null,
           clientPib: parsed.clientPib,
           totalAmount,
+          vatEnabled,
+          vatAmount,
           items: {
             create: items.map((item) => ({
               productId: item.productId,
@@ -154,6 +161,7 @@ export async function PUT(
               unitPrice: item.unitPrice,
               unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
               discount: item.discount,
+              vatRate: item.vatRate,
               total: item.total,
             })),
           },

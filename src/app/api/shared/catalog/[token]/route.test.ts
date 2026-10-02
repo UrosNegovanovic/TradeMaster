@@ -49,6 +49,53 @@ describe('GET /api/shared/catalog/[token]', () => {
     )
   })
 
+  it('maps the record to the public DTO with display settings and no private fields', async () => {
+    mocks.catalog.findFirst.mockResolvedValue({
+      id: 'cat-secret-id',
+      profileId: 'profile-secret',
+      name: 'Ponuda',
+      clientName: null,
+      notes: null,
+      discount: '0',
+      layout: 'GRID_12',
+      groupByCategory: true,
+      sortMode: 'PRICE_ASC',
+      showSku: true,
+      showDescription: true,
+      showOriginalPrice: false,
+      profile: { companyName: 'Firma', contactEmail: null, contactPhone: null, address: null, logoUrl: null },
+      items: [
+        {
+          id: 'item-1',
+          originalPrice: '100',
+          discountedPrice: '100',
+          sortOrder: 0,
+          product: {
+            name: 'Sok',
+            sku: '123',
+            imageUrl: null,
+            description: null,
+            category: { name: 'Pića' },
+            costPrice: '40',
+            quantity: 7,
+          },
+        },
+      ],
+    })
+
+    const response = await GET(
+      new NextRequest(`http://localhost/api/shared/catalog/${token}`),
+      { params: { token } }
+    )
+    const body = await response.json()
+
+    expect(body.display).toMatchObject({ layout: 'GRID_12', groupByCategory: true, sortMode: 'PRICE_ASC', showOriginalPrice: false })
+    expect(body.items[0].product).toEqual({ name: 'Sok', sku: '123', imageUrl: null, description: null, categoryName: 'Pića' })
+    expect(JSON.stringify(body)).not.toMatch(/costPrice|quantity|profileId|cat-secret-id/)
+    const select = mocks.catalog.findFirst.mock.calls[0][0].select
+    expect(JSON.stringify(select)).not.toMatch(/costPrice|quantity|"price"|profileId/)
+  })
+
   it('does not accept a catalog id as a public token', async () => {
     const response = await GET(
       new NextRequest('http://localhost/api/shared/catalog/catalog-id'),

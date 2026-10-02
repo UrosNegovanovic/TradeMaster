@@ -6,11 +6,23 @@ import {
   Page,
   Text,
   View,
-  Image,
+  // Aliased: react-pdf Image has no alt attribute, unlike next/image
+  Image as PdfImage,
   StyleSheet,
 } from '@react-pdf/renderer'
 import { CatalogWithItems } from '@/types/catalog'
 import { Profile } from '@/types/profile'
+import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
+import {
+  arrangeCatalogItems,
+  chunkSectionsIntoPages,
+  hasCatalogPrice,
+  readCatalogDisplay,
+  type CatalogSection,
+} from '@/lib/catalog-layout'
+import { sr } from '@/lib/ui-copy'
+
+registerPdfFonts()
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
@@ -18,7 +30,7 @@ const styles = StyleSheet.create({
     padding: 40,
     paddingBottom: 70, // Add bottom padding to prevent content overlap with footer
     fontSize: 10,
-    fontFamily: 'Helvetica',
+    fontFamily: PDF_FONT_FAMILY,
     backgroundColor: '#ffffff',
     position: 'relative',
   },
@@ -166,7 +178,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#6b7280',
     marginBottom: 6,
-    fontFamily: 'Courier',
   },
   productDescription: {
     fontSize: 9,
@@ -217,52 +228,148 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontSize: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  categoryTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  priceOnRequest: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#6b7280',
+  },
+  // List layout (price list)
+  listHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    backgroundColor: '#f3f4f6',
+    borderBottom: '1 solid #d1d5db',
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#374151',
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    borderBottom: '1 solid #e5e7eb',
+  },
+  listImageCell: {
+    width: 44,
+    height: 36,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listImage: {
+    width: 40,
+    height: 36,
+    objectFit: 'contain',
+  },
+  listNameCell: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  listName: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  listSku: {
+    fontSize: 8,
+    color: '#6b7280',
+    marginTop: 1,
+  },
+  listDescription: {
+    fontSize: 8,
+    color: '#4b5563',
+    marginTop: 2,
+    lineHeight: 1.3,
+  },
+  listPriceCell: {
+    width: 110,
+    alignItems: 'flex-end',
+  },
+  listOriginalPrice: {
+    fontSize: 8,
+    color: '#9ca3af',
+    textDecoration: 'line-through',
+  },
+  listPrice: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#059669',
+  },
+  listSectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 14,
+    marginBottom: 4,
+    paddingBottom: 3,
+    borderBottom: '1.5 solid #111827',
+  },
 })
+
+type CatalogPdfItem = CatalogWithItems['items'][number]
+type PdfTextStyle = (typeof styles)[keyof typeof styles]
 
 interface CatalogPDFProps {
   catalog: CatalogWithItems & { profile: Profile }
-  itemsPerPage?: number | 'all' // Used for web preview only; PDF always uses A4 pagination
-  pdfItemsPerPage?: 4 | 12 // PDF items per page: 4 (large) or 12 (compact)
 }
 
-export function CatalogPDF({ catalog, itemsPerPage = 'all', pdfItemsPerPage = 4 }: CatalogPDFProps) {
+const formatPrice = (price: unknown) =>
+  new Intl.NumberFormat('sr-RS', {
+    style: 'currency',
+    currency: 'RSD',
+    minimumFractionDigits: 2,
+  }).format(Number(price))
+
+const isValidImageUrl = (url: string | null | undefined): boolean => {
+  if (!url || url.trim() === '') return false
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/** Layout, grouping, order and visible fields come from the catalog's saved display settings. */
+export function CatalogPDF({ catalog }: CatalogPDFProps) {
   const profile = catalog.profile
-  const items = catalog.items || []
-  
-  // Determine if we're using compact (12 items) or large (4 items) layout
-  const isCompact = pdfItemsPerPage === 12
+  const display = readCatalogDisplay(catalog)
+  const discount = Number(catalog.discount)
+  const sections = arrangeCatalogItems(catalog.items || [], display, (item) => item.product?.category?.name)
 
-  // Format currency
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price
-    return new Intl.NumberFormat('sr-RS', {
-      style: 'currency',
-      currency: 'RSD',
-      minimumFractionDigits: 2,
-    }).format(numPrice)
-  }
+  // Compact (12) or large (4) cards; the list layout flows rows across as many pages as needed.
+  const isCompact = display.layout === 'GRID_12'
+  const perPage = isCompact ? 12 : 4
 
-  // Check if URL is valid
-  const isValidImageUrl = (url: string | null | undefined): boolean => {
-    if (!url || url.trim() === '') return false
-    try {
-      const parsed = new URL(url)
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    } catch {
-      return false
-    }
-  }
-
-  // Chunk items if itemsPerPage is a number
-  const chunkItems = (
-    itemsToChunk: typeof items,
-    chunkSize: number
+  const renderPrices = (
+    item: CatalogPdfItem,
+    priceStyles: { original: PdfTextStyle; discounted: PdfTextStyle; onRequest: PdfTextStyle }
   ) => {
-    const chunks: (typeof items)[] = []
-    for (let i = 0; i < itemsToChunk.length; i += chunkSize) {
-      chunks.push(itemsToChunk.slice(i, i + chunkSize) as typeof items)
+    if (!hasCatalogPrice(item.originalPrice)) {
+      return <Text style={priceStyles.onRequest}>{sr.catalog.priceOnRequest}</Text>
     }
-    return chunks
+    const showOriginal =
+      display.showOriginalPrice && Number(item.discountedPrice) < Number(item.originalPrice)
+    return (
+      <>
+        {showOriginal && <Text style={priceStyles.original}>{formatPrice(item.originalPrice)}</Text>}
+        <Text style={priceStyles.discounted}>{formatPrice(item.discountedPrice)}</Text>
+      </>
+    )
   }
 
   // Dynamic styles based on layout (4 or 12 items per page)
@@ -307,6 +414,10 @@ export function CatalogPDF({ catalog, itemsPerPage = 'all', pdfItemsPerPage = 4 
         originalPrice: {
           ...styles.originalPrice,
           fontSize: 7,
+        },
+        priceOnRequest: {
+          ...styles.priceOnRequest,
+          fontSize: 8,
         },
         productGrid: {
           ...styles.productGrid,
@@ -354,6 +465,10 @@ export function CatalogPDF({ catalog, itemsPerPage = 'all', pdfItemsPerPage = 4 
           ...styles.originalPrice,
           fontSize: 11,
         },
+        priceOnRequest: {
+          ...styles.priceOnRequest,
+          fontSize: 12,
+        },
         productGrid: {
           ...styles.productGrid,
           gap: 18,
@@ -364,164 +479,207 @@ export function CatalogPDF({ catalog, itemsPerPage = 'all', pdfItemsPerPage = 4 
 
   const dynamicStyles = getDynamicStyles()
 
-  // Render a single page with header, products, and footer
-  const renderPage = (
-    pageItems: typeof items,
-    pageNumber: number,
-    totalPages: number
-  ) => (
-    <Page 
-      key={pageNumber} 
-      size="A4" 
-      style={styles.page}
-      wrap={false} // Prevent page break inside products
-    >
-      {/* Modern Header with All Information */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {isValidImageUrl(profile.logoUrl) ? (
-            <Image src={profile.logoUrl!} style={styles.logo} />
-          ) : (
-            <View style={styles.logoContainer}>
-              <Text style={{ fontSize: 8, color: '#9ca3af' }}>LOGO</Text>
-            </View>
-          )}
-          <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>
-              {profile.companyName || 'Naziv firme'}
-            </Text>
-            {catalog.clientName && (
-              <Text style={styles.companyDetails}>
-                Katalog za: {catalog.clientName}
-              </Text>
-            )}
-            {catalog.name && (
-              <Text style={styles.companyDetails}>
-                {catalog.name}
-              </Text>
-            )}
-            {profile.pib && (
-              <Text style={styles.companyDetails}>
-                PIB: {profile.pib}
-              </Text>
-            )}
+  const header = (
+    <View style={styles.header}>
+      <View style={styles.headerLeft}>
+        {isValidImageUrl(profile.logoUrl) ? (
+          <PdfImage src={profile.logoUrl!} style={styles.logo} />
+        ) : (
+          <View style={styles.logoContainer}>
+            <Text style={{ fontSize: 8, color: '#9ca3af' }}>LOGO</Text>
           </View>
-        </View>
-        <View style={styles.headerRight}>
-          {profile.contactEmail && (
-            <View style={{ marginBottom: 4 }}>
-              <Text style={styles.contactLabel}>Email:</Text>
-              <Text style={styles.contactInfo}>{profile.contactEmail}</Text>
-            </View>
-          )}
-          {profile.contactPhone && (
-            <View style={{ marginBottom: 4 }}>
-              <Text style={styles.contactLabel}>Telefon:</Text>
-              <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
-            </View>
-          )}
-          {profile.address && (
-            <View>
-              <Text style={styles.contactLabel}>Adresa:</Text>
-              <Text style={styles.contactInfo}>{profile.address}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Title Section - Simplified since name is in header */}
-      <View style={styles.titleSection}>
-        {catalog.notes && (
-          <Text style={styles.notes}>{catalog.notes}</Text>
         )}
-        <View style={styles.discountBadge}>
-          <Text style={styles.discountBadgeText}>
-            {Number(catalog.discount).toFixed(2)}% popust
+        <View style={styles.companyInfo}>
+          <Text style={styles.companyName}>
+            {profile.companyName || 'Naziv firme'}
           </Text>
+          {catalog.clientName && (
+            <Text style={styles.companyDetails}>
+              Katalog za: {catalog.clientName}
+            </Text>
+          )}
+          {catalog.name && (
+            <Text style={styles.companyDetails}>
+              {catalog.name}
+            </Text>
+          )}
+          {profile.pib && (
+            <Text style={styles.companyDetails}>
+              PIB: {profile.pib}
+            </Text>
+          )}
         </View>
       </View>
+      <View style={styles.headerRight}>
+        {profile.contactEmail && (
+          <View style={{ marginBottom: 4 }}>
+            <Text style={styles.contactLabel}>Email:</Text>
+            <Text style={styles.contactInfo}>{profile.contactEmail}</Text>
+          </View>
+        )}
+        {profile.contactPhone && (
+          <View style={{ marginBottom: 4 }}>
+            <Text style={styles.contactLabel}>Telefon:</Text>
+            <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
+          </View>
+        )}
+        {profile.address && (
+          <View>
+            <Text style={styles.contactLabel}>Adresa:</Text>
+            <Text style={styles.contactInfo}>{profile.address}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  )
 
-      {/* Products Grid - with proper spacing for footer */}
-      {pageItems.length > 0 ? (
-        <View style={dynamicStyles.productGrid}>
-          {pageItems.map((item) => {
-            const product = item.product
-            if (!product) return null
+  const discountBadge = discount > 0 && (
+    <View style={styles.discountBadge}>
+      <Text style={styles.discountBadgeText}>
+        {discount.toFixed(2)}% popust
+      </Text>
+    </View>
+  )
 
-            return (
-              <View key={item.id} style={dynamicStyles.productCard}>
-                {/* Product Image */}
-                {isValidImageUrl(product.imageUrl) ? (
-                  <View style={dynamicStyles.productImageContainer}>
-                    <Image
-                      src={product.imageUrl!}
-                      style={dynamicStyles.productImage}
-                    />
-                  </View>
-                ) : (
-                  <View style={dynamicStyles.productImageContainer}>
-                    <Text style={{ fontSize: isCompact ? 7 : 8, color: '#9ca3af' }}>
-                      Nema slike
-                    </Text>
-                  </View>
-                )}
-
-                {/* Product Info */}
-                <View style={styles.productInfo}>
-                  <Text style={dynamicStyles.productName}>{product.name}</Text>
-                  <Text style={dynamicStyles.productSku}>SKU: {product.sku}</Text>
-                  {product.description && (
-                    <Text style={dynamicStyles.productDescription}>
-                      {product.description}
-                    </Text>
-                  )}
-
-                  {/* Pricing */}
-                  <View style={styles.priceContainer}>
-                    <Text style={dynamicStyles.originalPrice}>
-                      {formatPrice(Number(item.originalPrice))}
-                    </Text>
-                    <Text style={dynamicStyles.discountedPrice}>
-                      {formatPrice(Number(item.discountedPrice))}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )
-          })}
-        </View>
-      ) : (
-        <View style={styles.emptyState}>
-          <Text>Nema proizvoda u ovom katalogu.</Text>
+  // Category title sits on the same row as the discount badge so grouped pages keep the same height.
+  const titleSection = (category: string | null) => (
+    <View style={styles.titleSection}>
+      {catalog.notes && <Text style={styles.notes}>{catalog.notes}</Text>}
+      {(category || discountBadge) && (
+        <View style={styles.titleRow}>
+          {category && <Text style={styles.categoryTitle}>{category}</Text>}
+          {discountBadge}
         </View>
       )}
+    </View>
+  )
 
-      {/* Footer */}
-      <View style={styles.footer} fixed>
-        <View style={styles.footerLeft}>
-          <Text>Strana </Text>
-          <Text>{pageNumber} / {totalPages}</Text>
+  const footer = (
+    <View style={styles.footer} fixed>
+      <Text
+        style={styles.footerLeft}
+        render={({ pageNumber, totalPages }) => `Strana ${pageNumber} / ${totalPages}`}
+      />
+      <Text style={styles.footerRight}>Generisao TradeMaster</Text>
+    </View>
+  )
+
+  const emptyState = (
+    <View style={styles.emptyState}>
+      <Text>Nema proizvoda u ovom katalogu.</Text>
+    </View>
+  )
+
+  const renderCard = (item: CatalogPdfItem) => {
+    const product = item.product
+    if (!product) return null
+    return (
+      <View key={item.id} style={dynamicStyles.productCard}>
+        <View style={dynamicStyles.productImageContainer}>
+          {isValidImageUrl(product.imageUrl) ? (
+            <PdfImage src={product.imageUrl!} style={dynamicStyles.productImage} />
+          ) : (
+            <Text style={{ fontSize: isCompact ? 7 : 8, color: '#9ca3af' }}>Nema slike</Text>
+          )}
         </View>
-        <Text style={styles.footerRight}>Generisao TradeMaster</Text>
+        <View style={styles.productInfo}>
+          <Text style={dynamicStyles.productName}>{product.name}</Text>
+          {display.showSku && <Text style={dynamicStyles.productSku}>SKU: {product.sku}</Text>}
+          {display.showDescription && product.description && (
+            <Text style={dynamicStyles.productDescription}>{product.description}</Text>
+          )}
+          <View style={styles.priceContainer}>
+            {renderPrices(item, {
+              original: dynamicStyles.originalPrice,
+              discounted: dynamicStyles.discountedPrice,
+              onRequest: dynamicStyles.priceOnRequest,
+            })}
+          </View>
+        </View>
       </View>
+    )
+  }
+
+  const renderGridPage = (page: CatalogSection<CatalogPdfItem> | null, index: number) => (
+    <Page key={index} size="A4" style={styles.page} wrap={false}>
+      {header}
+      {titleSection(page?.category ?? null)}
+      {page && page.items.length > 0 ? (
+        <View style={dynamicStyles.productGrid}>{page.items.map(renderCard)}</View>
+      ) : (
+        emptyState
+      )}
+      {footer}
     </Page>
   )
 
-  // For PDF generation, always use pagination to ensure A4 format compatibility
-  // Using pdfItemsPerPage (4 for large or 12 for compact) ensures A4 format without scaling
-  // This ensures professional printing without content being cropped or scaled
-  const PDF_ITEMS_PER_PAGE = pdfItemsPerPage
-  
-  // Always chunk items for PDF regardless of itemsPerPage parameter
-  // (itemsPerPage is used for web preview only)
-  const itemChunks = chunkItems(items, PDF_ITEMS_PER_PAGE)
-  const totalPages = itemChunks.length
+  // Without any product photo the list becomes a compact text price list.
+  const listHasImages = sections.some((section) =>
+    section.items.some((item) => isValidImageUrl(item.product?.imageUrl))
+  )
+
+  const renderListRow = (item: CatalogPdfItem) => {
+    const product = item.product
+    if (!product) return null
+    return (
+      <View key={item.id} style={styles.listRow} wrap={false}>
+        {listHasImages && (
+          <View style={styles.listImageCell}>
+            {isValidImageUrl(product.imageUrl) && <PdfImage src={product.imageUrl!} style={styles.listImage} />}
+          </View>
+        )}
+        <View style={styles.listNameCell}>
+          <Text style={styles.listName}>{product.name}</Text>
+          {display.showSku && <Text style={styles.listSku}>SKU: {product.sku}</Text>}
+          {display.showDescription && product.description && (
+            <Text style={styles.listDescription}>{product.description}</Text>
+          )}
+        </View>
+        <View style={styles.listPriceCell}>
+          {renderPrices(item, {
+            original: styles.listOriginalPrice,
+            discounted: styles.listPrice,
+            onRequest: styles.priceOnRequest,
+          })}
+        </View>
+      </View>
+    )
+  }
+
+  if (display.layout === 'LIST') {
+    return (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          {header}
+          {titleSection(null)}
+          <View style={styles.listHeaderRow} fixed>
+            {listHasImages && <Text style={{ width: 52 }} />}
+            <Text style={{ flex: 1 }}>Proizvod</Text>
+            <Text style={{ width: 110, textAlign: 'right' }}>Cena</Text>
+          </View>
+          {sections.length === 0 && emptyState}
+          {sections.map((section, index) => (
+            <View key={section.category ?? index}>
+              {section.category && (
+                <Text style={styles.listSectionTitle} minPresenceAhead={40}>
+                  {section.category}
+                </Text>
+              )}
+              {section.items.map(renderListRow)}
+            </View>
+          ))}
+          {footer}
+        </Page>
+      </Document>
+    )
+  }
+
+  // Grid layouts: fixed number of cards per A4 page, every category starts on a new page.
+  const pages = chunkSectionsIntoPages(sections, perPage)
 
   return (
     <Document>
-      {itemChunks.map((chunk, index) =>
-        renderPage(chunk, index + 1, totalPages)
-      )}
+      {pages.length > 0 ? pages.map(renderGridPage) : renderGridPage(null, 0)}
     </Document>
   )
 }

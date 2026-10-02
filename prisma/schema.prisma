@@ -21,6 +21,7 @@ model Profile {
   pib          String? // Tax ID (PIB)
   giroAccount  String? // Merchant žiro-račun printed on invoices
   logoUrl      String? // URL to uploaded logo (stored in Supabase Storage)
+  inVatSystem  Boolean  @default(false) // Company is in the PDV system; new invoices carry VAT
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -136,6 +137,14 @@ model Catalog {
   shareToken   String?  @unique
   shareEnabled Boolean  @default(false)
 
+  // Display settings shared by the PDF, owner preview and public link (values: src/lib/catalog-layout.ts)
+  layout            String  @default("GRID_4") // GRID_4 | GRID_12 | LIST
+  groupByCategory   Boolean @default(false)
+  sortMode          String  @default("MANUAL") // MANUAL | NAME | PRICE_ASC | PRICE_DESC
+  showSku           Boolean @default(true)
+  showDescription   Boolean @default(true)
+  showOriginalPrice Boolean @default(true)
+
   // Foreign keys
   profileId String
 
@@ -186,8 +195,12 @@ model Invoice {
   clientAddress String?
   clientPib     String? // Buyer PIB (9 digits) printed on the invoice
   status        InvoiceStatus @default(DRAFT)
-  totalAmount   Decimal       @db.Decimal(10, 2)
+  totalAmount   Decimal       @db.Decimal(10, 2) // Amount payable (osnovica + PDV)
+  vatEnabled    Boolean       @default(false) // Snapshot of Profile.inVatSystem at issue time
+  vatAmount     Decimal       @default(0) @db.Decimal(10, 2) // Total PDV; osnovica = totalAmount - vatAmount
   paidAt        DateTime?
+  shareToken    String?       @unique // Revocable public link; only issued invoices are served
+  shareEnabled  Boolean       @default(false)
 
   // Foreign keys
   profileId String
@@ -219,7 +232,8 @@ model InvoiceItem {
   unitPrice   Decimal @db.Decimal(10, 2)
   unitCost    Decimal? @db.Decimal(10, 2) // Purchase-cost snapshot used for historical profit
   discount    Decimal @db.Decimal(5, 2) @default(0) // Discount percentage (e.g., 15.50 for 15.5%)
-  total       Decimal @db.Decimal(10, 2) // quantity * unitPrice * (1 - discount/100)
+  vatRate     Decimal @default(0) @db.Decimal(5, 2) // PDV rate snapshot: 0, 10 or 20 (unitPrice and total exclude PDV)
+  total       Decimal @db.Decimal(10, 2) // quantity * unitPrice * (1 - discount/100), excluding PDV
   productName String // Snapshot of product name (even if product is deleted)
 
   // Foreign keys

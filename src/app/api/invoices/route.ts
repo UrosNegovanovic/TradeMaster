@@ -99,7 +99,8 @@ export async function POST(request: NextRequest) {
 
     const body = await parseJsonBody(request)
     const parsed = parseInvoiceCreateBody(body)
-    const { items, totalAmount } = computeInvoiceAmounts(parsed.items)
+    const vatEnabled = profile.inVatSystem
+    const { items, vatAmount, totalAmount } = computeInvoiceAmounts(parsed.items, vatEnabled)
     const status = parsed.status ?? OPEN_INVOICE_STATUS
     const paidAt = nextPaidAt('UNPAID', null, status)
 
@@ -117,6 +118,8 @@ export async function POST(request: NextRequest) {
           status,
           paidAt: paidAt ?? null,
           totalAmount,
+          vatEnabled,
+          vatAmount,
           profileId: profile.id,
         },
       })
@@ -129,6 +132,7 @@ export async function POST(request: NextRequest) {
               unitPrice: item.unitPrice,
               unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
               discount: item.discount,
+              vatRate: item.vatRate,
               total: item.total,
               productName: item.productName,
               invoiceId: newInvoice.id,

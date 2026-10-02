@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { toPublicCatalog } from '@/lib/public-catalog'
+import { publicCatalogSelect, toPublicCatalog } from '@/lib/public-catalog'
 import { rateLimitedResponse, rateLimits } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -22,40 +22,7 @@ export async function GET(
   try {
     const catalog = await prisma.catalog.findUnique({
       where: { id: params.id },
-      select: {
-        id: true,
-        name: true,
-        clientName: true,
-        discount: true,
-        notes: true,
-        shareEnabled: true,
-        profile: {
-          select: {
-            companyName: true,
-            contactEmail: true,
-            contactPhone: true,
-            address: true,
-            logoUrl: true,
-          },
-        },
-        items: {
-          orderBy: { sortOrder: 'asc' },
-          select: {
-            id: true,
-            originalPrice: true,
-            discountedPrice: true,
-            sortOrder: true,
-            product: {
-              select: {
-                name: true,
-                sku: true,
-                imageUrl: true,
-                description: true,
-              },
-            },
-          },
-        },
-      },
+      select: { id: true, shareEnabled: true, ...publicCatalogSelect },
     })
 
     if (!catalog) {

@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { catalogSchema } from '@/lib/validations'
+import { orderBySelection } from '@/lib/catalog-layout'
 import { ZodError } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -55,6 +56,7 @@ export async function GET(
                 price: true,
                 imageUrl: true,
                 description: true,
+                category: { select: { name: true } },
               },
             },
           },
@@ -164,6 +166,12 @@ export async function PATCH(
           clientName: validatedData.clientName === '' ? null : validatedData.clientName ?? null,
           discount: validatedData.discount,
           notes: validatedData.notes === '' ? null : validatedData.notes ?? null,
+          layout: validatedData.layout,
+          groupByCategory: validatedData.groupByCategory,
+          sortMode: validatedData.sortMode,
+          showSku: validatedData.showSku,
+          showDescription: validatedData.showDescription,
+          showOriginalPrice: validatedData.showOriginalPrice,
         },
       })
 
@@ -174,7 +182,7 @@ export async function PATCH(
 
       // Create new catalog items with calculated prices
       const catalogItems = await Promise.all(
-        products.map(async (product, index) => {
+        orderBySelection(products, validatedData.productIds).map(async (product, index) => {
           const originalPrice = Number(product.price)
           const discountedPrice = originalPrice * (1 - validatedData.discount / 100)
 
@@ -206,6 +214,8 @@ export async function PATCH(
                 sku: true,
                 price: true,
                 imageUrl: true,
+                description: true,
+                category: { select: { name: true } },
               },
             },
           },

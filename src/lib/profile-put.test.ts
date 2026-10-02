@@ -58,3 +58,21 @@ describe('profileSavePayload', () => {
     )
   })
 })
+
+describe('inVatSystem', () => {
+  it('is written only when the client sent it, so an older client cannot reset the setting', () => {
+    const withoutFlag = profileSchema.parse(base)
+    expect(profilePutFields(withoutFlag, base)).not.toHaveProperty('inVatSystem')
+
+    const on = { ...base, inVatSystem: true }
+    expect(profilePutFields(profileSchema.parse(on), on).inVatSystem).toBe(true)
+
+    const off = { ...base, inVatSystem: false }
+    expect(profilePutFields(profileSchema.parse(off), off).inVatSystem).toBe(false)
+  })
+
+  it('defaults to false in the settings form', () => {
+    expect(toProfileFormValues(null).inVatSystem).toBe(false)
+    expect(toProfileFormValues({ inVatSystem: true }).inVatSystem).toBe(true)
+  })
+})

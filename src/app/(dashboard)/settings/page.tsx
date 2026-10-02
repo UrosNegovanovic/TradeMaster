@@ -203,6 +203,27 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
+                <label
+                  htmlFor="inVatSystem"
+                  className="flex cursor-pointer items-start gap-3 text-sm font-medium"
+                >
+                  <input
+                    id="inVatSystem"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4"
+                    {...register('inVatSystem')}
+                  />
+                  <span>
+                    Firma je u sistemu PDV-a
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                      Nove fakture imaju osnovicu, PDV (20%, 10% ili bez PDV) i ukupno za uplatu.
+                      Već izdate fakture se ne menjaju.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Adresa</Label>
                 <Input
                   id="address"

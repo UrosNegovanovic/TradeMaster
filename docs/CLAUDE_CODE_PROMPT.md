@@ -13,7 +13,7 @@ Radiš na TradeMaster-u (B2B SaaS za srpske veletrgovce i male magacine). Prvo p
 - UI tekstovi na srpskom (latinica), kod, komentari i commit poruke na engleskom, conventional commits.
 - Pre svakog push-a: `npm run typecheck && npm run lint && npm run test:run`. Za promenjeno ponašanje dodaj testove pored postojećih `*.test.ts`.
 - Ne diraj `BarcodeScanner.tsx`. Ne uvodi nove nazive cena (`price`, `costPrice`, `unitPrice`, `unitCost` već postoje). Novac validiraj preko `assertMoneyInput` / `MONEY_INPUT_PATTERN`.
-- Šema: nova SQL migracija u `supabase/migrations/` (naziv sa vremenskim pečatom) + izmena `prisma/schema.prisma`. Ne pokreći `prisma migrate deploy`, ne popunjavaj istorijske vrednosti izmišljenim podacima.
+- Šema: nova SQL migracija u `supabase/migrations/` (naziv sa vremenskim pečatom) + izmena `prisma/schema.prisma`. Pre `prisma migrate deploy` ili primene migracije na produkciju pitaj vlasnika; posle odobrenja možeš da ga pokreneš, ne popunjavaj istorijske vrednosti izmišljenim podacima.
 - Sve novo je po tenantu (`profileId`), svaki API ima autentifikaciju osim eksplicitno javnih ruta u `src/lib/route-access.ts`. Javni DTO nikad ne sadrži `costPrice`, zalihu ni interne ID-jeve vlasnika.
 
 ## Tačke

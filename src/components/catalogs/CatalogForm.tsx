@@ -9,10 +9,31 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProductPicker } from './ProductPicker'
 import { Product } from '@/types/product'
-import { Loader2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react'
 import React from 'react'
 import { sr } from '@/lib/ui-copy'
 import { formatRsd } from '@/lib/invoice-finance'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  CATALOG_LAYOUTS,
+  CATALOG_LAYOUT_LABELS,
+  CATALOG_SORT_LABELS,
+  CATALOG_SORT_MODES,
+  moveId,
+  readCatalogDisplay,
+  type CatalogDisplaySettings,
+  type CatalogLayout,
+  type CatalogSortMode,
+} from '@/lib/catalog-layout'
+
+type DisplayToggle = 'groupByCategory' | 'showSku' | 'showDescription' | 'showOriginalPrice'
 
 interface CatalogFormProps {
   products: Product[]
@@ -24,7 +45,7 @@ interface CatalogFormProps {
     discount?: number
     notes?: string | null
     productIds?: string[]
-  }
+  } & Partial<CatalogDisplaySettings>
 }
 
 export function CatalogForm({
@@ -59,10 +80,42 @@ export function CatalogForm({
       discount: initialData?.discount || 0,
       notes: initialData?.notes || '',
       productIds: initialProductIds,
+      ...readCatalogDisplay(initialData),
     },
   })
 
   const discount = watch('discount')
+  const layout = watch('layout')
+  const sortMode = watch('sortMode')
+  const toggles: Record<DisplayToggle, boolean> = {
+    groupByCategory: watch('groupByCategory'),
+    showSku: watch('showSku'),
+    showDescription: watch('showDescription'),
+    showOriginalPrice: watch('showOriginalPrice'),
+  }
+  const toggleOptions: Array<{ key: DisplayToggle; label: string; help?: string }> = [
+    { key: 'groupByCategory', label: sr.catalog.groupByCategory, help: sr.catalog.groupByCategoryHelp },
+    { key: 'showSku', label: sr.catalog.showSku },
+    { key: 'showDescription', label: sr.catalog.showDescription },
+    { key: 'showOriginalPrice', label: sr.catalog.showOriginalPrice },
+  ]
+
+  const renderToggle = ({ key, label, help }: (typeof toggleOptions)[number]) => (
+    <div key={key} className="flex items-start gap-3">
+      <Checkbox
+        id={`catalog-${key}`}
+        checked={toggles[key]}
+        onCheckedChange={(checked) => setValue(key, checked === true, { shouldDirty: true })}
+        className="mt-0.5"
+      />
+      <div className="grid gap-0.5">
+        <Label htmlFor={`catalog-${key}`} className="font-normal">
+          {label}
+        </Label>
+        {help && <p className="text-xs text-muted-foreground">{help}</p>}
+      </div>
+    </div>
+  )
 
   // Track previous selectedProductIds to prevent unnecessary setValue calls
   const prevSelectedProductIdsRef = React.useRef<string>(
@@ -79,7 +132,8 @@ export function CatalogForm({
 
   // Update form value when selected products change (only if actually changed)
   React.useEffect(() => {
-    const currentIds = JSON.stringify(selectedProductIds.sort())
+    // Order is the manual catalog order, so compare without sorting
+    const currentIds = JSON.stringify(selectedProductIds)
     const prevIds = prevSelectedProductIdsRef.current
     if (currentIds !== prevIds) {
       setValue('productIds', selectedProductIds, { shouldValidate: true })
@@ -90,7 +144,7 @@ export function CatalogForm({
 
   // Sync selected products when initialData.productIds changes (for edit mode)
   React.useEffect(() => {
-    const currentInitialIds = JSON.stringify(initialProductIds.sort())
+    const currentInitialIds = JSON.stringify(initialProductIds)
     // Only update if the initial productIds actually changed
     if (currentInitialIds !== prevInitialProductIdsRef.current) {
       setSelectedProductIds(initialProductIds)
@@ -196,6 +250,107 @@ export function CatalogForm({
               {errors.productIds.message}
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {sortMode === 'MANUAL' && selectedProductIds.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{sr.catalog.manualOrder}</CardTitle>
+            <CardDescription>{sr.catalog.manualOrderDescription}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="divide-y rounded-md border">
+              {selectedProductIds.map((productId, index) => {
+                const product = products.find((p) => p.id === productId)
+                if (!product) return null
+                return (
+                  <li key={productId} className="flex items-center gap-2 px-3 py-1.5">
+                    <span className="w-6 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
+                      {index + 1}.
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">{product.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                      disabled={index === 0}
+                      aria-label={`${sr.catalog.moveUp}: ${product.name}`}
+                      onClick={() => setSelectedProductIds((ids) => moveId(ids, productId, -1))}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                      disabled={index === selectedProductIds.length - 1}
+                      aria-label={`${sr.catalog.moveDown}: ${product.name}`}
+                      onClick={() => setSelectedProductIds((ids) => moveId(ids, productId, 1))}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </li>
+                )
+              })}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{sr.catalog.display}</CardTitle>
+          <CardDescription>{sr.catalog.displayDescription}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="catalog-layout">{sr.catalog.layout}</Label>
+              <Select
+                value={layout}
+                onValueChange={(value) => setValue('layout', value as CatalogLayout, { shouldDirty: true })}
+              >
+                <SelectTrigger id="catalog-layout" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATALOG_LAYOUTS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {CATALOG_LAYOUT_LABELS[option]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="catalog-sort">{sr.catalog.sortMode}</Label>
+              <Select
+                value={sortMode}
+                onValueChange={(value) => setValue('sortMode', value as CatalogSortMode, { shouldDirty: true })}
+              >
+                <SelectTrigger id="catalog-sort" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATALOG_SORT_MODES.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {CATALOG_SORT_LABELS[option]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {renderToggle(toggleOptions[0])}
+
+          <fieldset className="space-y-3">
+            <legend className="mb-2 text-sm font-medium">{sr.catalog.visibleFields}</legend>
+            {toggleOptions.slice(1).map(renderToggle)}
+          </fieldset>
         </CardContent>
       </Card>
 

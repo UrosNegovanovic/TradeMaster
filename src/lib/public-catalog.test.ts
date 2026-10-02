@@ -5,6 +5,7 @@ import {
   getSafePhoneHref,
   toPublicCatalog,
 } from './public-catalog'
+import { DEFAULT_CATALOG_DISPLAY } from './catalog-layout'
 
 describe('public catalog links', () => {
   it('accepts only an internal catalog share path with a 64-character token', () => {
@@ -50,6 +51,7 @@ describe('toPublicCatalog', () => {
             sku: '001',
             imageUrl: 'https://cdn.example/kafa.png',
             description: '250g',
+            category: { name: 'Napici' },
           },
         },
       ],
@@ -61,6 +63,7 @@ describe('toPublicCatalog', () => {
       clientName: 'Kafana',
       discount: 10,
       notes: 'Samo za ovog klijenta',
+      display: DEFAULT_CATALOG_DISPLAY,
       profile: {
         companyName: 'Veletrgovina',
         contactEmail: 'prodaja@example.com',
@@ -79,6 +82,7 @@ describe('toPublicCatalog', () => {
             sku: '001',
             imageUrl: 'https://cdn.example/kafa.png',
             description: '250g',
+            categoryName: 'Napici',
           },
         },
       ],
@@ -112,5 +116,48 @@ describe('toPublicCatalog', () => {
     })
 
     expect(publicCatalog.items[0].product).toBeNull()
+  })
+
+  it('passes display settings and drops fields the owner hid', () => {
+    const publicCatalog = toPublicCatalog({
+      id: 'cat-3',
+      name: 'Cenovnik',
+      clientName: null,
+      discount: 0,
+      notes: null,
+      layout: 'LIST',
+      groupByCategory: true,
+      sortMode: 'NAME',
+      showSku: false,
+      showDescription: false,
+      showOriginalPrice: false,
+      profile: { companyName: 'Firma', contactEmail: null, contactPhone: null, address: null, logoUrl: null },
+      items: [
+        {
+          id: 'item-1',
+          originalPrice: 100,
+          discountedPrice: 100,
+          sortOrder: 0,
+          product: { name: 'Kafa', sku: 'SECRET-SKU', imageUrl: null, description: 'opis', category: null },
+        },
+      ],
+    })
+
+    expect(publicCatalog.display).toEqual({
+      layout: 'LIST',
+      groupByCategory: true,
+      sortMode: 'NAME',
+      showSku: false,
+      showDescription: false,
+      showOriginalPrice: false,
+    })
+    expect(publicCatalog.items[0].product).toEqual({
+      name: 'Kafa',
+      sku: null,
+      imageUrl: null,
+      description: null,
+      categoryName: null,
+    })
+    expect(JSON.stringify(publicCatalog)).not.toContain('SECRET-SKU')
   })
 })

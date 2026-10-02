@@ -11,6 +11,9 @@ import {
 } from '@react-pdf/renderer'
 import type { Profile } from '@/types/profile'
 import { summarizeVat } from '@/lib/invoice-vat'
+import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
+
+registerPdfFonts()
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
@@ -18,7 +21,7 @@ const styles = StyleSheet.create({
     padding: 40,
     paddingBottom: 120, // Add bottom padding for footer
     fontSize: 10,
-    fontFamily: 'Helvetica',
+    fontFamily: PDF_FONT_FAMILY,
     backgroundColor: '#ffffff',
     position: 'relative',
   },

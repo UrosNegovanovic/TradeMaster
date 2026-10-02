@@ -15,7 +15,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, Edit, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
-import { ProductImage } from '@/components/shared/ProductImage'
+import { CatalogItemsView } from '@/components/catalogs/CatalogItemsView'
+import {
+  arrangeCatalogItems,
+  CATALOG_LAYOUT_LABELS,
+  CATALOG_SORT_LABELS,
+  countSectionItems,
+  paginateSections,
+  readCatalogDisplay,
+} from '@/lib/catalog-layout'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { CatalogSharing } from '@/components/catalogs/CatalogSharing'
@@ -43,20 +51,11 @@ export default function CatalogDetailsPage() {
   const catalogId = params.id as string
   const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(12)
   const [currentPage, setCurrentPage] = useState(1)
-  const [pdfItemsPerPage, setPdfItemsPerPage] = useState<4 | 12>(4)
 
   const { data: catalog, isLoading, error } = useQuery({
     queryKey: ['catalog', catalogId],
     queryFn: () => fetchCatalog(catalogId),
   })
-
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price
-    return new Intl.NumberFormat('sr-RS', {
-      style: 'currency',
-      currency: 'RSD',
-    }).format(numPrice)
-  }
 
   const formatDiscount = (discount: number | string | { toString(): string }) => {
     const numDiscount = typeof discount === 'string' 
@@ -67,9 +66,14 @@ export default function CatalogDetailsPage() {
     return `${numDiscount.toFixed(2)}%`
   }
 
-  // Calculate pagination for web view
-  const items = catalog?.items || []
-  const totalItems = items.length
+  // Preview uses the same layout, order and grouping as the PDF and the public link
+  const display = readCatalogDisplay(catalog)
+  const sections = useMemo(
+    () => arrangeCatalogItems(catalog?.items ?? [], display, (item) => item.product?.category?.name),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [catalog, display.sortMode, display.groupByCategory]
+  )
+  const totalItems = countSectionItems(sections)
   const itemsPerPageNum = itemsPerPage === 'all' ? totalItems : itemsPerPage
   const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(totalItems / itemsPerPageNum)
   
@@ -86,14 +90,10 @@ export default function CatalogDetailsPage() {
   }
 
   // Get current page items for web view
-  const currentPageItems = useMemo(() => {
-    if (itemsPerPage === 'all') {
-      return items
-    }
-    const startIndex = (currentPage - 1) * itemsPerPageNum
-    const endIndex = startIndex + itemsPerPageNum
-    return items.slice(startIndex, endIndex)
-  }, [items, currentPage, itemsPerPage, itemsPerPageNum])
+  const currentSections = useMemo(
+    () => paginateSections(sections, currentPage, itemsPerPage),
+    [sections, currentPage, itemsPerPage]
+  )
 
   if (isLoading) {
     return (
@@ -141,6 +141,10 @@ export default function CatalogDetailsPage() {
               Klijent: {catalog.clientName}
             </p>
           )}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {CATALOG_LAYOUT_LABELS[display.layout]} · {CATALOG_SORT_LABELS[display.sortMode]}
+            {display.groupByCategory ? ' · po kategorijama' : ''}
+          </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
@@ -149,26 +153,7 @@ export default function CatalogDetailsPage() {
               Izmeni
             </Link>
           </Button>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <span className="text-sm text-muted-foreground">PDF:</span>
-            <Select
-              value={pdfItemsPerPage.toString()}
-              onValueChange={(value) => setPdfItemsPerPage(value === '4' ? 4 : 12)}
-            >
-              <SelectTrigger className="h-11 w-full sm:w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="4">4 per page (Large)</SelectItem>
-                <SelectItem value="12">12 per page (Compact)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <CatalogPdfDownload
-            catalog={catalog}
-            itemsPerPage={itemsPerPage}
-            pdfItemsPerPage={pdfItemsPerPage}
-          />
+          <CatalogPdfDownload catalog={catalog} />
         </div>
       </div>
 
@@ -256,50 +241,8 @@ export default function CatalogDetailsPage() {
         <CardContent>
           {catalog.items && catalog.items.length > 0 ? (
             <>
-              <div className="space-y-4">
-                {currentPageItems.map((item) => {
-                const product = item.product
-                if (!product) return null
+              <CatalogItemsView sections={currentSections} display={display} />
 
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <ProductImage
-                      src={product.imageUrl}
-                      alt={product.name}
-                      size={64}
-                      className="shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-lg mb-1">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        SKU: <code className="bg-muted px-1 rounded">{product.sku}</code>
-                      </p>
-                      {product.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {product.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-sm line-through text-muted-foreground">
-                            {formatPrice(Number(item.originalPrice))}
-                          </p>
-                          <p className="text-xl font-bold text-primary">
-                            {formatPrice(Number(item.discountedPrice))}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-              </div>
-              
               {/* Pagination Controls */}
               {itemsPerPage !== 'all' && totalPages > 1 && (
                 <nav

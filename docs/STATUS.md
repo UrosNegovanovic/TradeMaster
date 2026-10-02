@@ -10,8 +10,10 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 - Settings logo persists after save.
 - Purchase price rules: `costPrice` required on ProductForm, invoice cost snapshots.
 - Optional sale price and Clerk-authenticated product image upload.
-- PDV on invoices (branch `feat/pdv-na-fakturi`, draft PR): company setting "u sistemu PDV-a", per-line rate snapshot (0/10/20), osnovica + PDV per rate + total on form, detail and PDF, finance on osnovica. **Needs migration `20261002100000_invoice_vat.sql` applied in Supabase before deploy.**
-- Onboarding (roadmap #2, draft PR): "Prvi koraci" checklist on Početna (podaci firme, prvi proizvod, prva faktura) derived from data, no new table; empty states on Asortiman, Katalozi and Fakture point to the next step (add products first). No demo data.
+- PDV on invoices (#53): company setting "u sistemu PDV-a", per-line rate snapshot (0/10/20), osnovica + PDV per rate + total on form, detail and PDF, finance on osnovica. Migration `invoice_vat` applied in production.
+- Onboarding (roadmap #2, #54): "Prvi koraci" checklist on Početna (podaci firme, prvi proizvod, prva faktura) derived from data, no new table; empty states on Asortiman, Katalozi and Fakture point to the next step (add products first). No demo data.
+- Invoice and catalog sharing (roadmap #3, #55): revocable invoice link, WhatsApp/Viber/mail buttons. Migration `invoice_sharing` applied.
+- Advanced catalog (#56): saved layout (grid 4/12 or list), category grouping, sort, visible fields, public-link search and category filter, "Cena na upit", PDF font with č/ć/đ (catalog and invoice). Migration `catalog_display_settings` applied 2026-10-02.
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
 
 ## Blocked on the owner
@@ -36,4 +38,4 @@ No paid ads until the first three are done.
 - `(profileId, sku)` is not unique: legacy daily-batch product rows remain (see `prisma/schema.prisma`). Needs a consolidation migration before a unique index.
 - `reserveNextInvoiceNumber` uses the server-clock year (`getFullYear()`), not Europe/Belgrade, so invoices issued just after midnight on 1 Jan can get the wrong year prefix.
 - Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening.
-- Baseline verified 2026-10-01: typecheck clean, lint 3 warnings, 254/254 unit tests.
+- Baseline verified 2026-10-02 (catalog PR): typecheck clean, lint 5 warnings, 316/316 unit tests.

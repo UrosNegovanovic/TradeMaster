@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { PublicCatalog } from '@/types/public-catalog'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -12,10 +13,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Loader2, Image as ImageIcon } from 'lucide-react'
+import { Loader2, Image as ImageIcon, Search } from 'lucide-react'
 import Image from 'next/image'
-import { ProductImage } from '@/components/shared/ProductImage'
 import { getSafeEmailHref, getSafePhoneHref } from '@/lib/public-catalog'
+import {
+  arrangeCatalogItems,
+  countSectionItems,
+  filterCatalogItems,
+  listCatalogCategories,
+  paginateSections,
+  readCatalogDisplay,
+} from '@/lib/catalog-layout'
+import { CatalogItemsView } from '@/components/catalogs/CatalogItemsView'
+import { cn } from '@/lib/utils'
+import { sr } from '@/lib/ui-copy'
+
+type PublicItem = PublicCatalog['items'][number]
+const categoryOf = (item: PublicItem) => item.product?.categoryName
 
 async function fetchCatalog(id: string): Promise<PublicCatalog> {
   // Token links are the share contract. Catalog-id links only work while shareEnabled is on.
@@ -38,21 +52,30 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
     queryFn: () => fetchCatalog(params.id),
   })
 
-  // Calculate pagination for web view
-  const items = catalog?.items || []
-  const totalItems = items.length
-  const itemsPerPageNum = itemsPerPage === 'all' ? totalItems : itemsPerPage
-  const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(totalItems / itemsPerPageNum)
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<string | null>(null)
 
-  // Get current page items for web view
-  const currentPageItems = useMemo(() => {
-    if (itemsPerPage === 'all') {
-      return items
-    }
-    const startIndex = (currentPage - 1) * itemsPerPageNum
-    const endIndex = startIndex + itemsPerPageNum
-    return items.slice(startIndex, endIndex)
-  }, [items, currentPage, itemsPerPage, itemsPerPageNum])
+  const display = readCatalogDisplay(catalog?.display)
+  const items = useMemo(() => catalog?.items ?? [], [catalog])
+  const categories = useMemo(() => listCatalogCategories(items, categoryOf), [items])
+
+  // Search and category chips narrow the list; layout, order and grouping come from the owner's settings.
+  const sections = useMemo(() => {
+    const filtered = filterCatalogItems(items, { query, category }, (item) => ({
+      text: [item.product?.name, item.product?.sku, item.product?.description],
+      category: categoryOf(item),
+    }))
+    return arrangeCatalogItems(filtered, display, categoryOf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, query, category, display.sortMode, display.groupByCategory])
+
+  const totalItems = countSectionItems(sections)
+  const itemsPerPageNum = itemsPerPage === 'all' ? totalItems : itemsPerPage
+  const totalPages = itemsPerPage === 'all' ? 1 : Math.max(1, Math.ceil(totalItems / itemsPerPageNum))
+  const currentSections = useMemo(
+    () => paginateSections(sections, currentPage, itemsPerPage),
+    [sections, currentPage, itemsPerPage]
+  )
 
   const isValidImageUrl = (url: string | null | undefined): boolean => {
     if (!url || url.trim() === '') return false
@@ -62,14 +85,6 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
     } catch {
       return false
     }
-  }
-
-  const formatPrice = (price: number | string) => {
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price
-    return new Intl.NumberFormat('sr-RS', {
-      style: 'currency',
-      currency: 'RSD',
-    }).format(numPrice)
   }
 
   if (isLoading) {
@@ -201,61 +216,65 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
               </div>
             </div>
           </div>
-          <div className="mt-4">
-            <span className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-semibold">
-              {Number(catalog.discount).toFixed(0)}% popusta
-            </span>
-          </div>
+          {Number(catalog.discount) > 0 && (
+            <div className="mt-4">
+              <span className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-semibold">
+                {Number(catalog.discount).toFixed(0)}% popusta
+              </span>
+            </div>
+          )}
+
+          {items.length > 0 && (
+            <div className="mt-6 space-y-3">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value)
+                    setCurrentPage(1)
+                  }}
+                  placeholder={sr.catalog.searchPlaceholder}
+                  aria-label={sr.catalog.searchPlaceholder}
+                  className="h-11 pl-9"
+                />
+              </div>
+              {categories.length > 1 && (
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Kategorije">
+                  {[null, ...categories].map((name) => (
+                    <button
+                      key={name ?? 'all'}
+                      type="button"
+                      aria-pressed={category === name}
+                      onClick={() => {
+                        setCategory(name)
+                        setCurrentPage(1)
+                      }}
+                      className={cn(
+                        'min-h-9 rounded-full border px-4 text-sm font-medium transition-colors',
+                        category === name
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'bg-background hover:bg-muted'
+                      )}
+                    >
+                      {name ?? sr.catalog.allCategories}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Products Grid */}
-        {catalog.items && catalog.items.length > 0 ? (
+        {/* Products */}
+        {items.length > 0 ? (
           <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {currentPageItems.map((item) => {
-              const product = item.product
-              if (!product) return null
-
-              return (
-                <Card key={item.id}>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {/* Product Image */}
-                      <ProductImage
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="h-48 w-full"
-                        imageClassName="object-contain"
-                      />
-
-                      {/* Product Info */}
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          SKU: <code className="bg-muted px-1 rounded">{product.sku}</code>
-                        </p>
-                        {product.description && (
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                            {product.description}
-                          </p>
-                        )}
-
-                        {/* Pricing */}
-                        <div className="space-y-1">
-                          <p className="text-sm line-through text-muted-foreground">
-                            {formatPrice(Number(item.originalPrice))}
-                          </p>
-                          <p className="text-xl font-bold text-primary">
-                            {formatPrice(Number(item.discountedPrice))}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-            </div>
+            {totalItems === 0 ? (
+              <p className="py-12 text-center text-muted-foreground">{sr.catalog.noResults}</p>
+            ) : (
+              <CatalogItemsView sections={currentSections} display={display} />
+            )}
 
             {/* Pagination Controls */}
             {itemsPerPage !== 'all' && totalPages > 1 && (

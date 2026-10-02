@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
+import { InvoiceExport } from '@/components/invoices/InvoiceExport'
 import { cn } from '@/lib/utils'
 import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
@@ -340,6 +341,12 @@ export default function InvoicesPage() {
               </Button>
             </CardContent>
           </Card>
+        </div>
+      ) : null}
+
+      {hasAnyInvoices ? (
+        <div className="mb-6">
+          <InvoiceExport />
         </div>
       ) : null}
 

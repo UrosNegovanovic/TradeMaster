@@ -65,6 +65,8 @@ export default defineConfig({
       'src/app/api/categories/route.test.ts',
       'src/app/api/clients/route.test.ts',
       'src/lib/client-fill.test.ts',
+      'src/lib/invoice-export.test.ts',
+      'src/app/api/invoices/export/route.test.ts',
       'src/test/require-test-database.test.ts',
     ],
     exclude: [

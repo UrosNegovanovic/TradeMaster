@@ -6,6 +6,7 @@ import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "sonner"
 import { AFTER_AUTH_PATH } from "@/lib/after-auth"
+import { VercelAnalytics } from "@/components/analytics/VercelAnalytics"
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] })
 
@@ -119,6 +120,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Script id="tm-pwa-capture" src="/pwa-capture.js" strategy="beforeInteractive" />
         <Providers>{children}</Providers>
+        <VercelAnalytics />
         <Toaster
           position="top-right"
           offset={16}

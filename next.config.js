@@ -130,6 +130,8 @@ const nextConfig = {
 
   experimental: {
     serverComponentsExternalPackages: ['xlsx'],
+    // Lets src/instrumentation.ts load Sentry on the server (Next 14).
+    instrumentationHook: true,
   },
 
   webpack: (config) => {
@@ -141,4 +143,16 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Sentry is wired in only when a DSN is configured, so builds without it stay exactly as before.
+if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  const { withSentryConfig } = require('@sentry/nextjs')
+  module.exports = withSentryConfig(nextConfig, {
+    silent: true,
+    telemetry: false,
+    disableLogger: true,
+    // Source maps upload only when SENTRY_AUTH_TOKEN (+ SENTRY_ORG, SENTRY_PROJECT) are set.
+    sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  })
+} else {
+  module.exports = nextConfig
+}

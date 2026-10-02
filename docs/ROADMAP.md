@@ -15,7 +15,7 @@ Urađeno i spojeno u `main`:
 | 3 | Deljenje fakture i kataloga (link, WhatsApp/Viber, mejl) | #55 | Opozivi link za fakturu; migracija `invoice_sharing` primenjena. |
 | K | **Napredni katalog** (raspored Mreža 4/12 ili Lista, grupisanje po kategoriji, redosled ručno/naziv/cena, izbor polja, pretraga i kategorije na javnom linku, "Cena na upit", PDF font sa č/ć/đ) | #56 | Migracija `catalog_display_settings` primenjena u produkciji 2026-10-02. |
 
-**Sledeće: #8 analitika i greške, #11 higijena, #9 probni period.** Urađeni su #4 Lista kupaca (#57), #5 izvoz (#58), #6 IPS QR (#59) i #7 upozorenja.
+**Sledeće: #11 higijena, #9 probni period.** Urađeni su #4 Lista kupaca (#57), #5 izvoz (#58), #6 IPS QR (#59), #7 upozorenja (#60) i #8 analitika i greške.
 
 Predlozi za katalog koji nisu urađeni (za kasnije, po vrednosti): cene sa/bez PDV-a i popust po stavci ili kategoriji; upit sa javnog linka (kupac upiše količine i pošalje poruku, bez korpe i plaćanja, traži odobrenje vlasnika jer je blizu korpe); naslovna strana i boja firme, datum važenja; dugme "osveži cene" i dupliranje kataloga; broj otvaranja linka; QR kod ka linku na PDF-u.
 
@@ -34,7 +34,7 @@ Skener barkodova, asortiman sa nabavnom cenom, magacin (ulaz/izlaz, uvoz, istori
 | 5 ✅ | **Kupcu-prijateljski izvoz** (CSV/XLSX faktura i stanja za knjigovođu) | Visoka | S | Knjigovođa je glavni uticajni faktor u odluci malih firmi. Magacin već ima CSV; dodati fakture. |
 | 6 ✅ | **Uplatnica / poziv na broj + QR kod (NBS IPS QR) na fakturi** | Visoka | M | Brže plaćanje, jasna razlika u odnosu na tabele. Zahteva žiro-račun (već u podešavanjima). |
 | 7 ✅ | **Pametna upozorenja** (niska zaliha na dashboardu, neplaćene fakture posle roka) | Srednja | S | `low-stock` API već postoji; dodati karticu "Kasni naplata". Daje razlog za dnevno otvaranje. |
-| 8 | **Analitika i praćenje grešaka** (Vercel Analytics + Sentry, bez ličnih podataka u događajima) | Srednja | S | Bez toga ne znate gde korisnici odustaju posle lansiranja. |
+| 8 ✅ | **Analitika i praćenje grešaka** (Vercel Analytics + Sentry, bez ličnih podataka u događajima) | Srednja | S | Bez toga ne znate gde korisnici odustaju posle lansiranja. |
 | 9 | **Naplata** (ručna: zahtev za fakturu + datum isteka u profilu; Stripe tek kasnije) | Srednja | M | Landing obećava 30 EUR / 60 dana. Potrebni su bar datum isteka probnog perioda i baner. Ne obećavati otkazivanje dok ne postoji. |
 | 10 | **Landing i SEO za domen** (kanonski URL, sitemap, 3 stranice po industriji, FAQ, demo video) | Srednja | M | Posle kupovine domena. `SEO_DEVOPS_AUDIT.md` je zastareo. |
 | 11 | **Higijena pred lansiranje** (godina broja fakture po Europe/Belgrade; trajni rate limit, npr. Upstash ili Vercel KV; test na pravom telefonu: kamera, zvuk, instalacija PWA) | Srednja | S | Sitni, ali ozbiljni rizici nađeni u kodu: vidi `docs/STATUS.md`. |

@@ -68,6 +68,8 @@ export default defineConfig({
       'src/lib/invoice-export.test.ts',
       'src/lib/ips-qr.test.ts',
       'src/lib/overdue-invoices.test.ts',
+      'src/lib/analytics.test.ts',
+      'src/lib/sentry-scrub.test.ts',
       'src/app/api/invoices/export/route.test.ts',
       'src/test/require-test-database.test.ts',
     ],

@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
+import { InvoiceSharing } from '@/components/invoices/InvoiceSharing'
+import { summarizeVat } from '@/lib/invoice-vat'
 import { invoiceStatusLabel, invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
@@ -78,6 +80,8 @@ export default function InvoiceDetailPage() {
     )
   }
 
+  const vat = invoice.vatEnabled ? summarizeVat(invoice.items ?? []) : null
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -105,6 +109,13 @@ export default function InvoiceDetailPage() {
           <InvoicePdfDownload invoice={invoice} />
         </div>
       </div>
+
+      <InvoiceSharing
+        invoiceId={invoice.id}
+        invoiceNumber={invoice.invoiceNumber}
+        status={invoice.status}
+        companyName={invoice.profile?.companyName}
+      />
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Invoice Details */}
@@ -163,9 +174,23 @@ export default function InvoiceDetailPage() {
                 <span className="text-muted-foreground">Items:</span>
                 <span>{invoice.items?.length || 0}</span>
               </div>
+              {vat ? (
+                <div className="space-y-1 border-t pt-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Osnovica:</span>
+                    <span>{formatCurrency(vat.base)}</span>
+                  </div>
+                  {vat.groups.map((group) => (
+                    <div key={group.rate} className="flex justify-between">
+                      <span className="text-muted-foreground">PDV {group.rate}%:</span>
+                      <span>{formatCurrency(group.vat)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               <div className="pt-3 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Total:</span>
+                  <span className="text-lg font-semibold">{vat ? 'Ukupno za uplatu:' : 'Total:'}</span>
                   <span className="text-2xl font-bold">
                     {formatCurrency(Number(invoice.totalAmount))}
                   </span>
@@ -199,6 +224,11 @@ export default function InvoiceDetailPage() {
                   <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
                     Discount
                   </th>
+                  {vat ? (
+                    <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
+                      PDV
+                    </th>
+                  ) : null}
                   <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
                     Total
                   </th>
@@ -217,6 +247,9 @@ export default function InvoiceDetailPage() {
                       <td className="py-3 px-4 text-right">
                         {discount > 0 ? `${discount.toFixed(2)}%` : '-'}
                       </td>
+                      {vat ? (
+                        <td className="py-3 px-4 text-right">{Number(item.vatRate ?? 0)}%</td>
+                      ) : null}
                       <td className="py-3 px-4 text-right font-semibold">
                         {formatCurrency(Number(item.total))}
                       </td>

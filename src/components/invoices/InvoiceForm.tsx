@@ -11,6 +11,7 @@ import { Product } from '@/types/product'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
+import { DEFAULT_VAT_RATE, VAT_RATE_OPTIONS, summarizeVat } from '@/lib/invoice-vat'
 import {
   clampDiscountPercent,
   lineDiscountAmount,
@@ -23,6 +24,8 @@ import {
 
 interface InvoiceFormProps {
   products: Product[]
+  /** Company is in the PDV system (new invoices and drafts). Issued invoices keep their own snapshot. */
+  inVatSystem?: boolean
   onSubmit: (data: InvoiceCreateInput) => Promise<void>
   isLoading?: boolean
   initialData?: any // Invoice data for edit mode
@@ -35,15 +38,31 @@ interface InvoiceItemRow {
   quantity: number
   unitPrice: number
   discount: number
+  vatRate: number
   total: number
 }
 
 const INVOICE_ITEM_TRACKS =
   'md:grid-cols-[minmax(0,2.8fr)_minmax(5.25rem,0.55fr)_minmax(5.75rem,0.6fr)_minmax(5.75rem,0.6fr)_minmax(6.5rem,0.65fr)_auto]'
+const INVOICE_ITEM_TRACKS_VAT =
+  'md:grid-cols-[minmax(0,2.6fr)_minmax(5rem,0.5fr)_minmax(5.5rem,0.6fr)_minmax(5.5rem,0.55fr)_minmax(5.25rem,0.5fr)_minmax(6.5rem,0.65fr)_auto]'
 
 const mobileFieldLabelClass = 'mb-1.5 block text-sm leading-snug tracking-normal md:hidden'
 
-export function InvoiceForm({ products, onSubmit, isLoading = false, initialData }: InvoiceFormProps) {
+export function InvoiceForm({
+  products,
+  inVatSystem = false,
+  onSubmit,
+  isLoading = false,
+  initialData,
+}: InvoiceFormProps) {
+  // An issued invoice keeps the PDV setting it was issued with; a draft/new invoice follows the company.
+  const vatEnabled =
+    initialData && initialData.status !== InvoiceStatus.DRAFT
+      ? initialData.vatEnabled === true
+      : inVatSystem
+  const defaultVatRate = vatEnabled ? DEFAULT_VAT_RATE : 0
+  const itemTracks = vatEnabled ? INVOICE_ITEM_TRACKS_VAT : INVOICE_ITEM_TRACKS
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [dueDate, setDueDate] = useState(() => {
     // Default to 30 days from now
@@ -55,7 +74,16 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
   const [clientAddress, setClientAddress] = useState('')
   const [clientPib, setClientPib] = useState('')
   const [items, setItems] = useState<InvoiceItemRow[]>([
-    { id: '1', productId: null, productName: '', quantity: 1, unitPrice: 0, discount: 0, total: 0 },
+    {
+      id: '1',
+      productId: null,
+      productName: '',
+      quantity: 1,
+      unitPrice: 0,
+      discount: 0,
+      vatRate: inVatSystem ? DEFAULT_VAT_RATE : 0,
+      total: 0,
+    },
   ])
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -77,6 +105,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
             quantity: item.quantity,
             unitPrice: Number(item.unitPrice),
             discount: Number(item.discount || 0),
+            vatRate: Number(item.vatRate ?? 0),
             total: lineTotal(
               Number(item.quantity) || 1,
               Number(item.unitPrice),
@@ -89,9 +118,14 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
   }, [initialData])
 
   // Calculate grand total
-  const grandTotal = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.total, 0)
-  }, [items])
+  const vatSummary = useMemo(
+    () =>
+      summarizeVat(
+        items.map((item) => ({ total: item.total, vatRate: vatEnabled ? item.vatRate : 0 }))
+      ),
+    [items, vatEnabled]
+  )
+  const grandTotal = vatSummary.total
 
   const productsById = useMemo(() => {
     return new Map(products.map((product) => [product.id, product]))
@@ -149,7 +183,16 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
     const newId = Date.now().toString()
     setItems([
       ...items,
-      { id: newId, productId: null, productName: '', quantity: 1, unitPrice: 0, discount: 0, total: 0 },
+      {
+        id: newId,
+        productId: null,
+        productName: '',
+        quantity: 1,
+        unitPrice: 0,
+        discount: 0,
+        vatRate: defaultVatRate,
+        total: 0,
+      },
     ])
   }
 
@@ -207,6 +250,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         discount: item.discount,
+        ...(vatEnabled ? { vatRate: item.vatRate } : {}),
       })),
     }
 
@@ -243,6 +287,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
         discount: Number(item.discount),
+        vatRate: vatEnabled ? Number(item.vatRate) : 0,
         total: 0,
       })),
     }
@@ -343,13 +388,14 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
           <div className="space-y-4">
             {/* Desktop Table Header */}
             <div
-              className={`hidden gap-3 border-b pb-2 text-sm font-medium leading-snug tracking-normal text-muted-foreground md:grid ${INVOICE_ITEM_TRACKS}`}
+              className={`hidden gap-3 border-b pb-2 text-sm font-medium leading-snug tracking-normal text-muted-foreground md:grid ${itemTracks}`}
             >
               <div>Proizvod</div>
               <div>Količina</div>
-              <div>Jedinična cena</div>
+              <div>{vatEnabled ? 'Cena bez PDV' : 'Jedinična cena'}</div>
               <div>Popust (%)</div>
-              <div>Ukupno</div>
+              {vatEnabled ? <div>PDV</div> : null}
+              <div>{vatEnabled ? 'Iznos bez PDV' : 'Ukupno'}</div>
               <div></div>
             </div>
 
@@ -361,7 +407,7 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
               return (
               <div
                 key={item.id}
-                className={`grid grid-cols-1 gap-3 border-b pb-4 md:items-start md:border-0 md:pb-0 ${INVOICE_ITEM_TRACKS}`}
+                className={`grid grid-cols-1 gap-3 border-b pb-4 md:items-start md:border-0 md:pb-0 ${itemTracks}`}
               >
                 <div className="min-w-0">
                   <Label className={mobileFieldLabelClass}>Proizvod</Label>
@@ -442,8 +488,27 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                       </p>
                     ) : null}
                   </div>
+                  {vatEnabled ? (
+                    <div className="min-w-0">
+                      <Label className={mobileFieldLabelClass}>PDV</Label>
+                      <select
+                        aria-label="Stopa PDV-a"
+                        className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+                        value={item.vatRate}
+                        onChange={(e) => updateItem(item.id, 'vatRate', Number(e.target.value))}
+                      >
+                        {VAT_RATE_OPTIONS.map((rate) => (
+                          <option key={rate} value={rate}>
+                            {rate === 0 ? 'Bez PDV' : `${rate}%`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
                   <div className="flex min-w-0 flex-col justify-center">
-                    <Label className={mobileFieldLabelClass}>Ukupno</Label>
+                    <Label className={mobileFieldLabelClass}>
+                      {vatEnabled ? 'Iznos bez PDV' : 'Ukupno'}
+                    </Label>
                     {item.discount > 0 ? (
                       <span className="text-xs text-muted-foreground line-through">
                         {formatCurrency(subtotal)}
@@ -486,9 +551,25 @@ export function InvoiceForm({ products, onSubmit, isLoading = false, initialData
                 </p>
               </div>
             ) : null}
+            {vatEnabled ? (
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Osnovica</span>
+                  <span className="tabular-nums">{formatCurrency(vatSummary.base)}</span>
+                </div>
+                {vatSummary.groups.map((group) => (
+                  <div key={group.rate} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      {group.rate === 0 ? 'Bez PDV' : `PDV ${group.rate}%`}
+                    </span>
+                    <span className="tabular-nums">{formatCurrency(group.vat)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="flex items-start justify-between gap-3">
               <span className="text-base font-semibold leading-snug tracking-normal sm:text-lg">
-                Ukupno
+                {vatEnabled ? 'Ukupno za uplatu' : 'Ukupno'}
               </span>
               <span className="text-xl font-bold tabular-nums sm:text-2xl">
                 {formatCurrency(grandTotal)}

@@ -8,9 +8,9 @@ import {
   MONEY_MAX,
   UNIT_PRICE_MIN,
   calculateItemTotal,
+  calculateVatBreakdown,
   hasAllowedMoneyScale,
   isWithinMoneyRange,
-  sumRoundedItemTotals,
   uniqueProductIds,
 } from '@/lib/invoice-totals'
 import {
@@ -108,11 +108,22 @@ export type ComputedInvoiceItem = {
   quantity: number
   unitPrice: Decimal
   discount: Decimal
+  vatRate: number
   total: Decimal
 }
 
-export function computeInvoiceAmounts(items: InvoiceWriteInput['items']): {
+/**
+ * Line totals are excluding PDV. When the company is not in the PDV system every line is stored
+ * with vatRate 0 whatever the client sent, so the server decides, not the form.
+ * `totalAmount` is the amount payable (osnovica + PDV); `subtotal` is the osnovica.
+ */
+export function computeInvoiceAmounts(
+  items: InvoiceWriteInput['items'],
+  vatEnabled = false
+): {
   items: ComputedInvoiceItem[]
+  subtotal: Decimal
+  vatAmount: Decimal
   totalAmount: Decimal
 } {
   const computedItems = items.map((item, index) => {
@@ -154,11 +165,13 @@ export function computeInvoiceAmounts(items: InvoiceWriteInput['items']): {
       quantity: item.quantity,
       unitPrice,
       discount,
+      vatRate: vatEnabled ? item.vatRate : 0,
       total,
     }
   })
 
-  const totalAmount = sumRoundedItemTotals(computedItems.map((item) => item.total))
+  const breakdown = calculateVatBreakdown(computedItems)
+  const totalAmount = breakdown.total
   if (!isWithinMoneyRange(totalAmount)) {
     throw new InvoiceClientError('Validation error', 400, [
       {
@@ -168,7 +181,12 @@ export function computeInvoiceAmounts(items: InvoiceWriteInput['items']): {
     ])
   }
 
-  return { items: computedItems, totalAmount }
+  return {
+    items: computedItems,
+    subtotal: breakdown.base,
+    vatAmount: breakdown.vat,
+    totalAmount,
+  }
 }
 
 export async function assertOwnedProducts(

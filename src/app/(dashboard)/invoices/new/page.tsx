@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { InvoiceForm } from '@/components/invoices/InvoiceForm'
+import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { Product } from '@/types/product'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
@@ -15,6 +16,14 @@ async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
   if (!response.ok) {
     throw new Error('Failed to fetch products')
+  }
+  return response.json()
+}
+
+async function fetchProfile(): Promise<{ inVatSystem?: boolean }> {
+  const response = await fetch('/api/profile')
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile')
   }
   return response.json()
 }
@@ -46,6 +55,12 @@ export default function NewInvoicePage() {
     queryFn: fetchProducts,
   })
 
+  // The PDV setting decides which line fields the form shows
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: fetchProfile,
+  })
+
   // Create invoice mutation
   const createMutation = useMutation({
     mutationFn: (data: InvoiceCreateInput) => createInvoice(data, request),
@@ -75,7 +90,7 @@ export default function NewInvoicePage() {
     await createMutation.mutateAsync(data)
   }
 
-  if (isLoadingProducts) {
+  if (isLoadingProducts || isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -87,19 +102,9 @@ export default function NewInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold lg:text-3xl">New Invoice</h1>
-          <p className="text-muted-foreground mt-2">
-            Create a new invoice
-          </p>
+          <h1 className="text-2xl font-bold lg:text-3xl">Nova faktura</h1>
         </div>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">
-            You need to add products to your inventory first.
-          </p>
-          <a href="/inventory" className="text-primary hover:underline">
-            Go to Inventory
-          </a>
-        </div>
+        <FirstRunEmptyState kind="invoice" />
       </div>
     )
   }
@@ -115,6 +120,7 @@ export default function NewInvoicePage() {
 
       <InvoiceForm
         products={products}
+        inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}
       />

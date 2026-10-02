@@ -3,12 +3,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, FileText, Trash2, Eye, Edit, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Eye, Edit, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Catalog } from '@/types/catalog'
 import { notify } from '@/lib/notify'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { sr } from '@/lib/ui-copy'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
@@ -61,8 +63,14 @@ export default function CatalogsPage() {
     },
   })
 
-  const handleDelete = (id: string) => {
-    if (confirm(sr.catalog.confirmDelete)) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDialog({
+      title: sr.catalog.confirmDelete,
+      confirmLabel: 'Obriši',
+      cancelLabel: 'Otkaži',
+      variant: 'destructive',
+    })
+    if (confirmed) {
       deleteMutation.mutate(id)
     }
   }
@@ -101,21 +109,7 @@ export default function CatalogsPage() {
       />
 
       {!catalogs || catalogs.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Još nema kataloga</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Napravite prvi katalog za klijenta.
-            </p>
-            <Link href="/catalogs/new">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Novi katalog
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <FirstRunEmptyState kind="catalog" />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {catalogs.map((catalog) => (

@@ -11,6 +11,8 @@ export type InvoiceItem = {
   quantity: number
   unitPrice: Decimal
   unitCost: Decimal | null
+  /** PDV rate snapshot (0, 10 or 20); unitPrice and total exclude PDV. */
+  vatRate: Decimal
   discount: Decimal
   total: Decimal
   productName: string
@@ -33,7 +35,11 @@ export type Invoice = {
   clientAddress: string | null
   clientPib: string | null
   status: InvoiceStatus
+  /** Amount payable (osnovica + PDV). */
   totalAmount: Decimal
+  /** Snapshot of the company's PDV setting at issue time. */
+  vatEnabled: boolean
+  vatAmount: Decimal
   paidAt: Date | null
   profileId: string
   items?: InvoiceItem[]
@@ -45,6 +51,7 @@ export type Invoice = {
     address: string | null
     pib: string | null
     giroAccount: string | null
+    inVatSystem?: boolean
     logoUrl: string | null
   }
 }
@@ -66,6 +73,7 @@ export type InvoiceCreateInput = {
     quantity: number
     unitPrice: number
     discount?: number
+    vatRate?: number
     total: number
   }[]
 }

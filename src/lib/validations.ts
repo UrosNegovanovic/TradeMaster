@@ -115,6 +115,12 @@ export const invoiceItemWriteSchema = z.object({
     .lte(QUANTITY_MAX, 'quantity is outside the supported range'),
   unitPrice: unitPriceSchema,
   discount: discountSchema,
+  vatRate: z
+    .union([z.literal(0), z.literal(10), z.literal(20)], {
+      errorMap: () => ({ message: 'vatRate must be 0, 10 or 20' }),
+    })
+    .optional()
+    .transform((value) => value ?? 0),
 })
 
 function normalizeClientPib(value: string | null | undefined): string | null | undefined {
@@ -331,6 +337,7 @@ export const profileSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal('')),
+  inVatSystem: z.boolean().optional(),
   logoUrl: z
     .union([
       z.string().url('Invalid URL'),

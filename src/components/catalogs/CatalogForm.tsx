@@ -11,6 +11,11 @@ import { ProductPicker } from './ProductPicker'
 import { Product } from '@/types/product'
 import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react'
 import React from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { notify } from '@/lib/notify'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { findClientByName } from '@/lib/client-fill'
+import type { Client } from '@/types/client'
 import { sr } from '@/lib/ui-copy'
 import { formatRsd } from '@/lib/invoice-finance'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -32,6 +37,13 @@ import {
   type CatalogLayout,
   type CatalogSortMode,
 } from '@/lib/catalog-layout'
+
+// Saved buyers are optional: a failed fetch just hides the picker.
+async function fetchClients(): Promise<Client[]> {
+  const response = await fetch('/api/clients')
+  if (!response.ok) throw new Error('Failed to fetch clients')
+  return response.json()
+}
 
 type DisplayToggle = 'groupByCategory' | 'showSku' | 'showDescription' | 'showOriginalPrice'
 
@@ -83,6 +95,14 @@ export function CatalogForm({
       ...readCatalogDisplay(initialData),
     },
   })
+
+  const request = useAuthorizedFetch()
+  const queryClient = useQueryClient()
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ['clients'], queryFn: fetchClients })
+  const [saveNewClient, setSaveNewClient] = React.useState(false)
+  const clientNameValue = watch('clientName') ?? ''
+  // Offer to remember a typed buyer only when it is not already in the saved list.
+  const canSaveClient = clientNameValue.trim().length > 0 && !findClientByName(clients, clientNameValue)
 
   const discount = watch('discount')
   const layout = watch('layout')
@@ -155,6 +175,28 @@ export function CatalogForm({
   }, [initialData?.productIds]) // Depend on the actual source, not the derived value
 
   const handleFormSubmit = async (data: CatalogFormData) => {
+    const name = data.clientName?.trim()
+    if (saveNewClient && name && !findClientByName(clients, name)) {
+      // Best effort: the catalog is saved even when remembering the buyer fails.
+      try {
+        const response = await request('/api/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        })
+        if (!response.ok) throw new Error('Failed to save client')
+        await queryClient.invalidateQueries({ queryKey: ['clients'] })
+        notify.success('Kupac je sačuvan', {
+          description: 'Dostupan je i pri kreiranju faktura i kataloga.',
+          duration: 4000,
+        })
+      } catch {
+        notify.error('Kupac nije sačuvan', {
+          description: 'Katalog će biti sačuvan; kupca možete dodati na stranici Kupci.',
+          duration: 5000,
+        })
+      }
+    }
     await onSubmit(data)
   }
 
@@ -184,12 +226,50 @@ export function CatalogForm({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
+              {clients.length > 0 ? (
+                <>
+                  <Label htmlFor="savedClient">{sr.catalog.savedClient}</Label>
+                  <select
+                    id="savedClient"
+                    value={findClientByName(clients, clientNameValue)?.id ?? ''}
+                    onChange={(e) => {
+                      const client = clients.find((c) => c.id === e.target.value)
+                      if (!client) return
+                      setValue('clientName', client.name, { shouldDirty: true, shouldValidate: true })
+                      setSaveNewClient(false)
+                    }}
+                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:h-10"
+                  >
+                    <option value="">{sr.catalog.savedClientPlaceholder}</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                        {client.pib ? ` (${client.pib})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : null}
               <Label htmlFor="clientName">{sr.catalog.clientName}</Label>
               <Input
                 id="clientName"
                 placeholder={sr.catalog.clientNamePlaceholder}
                 {...register('clientName')}
               />
+              {canSaveClient ? (
+                <div className="flex items-start gap-3 pt-1">
+                  <Checkbox
+                    id="saveNewClient"
+                    checked={saveNewClient}
+                    onCheckedChange={(checked) => setSaveNewClient(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="saveNewClient" className="font-normal">
+                    {sr.catalog.saveClient}
+                    <span className="block text-xs text-muted-foreground">{sr.catalog.saveClientHelp}</span>
+                  </Label>
+                </div>
+              ) : null}
               {errors.clientName && (
                 <p className="text-sm text-destructive">
                   {errors.clientName.message}

@@ -31,7 +31,7 @@ npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 66 test files / 360 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 67 test files / 371 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
 `vitest.config.ts` has an explicit `include` list: a new `*.test.ts` file does not run until you add it there.
 `test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
 
@@ -78,7 +78,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 | Analytics / Sentry | `src/lib/analytics.ts`, `src/components/analytics/`, `sentry.*.config.ts`, `src/instrumentation.ts`, `src/lib/sentry-scrub.ts` (both off unless `NEXT_PUBLIC_ANALYTICS=on` / `NEXT_PUBLIC_SENTRY_DSN` are set; keep events free of personal data) |
 | IPS QR (PDF) | `src/lib/ips-qr.ts`, `src/components/invoices/InvoicePDF.tsx` |
 | Accountant export | `src/lib/invoice-export.ts`, `src/app/api/invoices/export/route.ts`, `src/components/invoices/InvoiceExport.tsx` |
-| Catalog layout / PDF | `src/lib/catalog-layout.ts`, `src/components/catalogs/CatalogPDF.tsx`, `src/components/catalogs/CatalogItemsView.tsx`, `src/components/catalogs/CatalogForm.tsx` |
+| Catalog layout / PDF | `src/lib/catalog-layout.ts`, `src/lib/catalog-picker.ts` (multi-category product picker), `src/components/catalogs/CatalogPDF.tsx`, `src/components/catalogs/CatalogItemsView.tsx`, `src/components/catalogs/CatalogForm.tsx` |
 | Finance | `src/lib/invoice-finance.ts`, `src/app/(dashboard)/finance/` |
 | Images | `src/lib/client-image-upload.ts`, `src/app/api/uploads/`, `src/lib/server-storage.ts` |
 | Public catalog | `src/app/api/shared/catalog/[token]/` (token), `src/app/api/public/catalogs/[id]/` (must honor `shareEnabled`), `src/lib/public-catalog.ts` |

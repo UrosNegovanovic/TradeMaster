@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clientToInvoiceFields } from './client-fill'
+import { clientToInvoiceFields, findClientByName } from './client-fill'
 
 describe('clientToInvoiceFields', () => {
   it('copies name, PIB and address', () => {
@@ -18,5 +18,22 @@ describe('clientToInvoiceFields', () => {
       clientPib: '',
       clientAddress: '',
     })
+  })
+})
+
+describe('findClientByName', () => {
+  const clients = [
+    { id: '1', name: 'Kupac DOO' },
+    { id: '2', name: 'Đorđe Trade' },
+  ]
+
+  it('matches ignoring case and surrounding spaces', () => {
+    expect(findClientByName(clients, '  kupac doo ')?.id).toBe('1')
+    expect(findClientByName(clients, 'đorđe trade')?.id).toBe('2')
+  })
+
+  it('returns undefined for new or blank names', () => {
+    expect(findClientByName(clients, 'Novi kupac')).toBeUndefined()
+    expect(findClientByName(clients, '   ')).toBeUndefined()
   })
 })

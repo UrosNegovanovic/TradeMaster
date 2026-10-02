@@ -8,3 +8,10 @@ export function clientToInvoiceFields(client: Pick<Client, 'name' | 'pib' | 'add
     clientAddress: client.address ?? '',
   }
 }
+
+/** Saved client whose name matches (case-insensitive, trimmed), used to avoid saving the same buyer twice. */
+export function findClientByName<T extends Pick<Client, 'name'>>(clients: readonly T[], name: string): T | undefined {
+  const wanted = name.trim().toLowerCase()
+  if (!wanted) return undefined
+  return clients.find((client) => client.name.trim().toLowerCase() === wanted)
+}

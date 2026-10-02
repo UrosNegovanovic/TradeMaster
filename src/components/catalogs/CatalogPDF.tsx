@@ -659,7 +659,8 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
           </View>
           {sections.length === 0 && emptyState}
           {sections.map((section, index) => (
-            <View key={section.category ?? index}>
+            // Every category after the first starts on a new page; a long category continues over its own pages.
+            <View key={section.category ?? index} break={Boolean(section.category) && index > 0}>
               {section.category && (
                 <Text style={styles.listSectionTitle} minPresenceAhead={40}>
                   {section.category}

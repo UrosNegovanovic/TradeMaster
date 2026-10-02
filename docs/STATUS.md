@@ -11,6 +11,7 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 - Purchase price rules: `costPrice` required on ProductForm, invoice cost snapshots.
 - Optional sale price and Clerk-authenticated product image upload.
 - PDV on invoices (branch `feat/pdv-na-fakturi`, draft PR): company setting "u sistemu PDV-a", per-line rate snapshot (0/10/20), osnovica + PDV per rate + total on form, detail and PDF, finance on osnovica. **Needs migration `20261002100000_invoice_vat.sql` applied in Supabase before deploy.**
+- Onboarding (roadmap #2, draft PR): "Prvi koraci" checklist on Početna (podaci firme, prvi proizvod, prva faktura) derived from data, no new table; empty states on Asortiman, Katalozi and Fakture point to the next step (add products first). No demo data.
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
 
 ## Blocked on the owner

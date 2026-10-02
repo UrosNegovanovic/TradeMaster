@@ -23,6 +23,7 @@ const MAX_KEYS = 5000
 export const rateLimits = {
   publicCatalog: { name: 'public-catalog', limit: 60, windowMs: 60_000 },
   sharedCatalog: { name: 'shared-catalog', limit: 60, windowMs: 60_000 },
+  sharedInvoice: { name: 'shared-invoice', limit: 60, windowMs: 60_000 },
   barcodeLookup: { name: 'barcode-lookup', limit: 40, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitSpec>
 

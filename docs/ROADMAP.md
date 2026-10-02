@@ -1,20 +1,35 @@
 # Plan do lansiranja (mesec dana)
 
-Cilj: javno lansiranje na sopstvenom domenu za 30 dana, sa aplikacijom koju je lako izabrati i lako prodati malom i srednjem preduzeću u Srbiji. Stanje koda je proveravano 2026-10-01; blokeri su u `docs/STATUS.md`.
+Cilj: javno lansiranje na sopstvenom domenu za 30 dana, sa aplikacijom koju je lako izabrati i lako prodati malom i srednjem preduzeću u Srbiji. Stanje koda je proveravano 2026-10-02; blokeri su u `docs/STATUS.md`.
 
 Ocena: **vrednost** = koliko pomaže prodaji/zadržavanju, **trud** = S (do 1 dan), M (2-3 dana), L (nedelja+).
 
+## Gde smo stali (2026-10-02)
+
+Urađeno i spojeno u `main`:
+
+| # | Šta | PR | Napomena |
+|---|---|---|---|
+| 1 | PDV na fakturi | #53 | Migracija `invoice_vat` primenjena u produkciji. |
+| 2 | Onboarding i prazna stanja | #54 | Čeklista "Prvi koraci" na Početnoj; bez demo podataka. |
+| 3 | Deljenje fakture i kataloga (link, WhatsApp/Viber, mejl) | #55 | Opozivi link za fakturu; migracija `invoice_sharing` primenjena. |
+| K | **Napredni katalog** (raspored Mreža 4/12 ili Lista, grupisanje po kategoriji, redosled ručno/naziv/cena, izbor polja, pretraga i kategorije na javnom linku, "Cena na upit", PDF font sa č/ć/đ) | #56 | Migracija `catalog_display_settings` primenjena u produkciji 2026-10-02. |
+
+**Sledeće: #4 Lista kupaca.** Posle toga #5 izvoz, #6 IPS QR, #7 upozorenja.
+
+Predlozi za katalog koji nisu urađeni (za kasnije, po vrednosti): cene sa/bez PDV-a i popust po stavci ili kategoriji; upit sa javnog linka (kupac upiše količine i pošalje poruku, bez korpe i plaćanja, traži odobrenje vlasnika jer je blizu korpe); naslovna strana i boja firme, datum važenja; dugme "osveži cene" i dupliranje kataloga; broj otvaranja linka; QR kod ka linku na PDF-u.
+
 ## Šta aplikacija već ima
 
-Skener barkodova, asortiman sa nabavnom cenom, magacin (ulaz/izlaz, uvoz, istorija), katalog PDF + link za deljenje, interne fakture sa snimkom cena, finansije/profit, PWA. Fali ono što kupac u Srbiji očekuje od "programa za fakture".
+Skener barkodova, asortiman sa nabavnom cenom, magacin (ulaz/izlaz, uvoz, istorija), katalog (PDF i javni link sa izborom rasporeda, grupisanjem po kategoriji, redosledom i pretragom), interne fakture sa snimkom cena i PDV-om, deljenje fakture i kataloga, onboarding, finansije/profit, PWA.
 
 ## Rangirana lista (vrednost / trud)
 
 | # | Funkcija | Vrednost | Trud | Zašto |
 |---|---|---|---|---|
-| 1 | **PDV na fakturi** (stope 20% / 10% / bez PDV, iznos bez PDV, PDV, ukupno; podešavanje "u sistemu PDV-a" u firmi) | Visoka | M | Danas faktura ima samo zbir. Firme u PDV sistemu ne mogu da je koriste. Dodati polja u `InvoiceItem`, snimiti stopu na stavci (kao `unitCost`), ne menjati istoriju. |
-| 2 | **Onboarding i prazna stanja** (čekliste: firma, prvi proizvod, prva faktura; demo podaci na jedan klik) | Visoka | S | Prvi utisak odlučuje da li se korisnik vraća. Nema troškova podrške. |
-| 3 | **Slanje fakture i kataloga** (dugme "Podeli": link, WhatsApp/Viber, mejl) | Visoka | S | Katalog već ima token; isto za fakturu (javni PDF link sa tokenom, opozivo). Direktno prodajno: kupci dobijaju dokument sa brendom firme. |
+| 1 ✅ | **PDV na fakturi** (stope 20% / 10% / bez PDV, iznos bez PDV, PDV, ukupno; podešavanje "u sistemu PDV-a" u firmi) | Visoka | M | Danas faktura ima samo zbir. Firme u PDV sistemu ne mogu da je koriste. Dodati polja u `InvoiceItem`, snimiti stopu na stavci (kao `unitCost`), ne menjati istoriju. |
+| 2 ✅ | **Onboarding i prazna stanja** (čekliste: firma, prvi proizvod, prva faktura; demo podaci na jedan klik) | Visoka | S | Prvi utisak odlučuje da li se korisnik vraća. Nema troškova podrške. |
+| 3 ✅ | **Slanje fakture i kataloga** (dugme "Podeli": link, WhatsApp/Viber, mejl) | Visoka | S | Katalog već ima token; isto za fakturu (javni PDF link sa tokenom, opozivo). Direktno prodajno: kupci dobijaju dokument sa brendom firme. |
 | 4 | **Lista kupaca** (ime, PIB, adresa, popunjavanje fakture jednim klikom) | Visoka | M | Najmanje ponovnog kucanja; priprema teren za CRM bez pravljenja CRM-a. Samo tenant tabela `Client` i izbor u `InvoiceForm`. |
 | 5 | **Kupcu-prijateljski izvoz** (CSV/XLSX faktura i stanja za knjigovođu) | Visoka | S | Knjigovođa je glavni uticajni faktor u odluci malih firmi. Magacin već ima CSV; dodati fakture. |
 | 6 | **Uplatnica / poziv na broj + QR kod (NBS IPS QR) na fakturi** | Visoka | M | Brže plaćanje, jasna razlika u odnosu na tabele. Zahteva žiro-račun (već u podešavanjima). |
@@ -31,7 +46,8 @@ Namerno van plana: SEF i fiskalna kasa, nativne aplikacije, javna prodavnica, ko
 
 **Nedelja 1 (1-7. okt): temelj i brze pobede**
 - Vlasnik: kupovina domena, stvarni podaci firme, odluka o naplati.
-- Kod: #2 onboarding, #5 izvoz faktura, #8 analitika/greške, #11 higijena (godina fakture, rate limit).
+- Kod: #2 onboarding ✅, #5 izvoz faktura, #8 analitika/greške, #11 higijena (godina fakture, rate limit).
+- Urađeno ranije nego po planu: #1 PDV ✅, #3 deljenje ✅, napredni katalog ✅.
 
 **Nedelja 2 (8-14. okt): faktura kao proizvod**
 - Kod: #1 PDV (migracija + PDF + finansije + testovi), #4 kupci.

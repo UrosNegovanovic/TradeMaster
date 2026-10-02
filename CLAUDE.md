@@ -13,7 +13,7 @@ Read this file before any change. Prefer the smallest PR that fits the current a
 - **Sken**: `html5-qrcode` in `src/components/inventory/BarcodeScanner.tsx`. Do not rewrite it unless it is broken. UX rules: `docs/scanner-ux-rules.md`.
   Quick Scan is a fast intake path and may save without `costPrice` (the column is nullable for that reason); the user fills it later in ProductForm. Do not "fix" this in the scanner.
 - **Magacin**: Ulaz / Izlaz, CSV/XLSX import. Day boundaries use `Europe/Belgrade` (`src/lib/local-date.ts`). Stock rules: `docs/stock-invoice-rules.md`.
-- **Katalog**: PDF + revocable share token. Public catalog by CUID returns 410 unless `shareEnabled`. Never expose `costPrice`, stock or owner ids in public DTOs.
+- **Katalog**: PDF + revocable share token. Public catalog by CUID returns 410 unless `shareEnabled`. Never expose `costPrice`, stock or owner ids in public DTOs. Each catalog stores display settings (`layout` GRID_4 | GRID_12 | LIST, `groupByCategory`, `sortMode` MANUAL | NAME | PRICE_ASC | PRICE_DESC, `showSku`, `showDescription`, `showOriginalPrice`); the PDF, owner preview and public link all render through `src/lib/catalog-layout.ts`, so change ordering/grouping there, not per view. `CatalogItem.sortOrder` is the manual order (selection order). Public DTO is built only by `publicCatalogSelect` / `toPublicCatalogBody` and drops SKU/description the owner hid. Price 0 means "Cena na upit".
 - **Faktura**: internal invoices (not SEF, not fiscal). Lines snapshot `unitPrice`, `unitCost`, `quantity`, `productName`; historical invoices never follow later product edits. Profit uses snapshots (`src/lib/invoice-finance.ts`). PDV: `Profile.inVatSystem` is the company setting; each issued invoice snapshots `vatEnabled`, `vatAmount` and per-line `vatRate` (0/10/20). `unitPrice`/`total` are excluding PDV, `totalAmount` is the amount payable (osnovica + PDV), osnovica = `totalAmount - vatAmount`. Receivables are gross; revenue and profit use the osnovica. Old invoices have vatEnabled false / vatAmount 0. Stock leaves on DRAFT → UNPAID/PAID only.
 - **Podešavanja**: firma, PIB, žiro-račun, logo.
 
@@ -31,7 +31,8 @@ npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main: 50 test files / 254 tests pass, lint shows 3 known warnings (BarcodeScanner hook deps, InvoicePDF image alt) that are not yours to fix.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 58 test files / 316 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
+`vitest.config.ts` has an explicit `include` list: a new `*.test.ts` file does not run until you add it there.
 `test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
 
 ## Data model in one paragraph
@@ -57,7 +58,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 
 - Mutations from the client use `authorizedFetch` / `useAuthorizedFetch` (Bearer + credentials).
 - Toasts via `notify` (`src/lib/notify.ts`, Sonner). Shared Serbian UI strings in `src/lib/ui-copy.ts`; landing copy in `src/lib/landing-copy.ts`.
-- PDFs: load `@react-pdf/renderer` components with `next/dynamic(..., { ssr: false })`, Serbian labels.
+- PDFs: load `@react-pdf/renderer` components with `next/dynamic(..., { ssr: false })`, Serbian labels. Use `PDF_FONT_FAMILY` and call `registerPdfFonts()` from `src/lib/pdf-fonts.ts` (Liberation Sans in `public/fonts`); built-in Helvetica/Courier drop č, ć, đ.
 - Pure logic goes in `src/lib/*.ts` with a colocated `*.test.ts`. Add tests for the behavior you change.
 - Conventional commits: `feat|fix|chore|docs|refactor|test: ...`.
 - Work on a branch, open a draft PR, merge only when the owner says "merge".
@@ -74,6 +75,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 | Stock | `src/app/api/stock-movements/`, `src/lib/invoice-stock.ts`, `src/components/warehouse/` |
 | Invoice write | `src/lib/invoice-service.ts`, `src/app/api/invoices/`, `src/components/invoices/InvoiceForm.tsx` |
 | Invoice PDF | `src/components/invoices/InvoicePDF.tsx` |
+| Catalog layout / PDF | `src/lib/catalog-layout.ts`, `src/components/catalogs/CatalogPDF.tsx`, `src/components/catalogs/CatalogItemsView.tsx`, `src/components/catalogs/CatalogForm.tsx` |
 | Finance | `src/lib/invoice-finance.ts`, `src/app/(dashboard)/finance/` |
 | Images | `src/lib/client-image-upload.ts`, `src/app/api/uploads/`, `src/lib/server-storage.ts` |
 | Public catalog | `src/app/api/shared/catalog/[token]/` (token), `src/app/api/public/catalogs/[id]/` (must honor `shareEnabled`), `src/lib/public-catalog.ts` |

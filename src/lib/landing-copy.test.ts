@@ -11,7 +11,7 @@ describe('landing pricing copy', () => {
   })
 
   it('states the terms once: 60 days free, then 20 € per month, read-only after expiry', () => {
-    expect(PRICING_OFFER).toBe('Prvih 60 dana besplatno, zatim 20 € mesečno')
+    expect(PRICING_OFFER).toBe('Prvih 60 dana besplatno, zatim 20 € mesečno')
     const blob = [...pricingIncludes, paymentFaq.q, paymentFaq.a].join(' ')
     expect(blob).toContain(PRICING_OFFER)
     expect(blob).toContain(MONTHLY_PRICE)

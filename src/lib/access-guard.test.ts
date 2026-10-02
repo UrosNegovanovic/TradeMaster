@@ -16,6 +16,6 @@ describe('accessExpiredResponse', () => {
     expect(response?.status).toBe(402)
     expect(await response?.json()).toEqual({ error: ACCESS_EXPIRED_MESSAGE, code: 'ACCESS_EXPIRED' })
     expect(ACCESS_EXPIRED_MESSAGE).toMatch(/samo za pregled/)
-    expect(ACCESS_EXPIRED_MESSAGE).toMatch(/20 €/)
+    expect(ACCESS_EXPIRED_MESSAGE).toMatch(/20 €/)
   })
 })

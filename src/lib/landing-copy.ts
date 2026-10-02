@@ -1,21 +1,22 @@
 /** Honest early-access pricing. No in-app checkout until Phase 4. */
 export const FREE_PERIOD = '60 dana'
-export const MONTHLY_PRICE = '20 €'
+/** Non-breaking space keeps the number and the euro sign on one line. */
+export const MONTHLY_PRICE = '20 €'
 /** "Prvih 60 dana besplatno, zatim 20 € mesečno" */
 export const PRICING_OFFER = `Prvih ${FREE_PERIOD} besplatno, zatim ${MONTHLY_PRICE} mesečno`
 
 export const pricingIncludes = [
-  'Neograničen broj proizvoda',
-  'Skener, magacin, katalozi, fakture i finansije',
-  `${PRICING_OFFER}`,
-  'Naplata ručno — još nema pretplate u aplikaciji',
+  'Neograničen broj proizvoda i faktura',
+  'Skener, magacin, katalozi, fakture sa PDV-om',
+  'IPS QR, izvoz za knjigovođu, lista kupaca',
 ] as const
 
-export const pricingNote =
-  'Trenutno nema checkout-a ni samouslužne pretplate. Posle besplatnog perioda račun za svaki mesec šaljemo ručno, a pristup se produžava posle uplate.'
+export const pricingCardPeriod = `mesečno, posle ${FREE_PERIOD} besplatno`
 
-export const pricingFxNote =
-  'Naplata u dinarima po važećem kursu NBS na dan fakturisanja.'
+export const pricingCardNote =
+  'Bez kartice. Posle probnog perioda šaljemo račun jednom mesečno.'
+
+export const pricingNote = 'Naplata u dinarima po važećem kursu NBS na dan fakturisanja.'
 
 export const paymentFaq = {
   q: 'Šta se dešava posle 60 besplatnih dana?',

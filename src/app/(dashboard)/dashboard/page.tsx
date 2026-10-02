@@ -588,7 +588,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="default" className="bg-green-600 hover:bg-green-600">
+                <Badge variant="success">
                   <ArrowUp className="mr-1 h-3 w-3" />
                   {todayTotals.intakeCount} ulaz · +{todayTotals.intakeQuantity}
                 </Badge>
@@ -604,7 +604,7 @@ export default async function DashboardPage() {
                     className="flex min-h-11 items-start gap-3 rounded-md border px-3 py-2"
                   >
                     {movement.type === MovementType.IN ? (
-                      <Badge variant="default" className="mt-0.5 bg-green-600 hover:bg-green-600">
+                      <Badge variant="success" className="mt-0.5">
                         <ArrowUp className="mr-1 h-3 w-3" />
                         UL
                       </Badge>

@@ -12,7 +12,9 @@ import { Profile } from '@/types/profile'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { InvoiceSharing } from '@/components/invoices/InvoiceSharing'
 import { summarizeVat } from '@/lib/invoice-vat'
-import { invoiceStatusLabel, invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { INVOICE_TONE_BADGE_VARIANT, invoiceStatusView } from '@/lib/invoice-status-view'
+import { Badge } from '@/components/ui/badge'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
   ssr: false,
@@ -131,7 +133,12 @@ export default function InvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
-                <p className="text-base font-semibold">{invoiceStatusLabel(invoice.status)}</p>
+                <div className="mt-1">
+                  {(() => {
+                    const view = invoiceStatusView(invoice.status, invoice.dueDate)
+                    return <Badge variant={INVOICE_TONE_BADGE_VARIANT[view.tone]}>{view.label}</Badge>
+                  })()}
+                </div>
                 {isPaidInvoiceStatus(invoice.status) ? (
                   <div className="mt-3">
                     <InvoiceStatusActions invoiceId={invoice.id} status={invoice.status} />

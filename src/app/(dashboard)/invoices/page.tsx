@@ -15,7 +15,8 @@ import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { InvoiceExport } from '@/components/invoices/InvoiceExport'
 import { cn } from '@/lib/utils'
-import { invoiceStatusLabel, isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { INVOICE_TONE_BADGE_VARIANT, invoiceStatusView } from '@/lib/invoice-status-view'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
 import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
@@ -48,12 +49,9 @@ function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString('sr-RS')
 }
 
-function getStatusBadge(status: InvoiceStatus | string) {
-  if (isPaidInvoiceStatus(status)) {
-    return <Badge variant="secondary">{invoiceStatusLabel(status)}</Badge>
-  }
-
-  return <Badge variant="destructive">{invoiceStatusLabel(status)}</Badge>
+function getStatusBadge(status: InvoiceStatus | string, dueDate: Date | string) {
+  const view = invoiceStatusView(status, dueDate)
+  return <Badge variant={INVOICE_TONE_BADGE_VARIANT[view.tone]}>{view.label}</Badge>
 }
 
 function parseInvoiceView(value: string | null): 'open' | 'paid' {
@@ -77,7 +75,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
               {invoice.clientName}
             </CardDescription>
           </div>
-          {getStatusBadge(invoice.status)}
+          {getStatusBadge(invoice.status, invoice.dueDate)}
         </div>
       </CardHeader>
       <CardContent>

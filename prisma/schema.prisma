@@ -119,6 +119,14 @@ model Catalog {
   shareToken   String?  @unique
   shareEnabled Boolean  @default(false)
 
+  // Display settings shared by the PDF, owner preview and public link (values: src/lib/catalog-layout.ts)
+  layout            String  @default("GRID_4") // GRID_4 | GRID_12 | LIST
+  groupByCategory   Boolean @default(false)
+  sortMode          String  @default("MANUAL") // MANUAL | NAME | PRICE_ASC | PRICE_DESC
+  showSku           Boolean @default(true)
+  showDescription   Boolean @default(true)
+  showOriginalPrice Boolean @default(true)
+
   // Foreign keys
   profileId String
 

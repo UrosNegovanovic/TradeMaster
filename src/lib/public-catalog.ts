@@ -1,10 +1,12 @@
+import { readCatalogDisplay, type CatalogDisplaySettings } from './catalog-layout'
+
 /** Fields a guest may see on an unlisted share link. Omits inventory, ids of other tenants, and live product price. */
-export type PublicCatalog = {
-  id: string
+export type PublicCatalogBody = {
   name: string
   clientName: string | null
   discount: unknown
   notes: string | null
+  display: CatalogDisplaySettings
   profile: {
     companyName: string | null
     contactEmail: string | null
@@ -19,19 +21,29 @@ export type PublicCatalog = {
     sortOrder: number
     product: {
       name: string
-      sku: string
+      /** null when the owner hid SKUs in this catalog */
+      sku: string | null
       imageUrl: string | null
+      /** null when the owner hid descriptions in this catalog */
       description: string | null
+      categoryName: string | null
     } | null
   }>
 }
 
+export type PublicCatalog = PublicCatalogBody & { id: string }
+
 type CatalogRecord = {
-  id: string
   name: string
   clientName: string | null
   discount: unknown
   notes: string | null
+  layout?: unknown
+  groupByCategory?: unknown
+  sortMode?: unknown
+  showSku?: unknown
+  showDescription?: unknown
+  showOriginalPrice?: unknown
   profile: {
     companyName: string | null
     contactEmail: string | null
@@ -49,8 +61,38 @@ type CatalogRecord = {
       sku: string
       imageUrl: string | null
       description: string | null
+      category?: { name: string } | null
     } | null
   }>
+}
+
+/** Prisma select for the public DTO. Never add costPrice, quantity, price or owner ids here. */
+export const publicCatalogSelect = {
+  name: true,
+  clientName: true,
+  discount: true,
+  notes: true,
+  layout: true,
+  groupByCategory: true,
+  sortMode: true,
+  showSku: true,
+  showDescription: true,
+  showOriginalPrice: true,
+  profile: {
+    select: { companyName: true, contactEmail: true, contactPhone: true, address: true, logoUrl: true },
+  },
+  items: {
+    orderBy: { sortOrder: 'asc' as const },
+    select: {
+      id: true,
+      originalPrice: true,
+      discountedPrice: true,
+      sortOrder: true,
+      product: {
+        select: { name: true, sku: true, imageUrl: true, description: true, category: { select: { name: true } } },
+      },
+    },
+  },
 }
 
 const SHARE_PATH_PATTERN = /^\/shared\/catalog\/[a-f0-9]{64}$/
@@ -72,13 +114,14 @@ export function getSafePhoneHref(value: unknown): string | null {
   return normalized.length >= 3 ? `tel:${normalized}` : null
 }
 
-export function toPublicCatalog(catalog: CatalogRecord): PublicCatalog {
+export function toPublicCatalogBody(catalog: CatalogRecord): PublicCatalogBody {
+  const display = readCatalogDisplay(catalog)
   return {
-    id: catalog.id,
     name: catalog.name,
     clientName: catalog.clientName,
     discount: catalog.discount,
     notes: catalog.notes,
+    display,
     profile: {
       companyName: catalog.profile.companyName,
       contactEmail: catalog.profile.contactEmail,
@@ -94,11 +137,16 @@ export function toPublicCatalog(catalog: CatalogRecord): PublicCatalog {
       product: item.product
         ? {
             name: item.product.name,
-            sku: item.product.sku,
+            sku: display.showSku ? item.product.sku : null,
             imageUrl: item.product.imageUrl,
-            description: item.product.description,
+            description: display.showDescription ? item.product.description : null,
+            categoryName: item.product.category?.name ?? null,
           }
         : null,
     })),
   }
+}
+
+export function toPublicCatalog(catalog: CatalogRecord & { id: string }): PublicCatalog {
+  return { id: catalog.id, ...toPublicCatalogBody(catalog) }
 }

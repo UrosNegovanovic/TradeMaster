@@ -7,6 +7,7 @@ import { CatalogForm } from '@/components/catalogs/CatalogForm'
 import { Product } from '@/types/product'
 import { CatalogWithItems } from '@/types/catalog'
 import { CatalogFormData } from '@/lib/validations'
+import { readCatalogDisplay, type CatalogDisplaySettings } from '@/lib/catalog-layout'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -86,13 +87,13 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
 
   // Memoize initialData to prevent unnecessary re-renders
   // MUST be called before any early returns (React hooks rule)
-  const initialData = useMemo<{
+  const initialData = useMemo<({
     name: string
     clientName: string | null
     discount: number
     notes: string | null
     productIds: string[]
-  } | undefined>(
+  } & CatalogDisplaySettings) | undefined>(
     () => {
       if (!catalog) return undefined
       
@@ -101,7 +102,9 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
         clientName: catalog.clientName,
         discount: Number(catalog.discount),
         notes: catalog.notes,
+        // Items arrive in sortOrder, which is the saved manual order
         productIds: catalog.items?.map((item) => item.productId) || [],
+        ...readCatalogDisplay(catalog),
       }
     },
     // Use catalog.id and stringified productIds for stable comparison
@@ -112,6 +115,7 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
       catalog?.discount,
       catalog?.notes,
       catalog?.items?.map((item) => item.productId).join(',') || '',
+      catalog?.updatedAt,
     ]
   )
 

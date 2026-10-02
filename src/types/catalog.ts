@@ -1,5 +1,6 @@
 import { Decimal } from '@prisma/client/runtime/library'
 import { Product } from './product'
+import type { CatalogDisplaySettings } from '@/lib/catalog-layout'
 
 export type CatalogItem = {
   id: string
@@ -22,11 +23,12 @@ export type Catalog = {
   updatedAt: Date
   profileId: string
   items?: CatalogItem[]
-}
+} & Partial<CatalogDisplaySettings>
 
 export type CatalogWithItems = Catalog & {
   items: (CatalogItem & {
-    product: Product
+    // Owner API selects only the category name
+    product: Omit<Product, 'category'> & { category?: { name: string } | null }
   })[]
 }
 

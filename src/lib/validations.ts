@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CATALOG_LAYOUTS, CATALOG_SORT_MODES, DEFAULT_CATALOG_DISPLAY } from './catalog-layout'
 
 export const invoiceStatusSchema = z.enum(['DRAFT', 'PAID', 'UNPAID'])
 
@@ -296,7 +297,17 @@ export const catalogSchema = z.object({
   clientName: z.string().max(255).optional().nullable(),
   discount: z.number().min(0, 'Discount must be at least 0').max(100, 'Discount cannot exceed 100'),
   notes: z.string().max(1000).optional().nullable(),
-  productIds: z.array(z.string()).min(1, 'At least one product is required'),
+  // Order matters: it is the manual catalog order (sortOrder).
+  productIds: z
+    .array(z.string())
+    .min(1, 'At least one product is required')
+    .refine((ids) => new Set(ids).size === ids.length, 'Duplicate products'),
+  layout: z.enum(CATALOG_LAYOUTS).default(DEFAULT_CATALOG_DISPLAY.layout),
+  groupByCategory: z.boolean().default(DEFAULT_CATALOG_DISPLAY.groupByCategory),
+  sortMode: z.enum(CATALOG_SORT_MODES).default(DEFAULT_CATALOG_DISPLAY.sortMode),
+  showSku: z.boolean().default(DEFAULT_CATALOG_DISPLAY.showSku),
+  showDescription: z.boolean().default(DEFAULT_CATALOG_DISPLAY.showDescription),
+  showOriginalPrice: z.boolean().default(DEFAULT_CATALOG_DISPLAY.showOriginalPrice),
 })
 
 export type CatalogFormData = z.infer<typeof catalogSchema>

@@ -11,25 +11,13 @@ import { sr } from '@/lib/ui-copy'
 
 type CatalogPdfDownloadProps = {
   catalog: CatalogWithItems & { profile: Profile }
-  itemsPerPage: number | 'all'
-  pdfItemsPerPage: 4 | 12
 }
 
-export default function CatalogPdfDownload({
-  catalog,
-  itemsPerPage,
-  pdfItemsPerPage,
-}: CatalogPdfDownloadProps) {
+export default function CatalogPdfDownload({ catalog }: CatalogPdfDownloadProps) {
   const pdfDocument = useMemo(
-    () => (
-      <CatalogPDF
-        catalog={catalog}
-        itemsPerPage={itemsPerPage}
-        pdfItemsPerPage={pdfItemsPerPage}
-      />
-    ),
-    // catalog (not catalog.id) so item edits recreate the PDF
-    [catalog, itemsPerPage, pdfItemsPerPage]
+    () => <CatalogPDF catalog={catalog} />,
+    // catalog (not catalog.id) so item and display-setting edits recreate the PDF
+    [catalog]
   )
 
   const fileName = `${catalog.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_catalog.pdf`
@@ -37,7 +25,7 @@ export default function CatalogPdfDownload({
   return (
     <BlobProvider
       document={pdfDocument}
-      key={`pdf-${catalog.id}-${pdfItemsPerPage}-${catalog.items?.length ?? 0}`}
+      key={`pdf-${catalog.id}-${catalog.updatedAt}`}
     >
       {({ blob, url, loading }) => {
         const handleDownload = () => {

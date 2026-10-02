@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
+import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -116,6 +117,29 @@ export default function SettingsPage() {
         title="Podešavanja"
         description="Podaci o firmi i kontakt"
       />
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Pristup</CardTitle>
+          <CardDescription>Rani pristup se naplaćuje ručno: 30 € za 60 dana.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm">
+          {(() => {
+            const status = accessStatus(profile?.accessExpiresAt)
+            if (status.state === 'unlimited' || !status.untilYmd) return <p>Pristup nije vremenski ograničen.</p>
+            const date = formatAccessDate(status.untilYmd)
+            return status.state === 'expired' ? (
+              <p>
+                Period pristupa je istekao <span className="font-medium">{date}</span>.
+              </p>
+            ) : (
+              <p>
+                Pristup važi do <span className="font-medium">{date}</span> (ističe {formatDaysLeft(status.daysLeft ?? 0)}).
+              </p>
+            )
+          })()}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

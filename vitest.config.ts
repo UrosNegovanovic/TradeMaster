@@ -48,6 +48,7 @@ export default defineConfig({
       'src/lib/landing-copy.test.ts',
       'src/lib/catalog-layout.test.ts',
       'src/lib/catalog-picker.test.ts',
+      'src/lib/unsaved-changes.test.ts',
       'src/lib/pdf-fonts.test.ts',
       'src/app/api/invoices/route.test.ts',
       'src/app/api/invoices/[id]/route.test.ts',

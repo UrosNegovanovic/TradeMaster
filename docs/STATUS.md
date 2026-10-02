@@ -16,6 +16,7 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 - Advanced catalog (#56): saved layout (grid 4/12 or list), category grouping, sort, visible fields, public-link search and category filter, "Cena na upit", PDF font with č/ć/đ (catalog and invoice). Migration `catalog_display_settings` applied 2026-10-02.
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
 - Saved buyers (`Client`, ROADMAP #4): merged in #57, migration `20261002140000_clients.sql` applied in production.
+- IPS QR on the invoice PDF (ROADMAP #6): `src/lib/ips-qr.ts`; shown for unpaid invoices when the company giro account has valid control digits. Needs a real scan with a Serbian banking app before launch.
 - Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed.
 
 ## Blocked on the owner

@@ -15,7 +15,7 @@ Urađeno i spojeno u `main`:
 | 3 | Deljenje fakture i kataloga (link, WhatsApp/Viber, mejl) | #55 | Opozivi link za fakturu; migracija `invoice_sharing` primenjena. |
 | K | **Napredni katalog** (raspored Mreža 4/12 ili Lista, grupisanje po kategoriji, redosled ručno/naziv/cena, izbor polja, pretraga i kategorije na javnom linku, "Cena na upit", PDF font sa č/ć/đ) | #56 | Migracija `catalog_display_settings` primenjena u produkciji 2026-10-02. |
 
-**Sledeće: #6 IPS QR.** Posle toga #7 upozorenja. #4 Lista kupaca (#57) i #5 izvoz za knjigovođu su urađeni.
+**Sledeće: #7 upozorenja.** #4 Lista kupaca (#57), #5 izvoz za knjigovođu (#58) i #6 IPS QR su urađeni.
 
 Predlozi za katalog koji nisu urađeni (za kasnije, po vrednosti): cene sa/bez PDV-a i popust po stavci ili kategoriji; upit sa javnog linka (kupac upiše količine i pošalje poruku, bez korpe i plaćanja, traži odobrenje vlasnika jer je blizu korpe); naslovna strana i boja firme, datum važenja; dugme "osveži cene" i dupliranje kataloga; broj otvaranja linka; QR kod ka linku na PDF-u.
 
@@ -32,7 +32,7 @@ Skener barkodova, asortiman sa nabavnom cenom, magacin (ulaz/izlaz, uvoz, istori
 | 3 ✅ | **Slanje fakture i kataloga** (dugme "Podeli": link, WhatsApp/Viber, mejl) | Visoka | S | Katalog već ima token; isto za fakturu (javni PDF link sa tokenom, opozivo). Direktno prodajno: kupci dobijaju dokument sa brendom firme. |
 | 4 ✅ | **Lista kupaca** (ime, PIB, adresa, popunjavanje fakture jednim klikom) | Visoka | M | Najmanje ponovnog kucanja; priprema teren za CRM bez pravljenja CRM-a. Samo tenant tabela `Client` i izbor u `InvoiceForm`. |
 | 5 ✅ | **Kupcu-prijateljski izvoz** (CSV/XLSX faktura i stanja za knjigovođu) | Visoka | S | Knjigovođa je glavni uticajni faktor u odluci malih firmi. Magacin već ima CSV; dodati fakture. |
-| 6 | **Uplatnica / poziv na broj + QR kod (NBS IPS QR) na fakturi** | Visoka | M | Brže plaćanje, jasna razlika u odnosu na tabele. Zahteva žiro-račun (već u podešavanjima). |
+| 6 ✅ | **Uplatnica / poziv na broj + QR kod (NBS IPS QR) na fakturi** | Visoka | M | Brže plaćanje, jasna razlika u odnosu na tabele. Zahteva žiro-račun (već u podešavanjima). |
 | 7 | **Pametna upozorenja** (niska zaliha na dashboardu, neplaćene fakture posle roka) | Srednja | S | `low-stock` API već postoji; dodati karticu "Kasni naplata". Daje razlog za dnevno otvaranje. |
 | 8 | **Analitika i praćenje grešaka** (Vercel Analytics + Sentry, bez ličnih podataka u događajima) | Srednja | S | Bez toga ne znate gde korisnici odustaju posle lansiranja. |
 | 9 | **Naplata** (ručna: zahtev za fakturu + datum isteka u profilu; Stripe tek kasnije) | Srednja | M | Landing obećava 30 EUR / 60 dana. Potrebni su bar datum isteka probnog perioda i baner. Ne obećavati otkazivanje dok ne postoji. |

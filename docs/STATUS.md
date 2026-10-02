@@ -42,5 +42,6 @@ No paid ads until the first three are done.
 - Rate limiting is in-memory per instance, so it does not hold on Vercel serverless; fine as a speed bump, not as abuse protection.
 - `(profileId, sku)` is not unique: legacy daily-batch product rows remain (see `prisma/schema.prisma`). Needs a consolidation migration before a unique index.
 - `reserveNextInvoiceNumber` uses the server-clock year (`getFullYear()`), not Europe/Belgrade, so invoices issued just after midnight on 1 Jan can get the wrong year prefix.
+- PWA install (2026-10-02): the site is installable (Chromium reports no installability errors). Android's menu item "Dodaj na početni ekran" can create only a shortcut, so the in-app button is "Instaliraj aplikaciju" (native prompt, confirmation, menu guide) and the dashboard shows an install card on mobile (`src/lib/use-pwa-install.ts`).
 - Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening.
 - Baseline verified 2026-10-02 (catalog PR): typecheck clean, lint 5 warnings, 316/316 unit tests.

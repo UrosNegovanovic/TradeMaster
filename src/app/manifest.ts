@@ -2,6 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    // Stable identity of the installed app, independent of start_url changes.
+    id: '/',
     name: 'TradeMaster',
     short_name: 'TradeMaster',
     description: 'Skeniraj robu, vidi lager, pošalji katalog, izdaj fakturu.',

@@ -19,6 +19,7 @@ import { Decimal } from '@prisma/client/runtime/library'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
 import { AnalyticsMilestones } from '@/components/analytics/AnalyticsMilestones'
+import { InstallAppCard } from '@/components/pwa/InstallAppCard'
 import { getOnboardingProgress } from '@/lib/onboarding'
 import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/local-date'
 import { formatRsd } from '@/lib/invoice-finance'
@@ -277,6 +278,8 @@ export default async function DashboardPage() {
         sharedCatalogCount={sharedCatalogCount}
         sharedInvoiceCount={sharedInvoiceCount}
       />
+
+      <InstallAppCard />
 
       <OnboardingChecklist progress={onboarding} />
 

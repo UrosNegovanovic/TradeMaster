@@ -172,7 +172,7 @@ export default function CatalogDetailsPage() {
         </div>
       </div>
 
-      <CatalogSharing catalogId={catalog.id} />
+      <CatalogSharing catalogId={catalog.id} catalogName={catalog.name} companyName={catalog.profile?.companyName} />
 
       {/* Catalog Info */}
       <div className="grid gap-6 md:grid-cols-3 mb-6">

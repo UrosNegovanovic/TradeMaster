@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
+import { InvoiceSharing } from '@/components/invoices/InvoiceSharing'
 import { summarizeVat } from '@/lib/invoice-vat'
 import { invoiceStatusLabel, invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 
@@ -108,6 +109,13 @@ export default function InvoiceDetailPage() {
           <InvoicePdfDownload invoice={invoice} />
         </div>
       </div>
+
+      <InvoiceSharing
+        invoiceId={invoice.id}
+        invoiceNumber={invoice.invoiceNumber}
+        status={invoice.status}
+        companyName={invoice.profile?.companyName}
+      />
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Invoice Details */}

@@ -9,8 +9,7 @@ import {
   Image,
   StyleSheet,
 } from '@react-pdf/renderer'
-import { InvoiceWithItems } from '@/types/invoice'
-import { Profile } from '@/types/profile'
+import type { Profile } from '@/types/profile'
 import { summarizeVat } from '@/lib/invoice-vat'
 
 // Define styles for the PDF
@@ -271,8 +270,33 @@ const styles = StyleSheet.create({
   },
 })
 
+type Amount = number | string | { toString(): string }
+
+/** What the PDF prints. Both the owner's invoice and the public shared-invoice DTO fit this shape. */
+export type InvoicePdfData = {
+  invoiceNumber: string
+  createdAt: Date | string
+  dueDate: Date | string
+  clientName: string
+  clientAddress: string | null
+  clientPib: string | null
+  status: string
+  totalAmount: Amount
+  vatEnabled?: boolean
+  items: Array<{
+    id: string
+    productName: string
+    quantity: number
+    unitPrice: Amount
+    discount: Amount | null
+    vatRate?: Amount | null
+    total: Amount
+  }>
+  profile: Pick<Profile, 'companyName' | 'contactEmail' | 'contactPhone' | 'address' | 'pib' | 'giroAccount' | 'logoUrl'>
+}
+
 interface InvoicePDFProps {
-  invoice: InvoiceWithItems & { profile: Profile }
+  invoice: InvoicePdfData
 }
 
 export function InvoicePDF({ invoice }: InvoicePDFProps) {

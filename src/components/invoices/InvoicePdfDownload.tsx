@@ -4,13 +4,11 @@ import { useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { Download, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { InvoicePDF } from '@/components/invoices/InvoicePDF'
-import type { InvoiceWithItems } from '@/types/invoice'
-import type { Profile } from '@/types/profile'
+import { InvoicePDF, type InvoicePdfData } from '@/components/invoices/InvoicePDF'
 import { sr } from '@/lib/ui-copy'
 
 type InvoicePdfDownloadProps = {
-  invoice: InvoiceWithItems & { profile: Profile }
+  invoice: InvoicePdfData
 }
 
 export default function InvoicePdfDownload({ invoice }: InvoicePdfDownloadProps) {

@@ -63,6 +63,8 @@ export default defineConfig({
       'src/app/api/products/bulk-adjust/route.test.ts',
       'src/app/api/products/fetch-by-barcode/route.test.ts',
       'src/app/api/categories/route.test.ts',
+      'src/app/api/clients/route.test.ts',
+      'src/lib/client-fill.test.ts',
       'src/test/require-test-database.test.ts',
     ],
     exclude: [

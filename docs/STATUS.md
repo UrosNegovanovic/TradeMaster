@@ -11,6 +11,7 @@ _Last updated: 2026-10-01. Target release: 2026-11-01._
 - Purchase price rules: `costPrice` required on ProductForm, invoice cost snapshots.
 - Optional sale price and Clerk-authenticated product image upload.
 - Honest early-access landing copy, Serbian leftovers, after-sign-in redirect to `/dashboard`.
+- Saved buyers (`Client`, ROADMAP #4) on branch `feat/clients`: draft PR, migration `20261002120000_clients.sql` must be applied by hand before deploy.
 
 ## Blocked on the owner
 

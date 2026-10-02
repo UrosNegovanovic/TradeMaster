@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useUnsavedChangesGuard } from '@/lib/use-unsaved-changes-guard'
+import { invoiceDraftSnapshot } from '@/lib/unsaved-changes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DraftNumberInput } from '@/components/ui/draft-number-input'
@@ -124,6 +126,27 @@ export function InvoiceForm({
       }
     }
   }, [initialData])
+
+  // Unsaved-changes guard: compare what the user can edit with what the form started from.
+  const draftSnapshot = invoiceDraftSnapshot({ invoiceNumber, dueDate, clientName, clientAddress, clientPib, items })
+  const newInvoiceBaseline = useRef(draftSnapshot)
+  const baselineSnapshot = useMemo(() => {
+    if (!initialData) return newInvoiceBaseline.current
+    const storedItems: any[] = initialData.items ?? []
+    return invoiceDraftSnapshot({
+      invoiceNumber: initialData.invoiceNumber || '',
+      dueDate: initialData.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : '',
+      clientName: initialData.clientName || '',
+      clientAddress: initialData.clientAddress || '',
+      clientPib: initialData.clientPib || '',
+      items:
+        storedItems.length > 0
+          ? storedItems
+          : [{ productId: null, productName: '', quantity: 1, unitPrice: 0, discount: 0, vatRate: inVatSystem ? DEFAULT_VAT_RATE : 0 }],
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData])
+  useUnsavedChangesGuard(!isLoading && draftSnapshot !== baselineSnapshot)
 
   // Calculate grand total
   const vatSummary = useMemo(

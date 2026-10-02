@@ -16,6 +16,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { notify } from '@/lib/notify'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import { findClientByName } from '@/lib/client-fill'
+import { useUnsavedChangesGuard } from '@/lib/use-unsaved-changes-guard'
+import { sameSelection } from '@/lib/unsaved-changes'
 import type { Client } from '@/types/client'
 import { sr } from '@/lib/ui-copy'
 import { formatRsd } from '@/lib/invoice-finance'
@@ -85,7 +87,7 @@ export function CatalogForm({
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
     setValue,
     watch,
   } = useForm<CatalogFormData>({
@@ -107,6 +109,9 @@ export function CatalogForm({
   const clientNameValue = watch('clientName') ?? ''
   // Offer to remember a typed buyer only when it is not already in the saved list.
   const canSaveClient = clientNameValue.trim().length > 0 && !findClientByName(clients, clientNameValue)
+
+  // Fields and the product selection/order both count as unsaved changes.
+  useUnsavedChangesGuard(!isLoading && (isDirty || !sameSelection(selectedProductIds, initialProductIds)))
 
   const discount = watch('discount')
   const layout = watch('layout')

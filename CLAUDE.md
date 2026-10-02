@@ -31,7 +31,7 @@ npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 67 test files / 371 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 68 test files / 377 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
 `vitest.config.ts` has an explicit `include` list: a new `*.test.ts` file does not run until you add it there.
 `test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
 
@@ -57,7 +57,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 ## Conventions
 
 - Mutations from the client use `authorizedFetch` / `useAuthorizedFetch` (Bearer + credentials).
-- PWA has no browser back button: every new/edit/detail page shows `BackLink` (`src/components/layout/BackLink.tsx`) to its explicit parent route (not `history.back()`), and forms take `cancelHref` for a bottom "Otkaži" button.
+- PWA has no browser back button: every new/edit/detail page shows `BackLink` (`src/components/layout/BackLink.tsx`) to its explicit parent route (not `history.back()`), and forms take `cancelHref` for a bottom "Otkaži" button. Forms with user input (catalog, invoice) call `useUnsavedChangesGuard(dirty)` (`src/lib/use-unsaved-changes-guard.ts`): confirm on in-app links, browser prompt on refresh/close; the system back gesture cannot be intercepted.
 - Toasts via `notify` (`src/lib/notify.ts`, Sonner). Shared Serbian UI strings in `src/lib/ui-copy.ts`; landing copy in `src/lib/landing-copy.ts`.
 - PDFs: load `@react-pdf/renderer` components with `next/dynamic(..., { ssr: false })`, Serbian labels. Use `PDF_FONT_FAMILY` and call `registerPdfFonts()` from `src/lib/pdf-fonts.ts` (Liberation Sans in `public/fonts`); built-in Helvetica/Courier drop č, ć, đ.
 - Pure logic goes in `src/lib/*.ts` with a colocated `*.test.ts`. Add tests for the behavior you change.

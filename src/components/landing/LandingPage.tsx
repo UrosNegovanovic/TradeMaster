@@ -9,11 +9,11 @@ import { LandingStickyCta } from './LandingStickyCta'
 import { landingShell } from './landing-shell'
 import { AssortmentLaptop, FeatureShot, PhoneScanner } from './mocks'
 import {
-  FREE_PERIOD,
   MONTHLY_PRICE,
   PRICING_OFFER,
   paymentFaq,
-  pricingFxNote,
+  pricingCardNote,
+  pricingCardPeriod,
   pricingIncludes,
   pricingNote,
 } from '@/lib/landing-copy'
@@ -327,16 +327,15 @@ export function LandingPage() {
               Cena
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
-              {PRICING_OFFER}, sve uključeno. Naplata je ručna dok ne bude
-              checkout.
+              Jedan paket, sve uključeno.
             </p>
             <article className="mx-auto mt-8 max-w-[420px] rounded-[16px] border border-neutral-200/80 bg-white p-6 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)] sm:p-7">
               <p className="text-[16px] font-semibold text-neutral-900">TradeMaster</p>
               <p className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-[2.5rem] font-bold leading-none tracking-tight text-neutral-950">
-                  Besplatno
+                <span className="whitespace-nowrap text-[2.5rem] font-bold leading-none tracking-tight text-neutral-950">
+                  {MONTHLY_PRICE}
                 </span>
-                <span className="text-[15px] text-neutral-600">prvih {FREE_PERIOD}, zatim {MONTHLY_PRICE} mesečno</span>
+                <span className="text-[15px] text-neutral-600">{pricingCardPeriod}</span>
               </p>
               <ul className="mt-6 space-y-2.5">
                 {pricingIncludes.map((item) => (
@@ -352,16 +351,16 @@ export function LandingPage() {
                 asChild
               >
                 <Link href="/sign-up">
-                  Registruj se
+                  Probaj besplatno
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </article>
             <p className="mt-4 text-center text-[14px] text-neutral-600">
-              {pricingNote}
+              {pricingCardNote}
             </p>
             <p className="mt-1 text-center text-[12px] leading-relaxed text-neutral-500">
-              {pricingFxNote}
+              {pricingNote}
             </p>
           </div>
         </section>

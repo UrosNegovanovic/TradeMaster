@@ -147,7 +147,7 @@ function MovementList({ movements }: { movements: StockMovement[] }) {
         {movements.map((movement) => (
           <li key={movement.id} className="flex items-start gap-3 rounded-xl border p-3">
             {movement.type === MovementType.IN ? (
-              <Badge variant="default" className="mt-0.5 bg-green-600">
+              <Badge variant="success" className="mt-0.5">
                 <ArrowUp className="mr-1 h-3 w-3" />
                 UL
               </Badge>
@@ -196,7 +196,7 @@ function MovementList({ movements }: { movements: StockMovement[] }) {
                 </TableCell>
                 <TableCell>
                   {movement.type === MovementType.IN ? (
-                    <Badge variant="default" className="bg-green-500">
+                    <Badge variant="success">
                       <ArrowUp className="mr-1 h-3 w-3" />
                       IN
                     </Badge>

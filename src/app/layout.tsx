@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import Script from "next/script"
 import { ClerkProvider } from "@clerk/nextjs"
+import { srRS } from "@clerk/localizations/sr-RS"
 import "./globals.css"
 import { Providers } from "./providers"
 import { Toaster } from "sonner"
@@ -143,7 +144,14 @@ export default function RootLayout({
 
   return (
     <ClerkProvider
-      appearance={{ variables: { colorPrimary: '#1a6e5c' } }}
+      localization={srRS}
+      appearance={{
+        variables: {
+          colorPrimary: '#1a6e5c',
+          borderRadius: '0.5rem',
+          fontFamily: inter.style.fontFamily,
+        },
+      }}
       signInFallbackRedirectUrl={AFTER_AUTH_PATH}
       signUpFallbackRedirectUrl={AFTER_AUTH_PATH}
     >

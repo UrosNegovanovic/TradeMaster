@@ -13,6 +13,7 @@ export default defineConfig({
       'src/lib/invoice-vat.test.ts',
       'src/lib/invoice-validation.test.ts',
       'src/lib/invoice-status.test.ts',
+      'src/lib/invoice-status-view.test.ts',
       'src/lib/invoice-finance.test.ts',
       'src/lib/invoice-line.test.ts',
       'src/lib/product-picker.test.ts',

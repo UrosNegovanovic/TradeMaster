@@ -22,6 +22,7 @@
     "test:ci": "vitest --run"
   },
   "dependencies": {
+    "@clerk/localizations": "^2.8.1",
     "@clerk/nextjs": "^5.0.0",
     "@hookform/resolvers": "^3.3.4",
     "@prisma/client": "^6.19.2",

@@ -30,7 +30,7 @@ export default async function FinancePage() {
   }
 
   const invoices = await prisma.invoice.findMany({
-    where: { profileId: profile.id },
+    where: { profileId: profile.id, documentType: 'INVOICE' },
     select: {
       id: true,
       invoiceNumber: true,

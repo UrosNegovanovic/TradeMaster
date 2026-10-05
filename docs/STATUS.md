@@ -21,6 +21,10 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 - IPS QR on the invoice PDF (ROADMAP #6): `src/lib/ips-qr.ts`; shown for unpaid invoices when the company giro account has valid control digits. Needs a real scan with a Serbian banking app before launch.
 - Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed.
 
+## In review
+
+- Predračun and otpremnica (owner chose "both" with SEF XML, 2026-10-05): needs migration `20261005090000_invoice_document_type.sql` applied in production **before** the deploy (the app selects `documentType`).
+
 ## Blocked on the owner
 
 | Item | Why it blocks | Where it lands |

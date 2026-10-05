@@ -41,6 +41,10 @@ export type Invoice = {
   vatEnabled: boolean
   vatAmount: Decimal
   paidAt: Date | null
+  /** PROFORMA = predračun (own number series, no stock, no revenue). Older API mocks may omit it. */
+  documentType?: 'INVOICE' | 'PROFORMA'
+  /** Proforma only: the invoice it was turned into. */
+  convertedInvoiceId?: string | null
   profileId: string
   items?: InvoiceItem[]
   profile?: {
@@ -67,6 +71,7 @@ export type InvoiceCreateInput = {
   clientAddress?: string
   clientPib?: string | null
   status?: InvoiceStatus
+  documentType?: 'INVOICE' | 'PROFORMA'
   items: {
     productId?: string | null
     productName: string

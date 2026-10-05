@@ -246,3 +246,59 @@ describe('PATCH /api/invoices/:id (mocked Prisma/Clerk)', () => {
     expect(mocks.invoice.update).not.toHaveBeenCalled()
   })
 })
+
+describe('proforma (predračun) on /api/invoices/:id (mocked Prisma/Clerk)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
+    mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
+    vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
+    mocks.profile.findUnique.mockResolvedValue(profile)
+    mocks.product.findMany.mockResolvedValue([{ id: 'product-a', costPrice: '6.25' }])
+  })
+
+  it('refuses to mark a proforma paid', async () => {
+    mocks.$queryRaw.mockResolvedValue([
+      { id: 'pr-1', status: 'UNPAID', invoiceNumber: 'PR-01/2026', paidAt: null, documentType: 'PROFORMA' },
+    ])
+    const response = await PATCH(request('PATCH', { status: 'PAID' }), context)
+    expect(response.status).toBe(409)
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
+    expect(stockMocks.syncInvoiceStock).not.toHaveBeenCalled()
+  })
+
+  it('issues a proforma without taking stock', async () => {
+    mocks.$queryRaw.mockResolvedValue([
+      { id: 'pr-1', status: 'DRAFT', invoiceNumber: 'PR-01/2026', paidAt: null, documentType: 'PROFORMA' },
+    ])
+    mocks.invoice.update.mockResolvedValue({
+      id: 'pr-1',
+      status: 'UNPAID',
+      invoiceNumber: 'PR-01/2026',
+      documentType: 'PROFORMA',
+      items: [{ productId: 'product-a', quantity: 3 }],
+    })
+    const response = await PATCH(request('PATCH', { status: 'UNPAID' }), context)
+    expect(response.status).toBe(200)
+    expect(stockMocks.syncInvoiceStock.mock.calls[0][1].status).toBe('DRAFT')
+  })
+
+  it('edits an open proforma without taking stock', async () => {
+    mocks.$queryRaw.mockResolvedValue([
+      { id: 'pr-1', status: 'UNPAID', vatEnabled: false, documentType: 'PROFORMA', convertedInvoiceId: null },
+    ])
+    mocks.invoice.update.mockResolvedValue({ id: 'pr-1', items: [] })
+    const response = await PUT(request('PUT', validPutBody), context)
+    expect(response.status).toBe(200)
+    expect(stockMocks.syncInvoiceStock.mock.calls[0][1].status).toBe('DRAFT')
+  })
+
+  it('locks a proforma that was already turned into an invoice', async () => {
+    mocks.$queryRaw.mockResolvedValue([
+      { id: 'pr-1', status: 'UNPAID', vatEnabled: false, documentType: 'PROFORMA', convertedInvoiceId: 'inv-9' },
+    ])
+    const response = await PUT(request('PUT', validPutBody), context)
+    expect(response.status).toBe(409)
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
+  })
+})

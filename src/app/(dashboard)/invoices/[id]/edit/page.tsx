@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link'
 import { BackLink } from '@/components/layout/BackLink'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { documentLabels } from '@/lib/document-type'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProducts(): Promise<Product[]> {
@@ -91,16 +92,16 @@ export default function EditInvoicePage() {
       queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
-      notify.success('Invoice updated', {
-        description: `Invoice #${data.invoiceNumber} has been saved.`,
+      notify.success('Izmene su sačuvane', {
+        description: `${documentLabels(data.documentType).name} ${data.invoiceNumber} je sačuvan${data.documentType === 'PROFORMA' ? '' : 'a'}.`,
         duration: 5000,
       })
-      
-      router.push('/invoices')
+
+      router.push(data.documentType === 'PROFORMA' ? `/invoices/${invoiceId}` : '/invoices')
     },
     onError: (error: Error) => {
-      notify.error('Failed to update invoice', {
-        description: error.message || 'An unexpected error occurred',
+      notify.error('Čuvanje nije uspelo', {
+        description: error.message || 'Pokušajte ponovo.',
         duration: 5000,
       })
     },
@@ -179,13 +180,33 @@ export default function EditInvoicePage() {
     )
   }
 
+  const labels = documentLabels(invoice.documentType)
+  const isProformaDoc = invoice.documentType === 'PROFORMA'
+
+  if (isProformaDoc && invoice.convertedInvoiceId) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <BackLink href={`/invoices/${invoice.id}`}>Nazad na predračun</BackLink>
+          <h1 className="text-2xl font-bold lg:text-3xl">Predračun je zaključan</h1>
+          <p className="text-muted-foreground mt-2">
+            Predračun {invoice.invoiceNumber} je već pretvoren u fakturu i više se ne menja.
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link href={`/invoices/${invoice.convertedInvoiceId}`}>Otvori fakturu</Link>
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <BackLink href={`/invoices/${invoice.id}`}>Nazad na fakturu</BackLink>
-        <h1 className="text-2xl font-bold lg:text-3xl">Izmena fakture</h1>
+        <BackLink href={`/invoices/${invoice.id}`}>Nazad na {isProformaDoc ? 'predračun' : 'fakturu'}</BackLink>
+        <h1 className="text-2xl font-bold lg:text-3xl">Izmena {isProformaDoc ? 'predračuna' : 'fakture'}</h1>
         <p className="text-muted-foreground mt-2">
-          Faktura #{invoice.invoiceNumber}
+          {labels.name} {invoice.invoiceNumber}
         </p>
       </div>
 

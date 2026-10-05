@@ -189,7 +189,7 @@ model CatalogItem {
 // Invoice model
 model Invoice {
   id            String        @id @default(cuid())
-  invoiceNumber String // e.g., "01/2024" (NN/YYYY, continues an existing per-year sequence — see src/lib/invoice-number.ts)
+  invoiceNumber String // "01/2026" for invoices, "PR-01/2026" for proformas (per-year sequences, see src/lib/invoice-number.ts)
   createdAt     DateTime      @default(now())
   dueDate       DateTime
   clientName    String
@@ -202,21 +202,31 @@ model Invoice {
   paidAt        DateTime?
   shareToken    String?       @unique // Revocable public link; only issued invoices are served
   shareEnabled  Boolean       @default(false)
+  documentType  DocumentType  @default(INVOICE) // PROFORMA = predračun: own number series, no stock, no revenue
+  convertedInvoiceId String?  @unique // Proforma only: the invoice it was turned into
 
   // Foreign keys
   profileId String
 
   // Relations
-  profile        Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  items          InvoiceItem[]
-  stockMovements StockMovement[]
+  profile          Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items            InvoiceItem[]
+  stockMovements   StockMovement[]
+  convertedInvoice Invoice?        @relation("ProformaConversion", fields: [convertedInvoiceId], references: [id], onDelete: SetNull)
+  sourceProforma   Invoice?        @relation("ProformaConversion")
 
   @@index([profileId])
   @@index([invoiceNumber])
   @@index([profileId, createdAt]) // 🚀 Performance: Faster invoice history queries
   @@index([profileId, status])
   @@index([profileId, paidAt])
+  @@index([profileId, documentType])
   @@map("invoices")
+}
+
+enum DocumentType {
+  INVOICE
+  PROFORMA
 }
 
 // Invoice status enum

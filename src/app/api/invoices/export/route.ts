@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     const invoices = await prisma.invoice.findMany({
       where: {
         profileId: profile.id,
+        documentType: 'INVOICE',
         status: { not: 'DRAFT' },
         createdAt: { gte: range.from, lt: range.toExclusive },
       },

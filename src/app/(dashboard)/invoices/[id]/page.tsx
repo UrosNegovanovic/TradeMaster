@@ -13,8 +13,10 @@ import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions
 import { InvoiceSharing } from '@/components/invoices/InvoiceSharing'
 import { summarizeVat } from '@/lib/invoice-vat'
 import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
-import { INVOICE_TONE_BADGE_VARIANT, invoiceStatusView } from '@/lib/invoice-status-view'
+import { INVOICE_TONE_BADGE_VARIANT, documentStatusView } from '@/lib/invoice-status-view'
 import { Badge } from '@/components/ui/badge'
+import { ProformaConvertButton } from '@/components/invoices/ProformaConvertButton'
+import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
   ssr: false,
@@ -72,9 +74,9 @@ export default function InvoiceDetailPage() {
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">Invoice not found</p>
+            <p className="text-muted-foreground">Dokument nije pronađen.</p>
             <Link href="/invoices" className="mt-4">
-              <Button variant="outline">Back to Invoices</Button>
+              <Button variant="outline">Nazad na fakture</Button>
             </Link>
           </CardContent>
         </Card>
@@ -83,24 +85,40 @@ export default function InvoiceDetailPage() {
   }
 
   const vat = invoice.vatEnabled ? summarizeVat(invoice.items ?? []) : null
+  const isProformaDoc = invoice.documentType === 'PROFORMA'
+  const labels = documentLabels(invoice.documentType)
+  const statusView = documentStatusView(invoice)
+  const backHref = isProformaDoc ? '/invoices?view=proforma' : invoicesListHref(invoice.status)
 
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <Button variant="outline" size="sm" className="min-h-11 shrink-0" asChild>
-            <Link href={invoicesListHref(invoice.status)}>
+            <Link href={backHref}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Nazad
             </Link>
           </Button>
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-bold lg:text-3xl">{invoice.invoiceNumber}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Detalji fakture</p>
+            <p className="mt-1 text-sm text-muted-foreground">{labels.name}</p>
           </div>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-          {isPaidInvoiceStatus(invoice.status) ? null : (
+          {isProformaDoc ? (
+            invoice.convertedInvoiceId ? (
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+                <Link href={`/invoices/${invoice.convertedInvoiceId}`}>Otvori fakturu</Link>
+              </Button>
+            ) : (
+              <ProformaConvertButton
+                proformaId={invoice.id}
+                proformaNumber={invoice.invoiceNumber}
+                className="min-h-11 w-full sm:w-auto"
+              />
+            )
+          ) : isPaidInvoiceStatus(invoice.status) ? null : (
             <InvoiceStatusActions
               invoiceId={invoice.id}
               status={invoice.status}
@@ -109,6 +127,9 @@ export default function InvoiceDetailPage() {
             />
           )}
           <InvoicePdfDownload invoice={invoice} />
+          {canPrintDeliveryNote(invoice) ? (
+            <InvoicePdfDownload invoice={invoice} variant="delivery" label="Otpremnica" buttonVariant="outline" />
+          ) : null}
         </div>
       </div>
 
@@ -117,46 +138,44 @@ export default function InvoiceDetailPage() {
         invoiceNumber={invoice.invoiceNumber}
         status={invoice.status}
         companyName={invoice.profile?.companyName}
+        documentType={invoice.documentType}
       />
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Invoice Details */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Invoice Information</CardTitle>
+            <CardTitle>Podaci</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <p className="text-sm text-muted-foreground">Invoice Number</p>
+                <p className="text-sm text-muted-foreground">{labels.numberLabel}</p>
                 <p className="text-base font-semibold">{invoice.invoiceNumber}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 <div className="mt-1">
-                  {(() => {
-                    const view = invoiceStatusView(invoice.status, invoice.dueDate)
-                    return <Badge variant={INVOICE_TONE_BADGE_VARIANT[view.tone]}>{view.label}</Badge>
-                  })()}
+                  <Badge variant={INVOICE_TONE_BADGE_VARIANT[statusView.tone]}>{statusView.label}</Badge>
                 </div>
-                {isPaidInvoiceStatus(invoice.status) ? (
+                {!isProformaDoc && isPaidInvoiceStatus(invoice.status) ? (
                   <div className="mt-3">
                     <InvoiceStatusActions invoiceId={invoice.id} status={invoice.status} />
                   </div>
                 ) : null}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Created Date</p>
+                <p className="text-sm text-muted-foreground">Datum</p>
                 <p className="text-base">{formatDate(invoice.createdAt)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Due Date</p>
+                <p className="text-sm text-muted-foreground">{labels.dueLabel}</p>
                 <p className="text-base">{formatDate(invoice.dueDate)}</p>
               </div>
             </div>
 
             <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-2">Client</p>
+              <p className="text-sm text-muted-foreground mb-2">Kupac</p>
               <p className="text-base font-semibold">{invoice.clientName}</p>
               {invoice.clientPib && (
                 <p className="text-sm text-muted-foreground mt-1">PIB: {invoice.clientPib}</p>
@@ -173,12 +192,12 @@ export default function InvoiceDetailPage() {
         {/* Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Summary</CardTitle>
+            <CardTitle>Ukupno</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Items:</span>
+                <span className="text-muted-foreground">Broj stavki:</span>
                 <span>{invoice.items?.length || 0}</span>
               </div>
               {vat ? (
@@ -197,7 +216,7 @@ export default function InvoiceDetailPage() {
               ) : null}
               <div className="pt-3 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">{vat ? 'Ukupno za uplatu:' : 'Total:'}</span>
+                  <span className="text-lg font-semibold">{vat ? 'Ukupno za uplatu:' : 'Ukupno:'}</span>
                   <span className="text-2xl font-bold">
                     {formatCurrency(Number(invoice.totalAmount))}
                   </span>
@@ -211,8 +230,10 @@ export default function InvoiceDetailPage() {
       {/* Items Table */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Invoice Items</CardTitle>
-          <CardDescription>Products and services included in this invoice</CardDescription>
+          <CardTitle>Stavke</CardTitle>
+          {isProformaDoc ? (
+            <CardDescription>Predračun ne skida robu sa magacina; to se dešava kada ga pretvorite u fakturu.</CardDescription>
+          ) : null}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -220,16 +241,16 @@ export default function InvoiceDetailPage() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">
-                    Item
+                    Stavka
                   </th>
                   <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
-                    Quantity
+                    Količina
                   </th>
                   <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
-                    Unit Price
+                    Jed. cena
                   </th>
                   <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
-                    Discount
+                    Popust
                   </th>
                   {vat ? (
                     <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
@@ -237,7 +258,7 @@ export default function InvoiceDetailPage() {
                     </th>
                   ) : null}
                   <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">
-                    Total
+                    Iznos
                   </th>
                 </tr>
               </thead>

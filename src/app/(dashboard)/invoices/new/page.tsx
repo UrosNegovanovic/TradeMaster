@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { InvoiceForm } from '@/components/invoices/InvoiceForm'
 import { BackLink } from '@/components/layout/BackLink'
 import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { documentLabels, parseDocumentType } from '@/lib/document-type'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 
 async function fetchProducts(): Promise<Product[]> {
@@ -50,6 +51,11 @@ export default function NewInvoicePage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const request = useAuthorizedFetch()
+  const documentType = parseDocumentType(useSearchParams().get('type') === 'proforma' ? 'PROFORMA' : null)
+  const isProformaDoc = documentType === 'PROFORMA'
+  const labels = documentLabels(documentType)
+  const listHref = isProformaDoc ? '/invoices?view=proforma' : '/invoices'
+  const backLabel = isProformaDoc ? 'Nazad na predračune' : 'Nazad na fakture'
 
   // Fetch products
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -82,17 +88,16 @@ export default function NewInvoicePage() {
       queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
       
-      // Professional success toast
-      notify.success('Invoice created', {
-        description: `Invoice #${data.invoiceNumber || 'N/A'} has been saved.`,
+      notify.success(isProformaDoc ? 'Predračun je sačuvan' : 'Faktura je sačuvana', {
+        description: `${labels.name} ${data.invoiceNumber ?? ''} je sačuvan${isProformaDoc ? '' : 'a'}.`,
         duration: 5000,
       })
-      
-      router.push('/invoices')
+
+      router.push(isProformaDoc ? `/invoices/${data.id}` : '/invoices')
     },
     onError: (error: Error) => {
-      notify.error('Failed to create invoice', {
-        description: error.message || 'An unexpected error occurred',
+      notify.error('Čuvanje nije uspelo', {
+        description: error.message || 'Pokušajte ponovo.',
         duration: 5000,
       })
     },
@@ -114,8 +119,8 @@ export default function NewInvoicePage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <BackLink href="/invoices">Nazad na fakture</BackLink>
-          <h1 className="text-2xl font-bold lg:text-3xl">Nova faktura</h1>
+          <BackLink href={listHref}>{backLabel}</BackLink>
+          <h1 className="text-2xl font-bold lg:text-3xl">{labels.newTitle}</h1>
         </div>
         <FirstRunEmptyState kind="invoice" />
       </div>
@@ -125,10 +130,12 @@ export default function NewInvoicePage() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <BackLink href="/invoices">Nazad na fakture</BackLink>
-        <h1 className="text-2xl font-bold lg:text-3xl">Nova faktura</h1>
+        <BackLink href={listHref}>{backLabel}</BackLink>
+        <h1 className="text-2xl font-bold lg:text-3xl">{labels.newTitle}</h1>
         <p className="text-muted-foreground mt-2">
-          Izaberite proizvode i kupca, pa sačuvajte fakturu.
+          {isProformaDoc
+            ? 'Predračun ne skida robu sa magacina. Kada kupac uplati, pretvorite ga u fakturu.'
+            : 'Izaberite proizvode i kupca, pa sačuvajte fakturu.'}
         </p>
       </div>
 
@@ -138,7 +145,8 @@ export default function NewInvoicePage() {
         inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}
-        cancelHref="/invoices"
+        cancelHref={listHref}
+        documentType={documentType}
       />
     </div>
   )

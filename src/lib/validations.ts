@@ -161,7 +161,12 @@ export const invoiceWriteSchema = z.object({
   items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
 })
 
-export const invoiceCreateSchema = invoiceWriteSchema.omit({ invoiceNumber: true })
+export const documentTypeSchema = z.enum(['INVOICE', 'PROFORMA'])
+
+/** documentType is set once at creation (predračun or faktura) and never changes afterwards. */
+export const invoiceCreateSchema = invoiceWriteSchema
+  .omit({ invoiceNumber: true })
+  .extend({ documentType: documentTypeSchema.optional() })
 
 export const invoicePatchSchema = z
   .object({

@@ -33,6 +33,20 @@ function invoice(partial: {
 }
 
 describe('invoice-finance', () => {
+  it('ignores proformas: they are neither receivables nor revenue', () => {
+    const snapshot = buildFinanceSnapshot(
+      [
+        invoice({ id: 'a', status: 'UNPAID', totalAmount: 100 }),
+        { ...invoice({ id: 'p1', status: 'UNPAID', totalAmount: 500 }), documentType: 'PROFORMA' },
+        { ...invoice({ id: 'p2', status: 'PAID', totalAmount: 700, paidAt: now }), documentType: 'PROFORMA' },
+      ],
+      now
+    )
+    expect(snapshot.receivables).toBe(100)
+    expect(snapshot.openCount).toBe(1)
+    expect(snapshot.monthRevenue).toBe(0)
+  })
+
   it('treats marking paid as a transfer from receivables to payment-month revenue', () => {
     const open = [
       invoice({ id: 'a', status: 'UNPAID', totalAmount: 100 }),

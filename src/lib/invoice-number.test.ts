@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextInvoiceNumber, reserveNextInvoiceNumber } from './invoice-number'
+import { nextInvoiceNumber, nextProformaNumber, reserveNextInvoiceNumber } from './invoice-number'
 
 describe('nextInvoiceNumber', () => {
   it('starts a company year at 01/YYYY when there are no existing invoices', () => {
@@ -24,13 +24,16 @@ describe('nextInvoiceNumber', () => {
 describe('reserveNextInvoiceNumber', () => {
   function fakeTx(existing: string[]) {
     const where: Array<{ endsWith: string }> = []
+    const documentTypes: string[] = []
     return {
       where,
+      documentTypes,
       tx: {
         $executeRaw: async () => 1,
         invoice: {
-          findMany: async (args: { where: { invoiceNumber: { endsWith: string } } }) => {
+          findMany: async (args: { where: { documentType: string; invoiceNumber: { endsWith: string } } }) => {
             where.push(args.where.invoiceNumber)
+            documentTypes.push(args.where.documentType)
             return existing.filter((n) => n.endsWith(args.where.invoiceNumber.endsWith)).map((invoiceNumber) => ({ invoiceNumber }))
           },
         },
@@ -50,5 +53,34 @@ describe('reserveNextInvoiceNumber', () => {
     const { tx } = fakeTx(['07/2026'])
     const number = await reserveNextInvoiceNumber(tx as never, 'profile-a', new Date('2026-12-31T22:30:00.000Z'))
     expect(number).toBe('08/2026')
+  })
+
+  it('reserves invoice numbers only from invoices', async () => {
+    const { tx, documentTypes } = fakeTx(['03/2026'])
+    const number = await reserveNextInvoiceNumber(tx as never, 'profile-a', new Date('2026-06-01T10:00:00.000Z'))
+    expect(documentTypes).toEqual(['INVOICE'])
+    expect(number).toBe('04/2026')
+  })
+
+  it('reserves proforma numbers from their own PR- series', async () => {
+    const { tx, documentTypes } = fakeTx(['PR-02/2026'])
+    const number = await reserveNextInvoiceNumber(
+      tx as never,
+      'profile-a',
+      new Date('2026-06-01T10:00:00.000Z'),
+      'PROFORMA'
+    )
+    expect(documentTypes).toEqual(['PROFORMA'])
+    expect(number).toBe('PR-03/2026')
+  })
+})
+
+describe('nextProformaNumber', () => {
+  it('starts at PR-01 and ignores invoice numbers', () => {
+    expect(nextProformaNumber(2026, ['05/2026'])).toBe('PR-01/2026')
+  })
+
+  it('continues the PR- series within the year', () => {
+    expect(nextProformaNumber(2026, ['PR-01/2026', 'PR-09/2026', 'PR-03/2025'])).toBe('PR-10/2026')
   })
 })

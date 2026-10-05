@@ -425,4 +425,38 @@ describe('POST /api/invoices (mocked Prisma/Clerk — not a real DB rollback pro
       expect(mocks.invoice.create).not.toHaveBeenCalled()
     })
   })
+
+  describe('proforma (predračun)', () => {
+    const proformaBody = {
+      documentType: 'PROFORMA',
+      dueDate: '2026-11-01',
+      clientName: 'Acme',
+      items: [{ productId: 'product-a', productName: 'Coffee', quantity: 500, unitPrice: 10, discount: 0 }],
+    }
+
+    it('numbers it in the PR- series and takes no stock', async () => {
+      mocks.invoice.findMany.mockResolvedValue([{ invoiceNumber: 'PR-03/2026' }])
+      const response = await POST(postRequest(proformaBody))
+      expect(response.status).toBe(201)
+
+      expect(mocks.invoice.findMany.mock.calls[0][0].where.documentType).toBe('PROFORMA')
+      const data = mocks.invoice.create.mock.calls[0][0].data
+      expect(data.documentType).toBe('PROFORMA')
+      expect(data.invoiceNumber).toMatch(/^PR-04\/\d{4}$/)
+      expect(stockMocks.syncInvoiceStock.mock.calls[0][1].status).toBe('DRAFT')
+    })
+
+    it('cannot be created as paid', async () => {
+      const response = await POST(postRequest({ ...proformaBody, status: 'PAID' }))
+      expect(response.status).toBe(409)
+      expect(mocks.invoice.create).not.toHaveBeenCalled()
+    })
+
+    it('defaults to an invoice when documentType is missing', async () => {
+      const response = await POST(postRequest({ ...proformaBody, documentType: undefined, items: [{ ...proformaBody.items[0], quantity: 1 }] }))
+      expect(response.status).toBe(201)
+      expect(mocks.invoice.create.mock.calls[0][0].data.documentType).toBe('INVOICE')
+      expect(stockMocks.syncInvoiceStock.mock.calls[0][1].status).toBe('UNPAID')
+    })
+  })
 })

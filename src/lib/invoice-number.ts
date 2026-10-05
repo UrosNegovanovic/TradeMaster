@@ -1,5 +1,8 @@
 import { Prisma } from '@prisma/client'
 import { belgradeYear } from '@/lib/local-date'
+import type { DocumentTypeValue } from '@/lib/document-type'
+
+export const PROFORMA_NUMBER_PREFIX = 'PR-'
 
 /**
  * Invoice numbers follow the merchant-facing "NN/YYYY" format that predates
@@ -20,11 +23,19 @@ export function nextInvoiceNumber(year: number, existingNumbers: string[]): stri
   return `${String(highest + 1).padStart(2, '0')}/${year}`
 }
 
+/** Proformas (predračuni) have their own per-year series: "PR-01/2026", "PR-02/2026", ... */
+export function nextProformaNumber(year: number, existingNumbers: string[]): string {
+  const withoutPrefix = existingNumbers
+    .filter((number) => number.startsWith(PROFORMA_NUMBER_PREFIX))
+    .map((number) => number.slice(PROFORMA_NUMBER_PREFIX.length))
+  return `${PROFORMA_NUMBER_PREFIX}${nextInvoiceNumber(year, withoutPrefix)}`
+}
+
 type InvoiceNumberTransaction = {
   $executeRaw(query: Prisma.Sql): Promise<unknown>
   invoice: {
     findMany(args: {
-      where: { profileId: string; invoiceNumber: { endsWith: string } }
+      where: { profileId: string; documentType: DocumentTypeValue; invoiceNumber: { endsWith: string } }
       select: { invoiceNumber: true }
     }): Promise<Array<{ invoiceNumber: string }>>
   }
@@ -34,16 +45,21 @@ type InvoiceNumberTransaction = {
 export async function reserveNextInvoiceNumber(
   tx: InvoiceNumberTransaction,
   profileId: string,
-  now = new Date()
+  now = new Date(),
+  documentType: DocumentTypeValue = 'INVOICE'
 ): Promise<string> {
   // The invoice year is the Belgrade calendar year, not the server (UTC) clock: just after midnight on
   // 1 Jan a UTC server still reports the old year.
   const year = belgradeYear(now)
-  const lockKey = `invoice-number:${profileId}:${year}`
+  const lockKey =
+    documentType === 'PROFORMA'
+      ? `proforma-number:${profileId}:${year}`
+      : `invoice-number:${profileId}:${year}`
   await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`)
   const invoices = await tx.invoice.findMany({
-    where: { profileId, invoiceNumber: { endsWith: `/${year}` } },
+    where: { profileId, documentType, invoiceNumber: { endsWith: `/${year}` } },
     select: { invoiceNumber: true },
   })
-  return nextInvoiceNumber(year, invoices.map((invoice) => invoice.invoiceNumber))
+  const numbers = invoices.map((invoice) => invoice.invoiceNumber)
+  return documentType === 'PROFORMA' ? nextProformaNumber(year, numbers) : nextInvoiceNumber(year, numbers)
 }

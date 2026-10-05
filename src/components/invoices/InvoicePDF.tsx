@@ -16,6 +16,7 @@ import { summarizeVat } from '@/lib/invoice-vat'
 import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
 import { buildIpsQrPayload, ipsQrMatrix } from '@/lib/ips-qr'
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { documentLabels } from '@/lib/document-type'
 
 registerPdfFonts()
 
@@ -315,6 +316,8 @@ export type InvoicePdfData = {
   status: string
   totalAmount: Amount
   vatEnabled?: boolean
+  /** PROFORMA prints as PREDRAČUN; missing means invoice. */
+  documentType?: string | null
   items: Array<{
     id: string
     productName: string
@@ -327,12 +330,22 @@ export type InvoicePdfData = {
   profile: Pick<Profile, 'companyName' | 'contactEmail' | 'contactPhone' | 'address' | 'pib' | 'giroAccount' | 'logoUrl'>
 }
 
+/** `delivery` prints the otpremnica of an issued invoice: same lines and quantities, no prices. */
+export type InvoicePdfVariant = 'document' | 'delivery'
+
 interface InvoicePDFProps {
   invoice: InvoicePdfData
+  variant?: InvoicePdfVariant
 }
 
-export function InvoicePDF({ invoice }: InvoicePDFProps) {
+export function InvoicePDF({ invoice, variant = 'document' }: InvoicePDFProps) {
+  if (variant === 'delivery') {
+    return <DeliveryNotePDF invoice={invoice} />
+  }
+
   const profile = invoice.profile
+  const labels = documentLabels(invoice.documentType)
+  const isProformaDoc = invoice.documentType === 'PROFORMA'
   // vatEnabled is the snapshot taken when the invoice was issued; old invoices have it false.
   const vatEnabled = invoice.vatEnabled === true
   const vat = vatEnabled ? summarizeVat(invoice.items) : null
@@ -428,9 +441,9 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         {/* Invoice Info */}
         <View style={styles.invoiceInfo}>
           <View style={styles.invoiceInfoLeft}>
-            <Text style={styles.invoiceTitle}>FAKTURA</Text>
+            <Text style={styles.invoiceTitle}>{labels.pdfTitle}</Text>
             <View>
-              <Text style={styles.invoiceLabel}>Broj fakture:</Text>
+              <Text style={styles.invoiceLabel}>{labels.numberLabel}:</Text>
               <Text style={styles.invoiceValue}>{invoice.invoiceNumber}</Text>
             </View>
             <View style={{ marginTop: 15 }}>
@@ -443,18 +456,20 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
             </View>
           </View>
           <View style={styles.invoiceInfoRight}>
-            <View style={{ marginBottom: 15 }}>
-              <Text style={styles.invoiceLabel}>Status:</Text>
-              <Text style={styles.invoiceValue}>
-                {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'DRAFT' ? 'Nacrt' : 'Otvoreno'}
-              </Text>
-            </View>
+            {isProformaDoc ? null : (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={styles.invoiceLabel}>Status:</Text>
+                <Text style={styles.invoiceValue}>
+                  {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'DRAFT' ? 'Nacrt' : 'Otvoreno'}
+                </Text>
+              </View>
+            )}
             <View>
               <Text style={styles.invoiceLabel}>Datum:</Text>
               <Text style={styles.invoiceValue}>{formatDate(invoice.createdAt)}</Text>
             </View>
             <View>
-              <Text style={styles.invoiceLabel}>Rok plaćanja:</Text>
+              <Text style={styles.invoiceLabel}>{labels.dueLabel}:</Text>
               <Text style={styles.invoiceValue}>{formatDate(invoice.dueDate)}</Text>
             </View>
           </View>
@@ -534,7 +549,7 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
             <View style={styles.paymentQrText}>
               <Text style={styles.paymentQrTitle}>Plati QR kodom</Text>
               <Text style={styles.paymentQrHint}>
-                Skenirajte u mobilnom bankarstvu (NBS IPS QR). Iznos i broj fakture su već popunjeni.
+                Skenirajte u mobilnom bankarstvu (NBS IPS QR). Iznos i broj {isProformaDoc ? 'predračuna' : 'fakture'} su već popunjeni.
               </Text>
             </View>
             <View style={styles.paymentQrBox}>
@@ -553,16 +568,127 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
               <Text style={styles.footerText}>{profile.giroAccount}</Text>
             ) : null}
             <Text style={styles.footerText}>
-              Molimo navedite broj fakture pri uplati.
+              Molimo navedite broj {isProformaDoc ? 'predračuna' : 'fakture'} pri uplati.
             </Text>
-            <Text style={styles.footerText}>
-              Rok plaćanja: {Math.ceil((new Date(invoice.dueDate).getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24))} dana
-            </Text>
+            {isProformaDoc ? (
+              <Text style={styles.footerText}>
+                Predračun nije faktura. Po uplati izdajemo fakturu.
+              </Text>
+            ) : (
+              <Text style={styles.footerText}>
+                Rok plaćanja: {Math.ceil((new Date(invoice.dueDate).getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24))} dana
+              </Text>
+            )}
           </View>
           <View style={styles.footerRight}>
             <Text style={styles.signatureLabel}>
               Ovlašćeni potpis: _____________________________
             </Text>
+          </View>
+        </View>
+      </Page>
+    </Document>
+  )
+}
+
+const deliveryStyles = StyleSheet.create({
+  colNo: { width: '8%', fontSize: 10, color: '#111827' },
+  colName: { width: '62%', fontSize: 10, color: '#111827' },
+  colUnit: { width: '12%', fontSize: 10, color: '#111827', textAlign: 'center' },
+  colQty: { width: '18%', fontSize: 10, color: '#111827', textAlign: 'right', fontWeight: 'bold' },
+  signatures: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 50,
+    gap: 40,
+  },
+  signatureBox: {
+    flex: 1,
+    borderTop: '1 solid #9ca3af',
+    paddingTop: 6,
+  },
+})
+
+/** Otpremnica: accompanies the goods of an issued invoice. Lines and quantities only, no prices. */
+function DeliveryNotePDF({ invoice }: { invoice: InvoicePdfData }) {
+  const profile = invoice.profile
+  const totalQuantity = invoice.items.reduce((sum, item) => sum + item.quantity, 0)
+  const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('sr-RS')
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header} fixed>
+          <View style={styles.headerLeft}>
+            <View style={styles.companyInfo}>
+              <Text style={styles.companyName}>{profile.companyName || 'Naziv firme'}</Text>
+              {profile.address && <Text style={styles.companyDetails}>{profile.address}</Text>}
+              {profile.pib && <Text style={styles.companyDetails}>PIB: {profile.pib}</Text>}
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            {profile.contactPhone && (
+              <View>
+                <Text style={styles.contactLabel}>Telefon:</Text>
+                <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.invoiceInfo}>
+          <View style={styles.invoiceInfoLeft}>
+            <Text style={styles.invoiceTitle}>OTPREMNICA</Text>
+            <View>
+              <Text style={styles.invoiceLabel}>Uz fakturu broj:</Text>
+              <Text style={styles.invoiceValue}>{invoice.invoiceNumber}</Text>
+            </View>
+            <View style={{ marginTop: 15 }}>
+              <Text style={styles.clientTitle}>Primalac:</Text>
+              <View style={styles.clientDetails}>
+                <Text>{invoice.clientName}</Text>
+                {invoice.clientAddress && <Text>{invoice.clientAddress}</Text>}
+                {invoice.clientPib && <Text>PIB: {invoice.clientPib}</Text>}
+              </View>
+            </View>
+          </View>
+          <View style={styles.invoiceInfoRight}>
+            <View>
+              <Text style={styles.invoiceLabel}>Datum:</Text>
+              <Text style={styles.invoiceValue}>{formatDate(invoice.createdAt)}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[deliveryStyles.colNo, styles.tableHeaderText]}>R.br.</Text>
+            <Text style={[deliveryStyles.colName, styles.tableHeaderText]}>Naziv robe</Text>
+            <Text style={[deliveryStyles.colUnit, styles.tableHeaderText]}>Jed. mere</Text>
+            <Text style={[deliveryStyles.colQty, styles.tableHeaderText]}>Količina</Text>
+          </View>
+          {invoice.items.map((item, index) => (
+            <View key={item.id} style={styles.tableRow} wrap={false}>
+              <Text style={deliveryStyles.colNo}>{index + 1}.</Text>
+              <Text style={deliveryStyles.colName}>{item.productName}</Text>
+              <Text style={deliveryStyles.colUnit}>kom</Text>
+              <Text style={deliveryStyles.colQty}>{item.quantity}</Text>
+            </View>
+          ))}
+          <View style={styles.tableRow}>
+            <Text style={deliveryStyles.colNo} />
+            <Text style={[deliveryStyles.colName, styles.tableHeaderText]}>Ukupno komada</Text>
+            <Text style={deliveryStyles.colUnit} />
+            <Text style={deliveryStyles.colQty}>{totalQuantity}</Text>
+          </View>
+        </View>
+
+        <View style={deliveryStyles.signatures} wrap={false}>
+          <View style={deliveryStyles.signatureBox}>
+            <Text style={styles.signatureLabel}>Robu izdao</Text>
+          </View>
+          <View style={deliveryStyles.signatureBox}>
+            <Text style={styles.signatureLabel}>Robu primio</Text>
           </View>
         </View>
       </Page>

@@ -22,6 +22,7 @@ export function toProfileFormValues(profile?: {
   contactPhone?: string | null
   address?: string | null
   pib?: string | null
+  registrationNumber?: string | null
   giroAccount?: string | null
   inVatSystem?: boolean | null
   logoUrl?: string | null
@@ -32,6 +33,7 @@ export function toProfileFormValues(profile?: {
     contactPhone: profile?.contactPhone ?? '',
     address: profile?.address ?? '',
     pib: profile?.pib ?? '',
+    registrationNumber: profile?.registrationNumber ?? '',
     giroAccount: profile?.giroAccount ?? '',
     inVatSystem: profile?.inVatSystem ?? false,
     logoUrl: persistableImageUrl(profile?.logoUrl) ?? '',
@@ -50,6 +52,10 @@ export function profilePutFields(validated: ProfileFormData, rawBody: unknown = 
     address: emptyToNull(validated.address),
     pib: emptyToNull(validated.pib),
     giroAccount: emptyToNull(validated.giroAccount),
+    // Omitted by older clients: keep the stored matični broj.
+    ...(hasOwn(rawBody, 'registrationNumber')
+      ? { registrationNumber: emptyToNull(validated.registrationNumber) }
+      : {}),
     // Omitted by older clients: leave the stored setting untouched instead of resetting it.
     ...(hasOwn(rawBody, 'inVatSystem') && validated.inVatSystem !== undefined
       ? { inVatSystem: validated.inVatSystem }

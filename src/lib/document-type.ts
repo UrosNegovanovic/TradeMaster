@@ -94,3 +94,9 @@ export function pdfFileName(documentNumber: string, kind: string | null | undefi
   const safeNumber = documentNumber.trim().replace(/[\\/\s]+/g, '_') || 'dokument'
   return `${safeNumber}_${suffix}.pdf`
 }
+
+/** "05_2026_SEF.xml": the file the owner uploads on the SEF portal. ASCII only, safe in a header. */
+export function sefXmlFileName(invoiceNumber: string): string {
+  const safeNumber = invoiceNumber.trim().replace(/[^A-Za-z0-9.-]+/g, '_').replace(/^_+|_+$/g, '') || 'faktura'
+  return `${safeNumber}_SEF.xml`
+}

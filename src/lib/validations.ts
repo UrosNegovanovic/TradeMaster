@@ -335,6 +335,13 @@ export const profileSchema = z.object({
   contactPhone: z.string().max(50).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
   pib: z.string().trim().regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara'),
+  registrationNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{8}$/, 'Matični broj mora imati tačno 8 cifara')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   giroAccount: z
     .string()
     .trim()
@@ -359,6 +366,10 @@ export type ProfileFormData = z.infer<typeof profileSchema>
 export const clientWriteSchema = z.object({
   name: z.string().trim().min(1, 'Naziv kupca je obavezan').max(255),
   pib: clientPibWriteSchema,
+  registrationNumber: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => normalizeClientPib(value) ?? null)
+    .refine((value) => value === null || /^\d{8}$/.test(value), 'Matični broj kupca mora imati tačno 8 cifara'),
   address: z
     .union([z.string(), z.null(), z.undefined()])
     .transform((value) => normalizeClientPib(value) ?? null)

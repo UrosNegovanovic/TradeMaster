@@ -7,6 +7,7 @@ import {
   onlyInvoices,
   parseDocumentType,
   pdfFileName,
+  sefXmlFileName,
   stockStatusFor,
 } from './document-type'
 
@@ -71,5 +72,10 @@ describe('document type', () => {
     expect(pdfFileName('PR-02/2026', 'PROFORMA')).toBe('PR-02_2026_predracun.pdf')
     expect(pdfFileName('05/2026', 'delivery')).toBe('05_2026_otpremnica.pdf')
     expect(pdfFileName('Test 2026', undefined)).toBe('Test_2026_faktura.pdf')
+  })
+
+  it('names the SEF XML file', () => {
+    expect(sefXmlFileName('05/2026')).toBe('05_2026_SEF.xml')
+    expect(sefXmlFileName('Đ "x"\r\n1')).toBe('x_1_SEF.xml')
   })
 })

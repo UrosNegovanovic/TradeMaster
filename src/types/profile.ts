@@ -6,6 +6,7 @@ export type Profile = {
   contactPhone: string | null
   address: string | null
   pib: string | null
+  registrationNumber?: string | null
   giroAccount: string | null
   inVatSystem: boolean
   logoUrl: string | null
@@ -21,6 +22,7 @@ export type ProfileUpdateInput = {
   contactPhone?: string | null
   address?: string | null
   pib?: string | null
+  registrationNumber?: string | null
   giroAccount?: string | null
   inVatSystem?: boolean
   logoUrl?: string | null

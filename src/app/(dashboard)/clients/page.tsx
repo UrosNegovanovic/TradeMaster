@@ -23,8 +23,8 @@ async function fetchClients(): Promise<Client[]> {
   return response.json()
 }
 
-type FormState = { name: string; pib: string; address: string }
-const emptyForm: FormState = { name: '', pib: '', address: '' }
+type FormState = { name: string; pib: string; registrationNumber: string; address: string }
+const emptyForm: FormState = { name: '', pib: '', registrationNumber: '', address: '' }
 
 export default function ClientsPage() {
   const queryClient = useQueryClient()
@@ -88,7 +88,12 @@ export default function ClientsPage() {
 
   const startEdit = (client: Client) => {
     setEditingId(client.id)
-    setForm({ name: client.name, pib: client.pib ?? '', address: client.address ?? '' })
+    setForm({
+      name: client.name,
+      pib: client.pib ?? '',
+      registrationNumber: client.registrationNumber ?? '',
+      address: client.address ?? '',
+    })
     setFormError(null)
     setShowForm(true)
   }
@@ -155,12 +160,23 @@ export default function ClientsPage() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="clientRegistrationNumber">Matični broj</Label>
+                  <Input
+                    id="clientRegistrationNumber"
+                    value={form.registrationNumber}
+                    onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
+                    placeholder="8 cifara, za SEF"
+                    inputMode="numeric"
+                    maxLength={8}
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="clientAddress">Adresa</Label>
                   <Input
                     id="clientAddress"
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Opciono"
+                    placeholder="Ulica i broj, mesto"
                   />
                 </div>
               </div>
@@ -211,7 +227,10 @@ export default function ClientsPage() {
                 <div className="min-w-0 space-y-0.5">
                   <p className="break-words font-medium [overflow-wrap:anywhere]">{client.name}</p>
                   {client.pib ? (
-                    <p className="text-sm text-muted-foreground">PIB: {client.pib}</p>
+                    <p className="text-sm text-muted-foreground">
+                      PIB: {client.pib}
+                      {client.registrationNumber ? ` · MB: ${client.registrationNumber}` : ''}
+                    </p>
                   ) : null}
                   {client.address ? (
                     <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">

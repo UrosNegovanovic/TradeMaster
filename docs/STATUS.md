@@ -24,6 +24,7 @@ _Last updated: 2026-10-02. Target release: 2026-11-01._
 ## In review
 
 - Predračun and otpremnica (owner chose "both" with SEF XML, 2026-10-05): needs migration `20261005090000_invoice_document_type.sql` applied in production **before** the deploy (the app selects `documentType`).
+- XML za SEF (same PR): needs migration `20261005100000_registration_numbers.sql` (matični broj on profiles and clients) applied before the deploy too. The file is checked only for well-formedness; upload a sample on the SEF demo environment before telling customers it works.
 
 ## Blocked on the owner
 

@@ -71,12 +71,13 @@ describe('/api/clients', () => {
     )
     expect(response.status).toBe(201)
     expect(mocks.client.create).toHaveBeenCalledWith({
-      data: { name: 'Kupac DOO', pib: '123456789', address: null, profileId: profile.id },
+      data: { name: 'Kupac DOO', pib: '123456789', address: null, registrationNumber: null, profileId: profile.id },
     })
   })
 
   it('rejects an invalid PIB and an empty name', async () => {
     expect((await POST(jsonRequest('POST', { name: 'A', pib: '12345' }))).status).toBe(400)
+    expect((await POST(jsonRequest('POST', { name: 'A', registrationNumber: '123' }))).status).toBe(400)
     expect((await POST(jsonRequest('POST', { name: '   ' }))).status).toBe(400)
     expect(mocks.client.create).not.toHaveBeenCalled()
   })
@@ -99,7 +100,7 @@ describe('/api/clients', () => {
     expect(put.status).toBe(200)
     expect(mocks.client.update).toHaveBeenCalledWith({
       where: { id: 'c1' },
-      data: { name: 'Novi naziv', pib: null, address: 'Adresa 1' },
+      data: { name: 'Novi naziv', pib: null, address: 'Adresa 1', registrationNumber: null },
     })
     expect((await DELETE(jsonRequest('DELETE', {}), ctx('c1'))).status).toBe(200)
     expect(mocks.client.delete).toHaveBeenCalledWith({ where: { id: 'c1' } })

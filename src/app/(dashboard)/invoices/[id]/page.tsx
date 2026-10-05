@@ -16,6 +16,7 @@ import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { INVOICE_TONE_BADGE_VARIANT, documentStatusView } from '@/lib/invoice-status-view'
 import { Badge } from '@/components/ui/badge'
 import { ProformaConvertButton } from '@/components/invoices/ProformaConvertButton'
+import { SefXmlDownloadButton } from '@/components/invoices/SefXmlDownloadButton'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
@@ -128,7 +129,10 @@ export default function InvoiceDetailPage() {
           )}
           <InvoicePdfDownload invoice={invoice} />
           {canPrintDeliveryNote(invoice) ? (
-            <InvoicePdfDownload invoice={invoice} variant="delivery" label="Otpremnica" buttonVariant="outline" />
+            <>
+              <InvoicePdfDownload invoice={invoice} variant="delivery" label="Otpremnica" buttonVariant="outline" />
+              <SefXmlDownloadButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} />
+            </>
           ) : null}
         </div>
       </div>

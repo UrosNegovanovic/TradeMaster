@@ -15,6 +15,7 @@ import type { Client } from '@/types/client'
 import { clientToInvoiceFields } from '@/lib/client-fill'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
+import { documentLabels } from '@/lib/document-type'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
 import { DEFAULT_VAT_RATE, VAT_RATE_OPTIONS, summarizeVat } from '@/lib/invoice-vat'
 import {
@@ -37,6 +38,8 @@ interface InvoiceFormProps {
   cancelHref?: string
   isLoading?: boolean
   initialData?: any // Invoice data for edit mode
+  /** New documents only; an edited one keeps initialData.documentType. */
+  documentType?: 'INVOICE' | 'PROFORMA'
 }
 
 interface InvoiceItemRow {
@@ -65,7 +68,14 @@ export function InvoiceForm({
   isLoading = false,
   initialData,
   cancelHref,
+  documentType: newDocumentType = 'INVOICE',
 }: InvoiceFormProps) {
+  const documentType: 'INVOICE' | 'PROFORMA' =
+    initialData?.documentType === 'PROFORMA' || (!initialData && newDocumentType === 'PROFORMA')
+      ? 'PROFORMA'
+      : 'INVOICE'
+  const isProformaDoc = documentType === 'PROFORMA'
+  const labels = documentLabels(documentType)
   // An issued invoice keeps the PDV setting it was issued with; a draft/new invoice follows the company.
   const vatEnabled =
     initialData && initialData.status !== InvoiceStatus.DRAFT
@@ -198,7 +208,8 @@ export function InvoiceForm({
     )
   }, [items, productsById, stockMap])
 
-  const hasShortage = [...lineStock.values()].some((entry) => entry.shortage > 0)
+  // A proforma takes no stock, so a shortage is only shown, never blocking.
+  const hasShortage = !isProformaDoc && [...lineStock.values()].some((entry) => entry.shortage > 0)
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -311,7 +322,7 @@ export function InvoiceForm({
       clientName: validation.data.clientName,
       clientAddress: validation.data.clientAddress || undefined,
       clientPib: validation.data.clientPib || undefined,
-      ...(initialData ? {} : { status: InvoiceStatus.UNPAID }),
+      ...(initialData ? {} : { status: InvoiceStatus.UNPAID, documentType }),
       items: validation.data.items.map((item) => ({
         productId: item.productId ?? null,
         productName: item.productName,
@@ -331,13 +342,13 @@ export function InvoiceForm({
       {/* Header Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Podaci o fakturi</CardTitle>
+          <CardTitle>{isProformaDoc ? 'Podaci o predračunu' : 'Podaci o fakturi'}</CardTitle>
           <CardDescription>Broj, rok i podaci o kupcu</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="invoiceNumber">Broj fakture</Label>
+              <Label htmlFor="invoiceNumber">{labels.numberLabel}</Label>
               <Input
                 id="invoiceNumber"
                 value={initialData ? invoiceNumber : 'Dodeljuje se automatski pri čuvanju'}
@@ -346,7 +357,7 @@ export function InvoiceForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="dueDate">
-                Rok plaćanja <span className="text-destructive">*</span>
+                {labels.dueLabel} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="dueDate"
@@ -656,7 +667,7 @@ export function InvoiceForm({
               Čuvanje...
             </>
           ) : (
-            'Sačuvaj fakturu'
+            labels.saveLabel
           )}
         </Button>
       </div>

@@ -36,6 +36,7 @@ export const publicInvoiceSelect = {
   totalAmount: true,
   vatEnabled: true,
   vatAmount: true,
+  documentType: true,
   profile: {
     select: {
       companyName: true,
@@ -73,6 +74,7 @@ export type PublicInvoice = {
   totalAmount: string
   vatEnabled: boolean
   vatAmount: string
+  documentType: 'INVOICE' | 'PROFORMA'
   profile: {
     companyName: string | null
     contactEmail: string | null

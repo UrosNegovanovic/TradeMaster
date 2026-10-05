@@ -95,12 +95,12 @@ async function getDashboardData(profileId: string) {
       _sum: { quantity: true },
     }),
     prisma.invoice.aggregate({
-      where: { profileId, status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] } },
+      where: { profileId, documentType: 'INVOICE', status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] } },
       _count: true,
       _sum: { totalAmount: true },
     }),
     prisma.invoice.findMany({
-      where: { profileId, status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] } },
+      where: { profileId, documentType: 'INVOICE', status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] } },
       select: {
         id: true,
         invoiceNumber: true,
@@ -115,18 +115,19 @@ async function getDashboardData(profileId: string) {
     prisma.invoice.count({
       where: {
         profileId,
+        documentType: 'INVOICE',
         status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.DRAFT] },
         dueDate: { lt: startOfToday },
       },
     }),
     // Kasni naplata: issued (UNPAID) invoices past the due day. Drafts were never sent, so they are not receivables.
     prisma.invoice.aggregate({
-      where: { profileId, status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
+      where: { profileId, documentType: 'INVOICE', status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
       _count: true,
       _sum: { totalAmount: true },
     }),
     prisma.invoice.findMany({
-      where: { profileId, status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
+      where: { profileId, documentType: 'INVOICE', status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
       select: { id: true, invoiceNumber: true, clientName: true, totalAmount: true, dueDate: true },
       orderBy: { dueDate: 'asc' },
       take: DASHBOARD_OVERDUE_PREVIEW,
@@ -135,11 +136,11 @@ async function getDashboardData(profileId: string) {
       where: { profileId },
     }),
     prisma.invoice.count({
-      where: { profileId },
+      where: { profileId, documentType: 'INVOICE' },
     }),
     // Analytics milestones only (no personal data leaves the server).
     prisma.catalog.count({ where: { profileId, shareEnabled: true } }),
-    prisma.invoice.count({ where: { profileId, shareEnabled: true } }),
+    prisma.invoice.count({ where: { profileId, documentType: 'INVOICE', shareEnabled: true } }),
     prisma.product.count({
       where: { profileId, price: { lte: 0 } },
     }),

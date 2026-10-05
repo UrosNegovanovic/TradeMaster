@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { summarizeVat } from '@/lib/invoice-vat'
 import { getSafeEmailHref, getSafePhoneHref } from '@/lib/public-catalog'
 import { isShareToken, type PublicInvoice } from '@/lib/public-invoice'
+import { documentLabels } from '@/lib/document-type'
 import { sr } from '@/lib/ui-copy'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
@@ -60,7 +61,7 @@ export default function SharedInvoicePage({ params }: { params: { token: string 
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="text-center">
-          <h1 className="mb-2 text-2xl font-bold">Faktura nije dostupna</h1>
+          <h1 className="mb-2 text-2xl font-bold">Dokument nije dostupan</h1>
           <p className="text-muted-foreground">Link je nevažeći ili ga je izdavalac opozvao.</p>
         </div>
       </div>
@@ -71,6 +72,8 @@ export default function SharedInvoicePage({ params }: { params: { token: string 
   const emailHref = getSafeEmailHref(profile.contactEmail)
   const phoneHref = getSafePhoneHref(profile.contactPhone)
   const vat = invoice.vatEnabled ? summarizeVat(invoice.items) : null
+  const labels = documentLabels(invoice.documentType)
+  const isProformaDoc = invoice.documentType === 'PROFORMA'
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,9 +101,10 @@ export default function SharedInvoicePage({ params }: { params: { token: string 
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Faktura {invoice.invoiceNumber}</h1>
+            <h1 className="text-2xl font-bold">{labels.name} {invoice.invoiceNumber}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Datum: {formatDate(invoice.createdAt)} · Rok plaćanja: {formatDate(invoice.dueDate)} · {invoice.status === 'PAID' ? 'Plaćeno' : 'Otvoreno'}
+              Datum: {formatDate(invoice.createdAt)} · {labels.dueLabel}: {formatDate(invoice.dueDate)}
+              {isProformaDoc ? null : <> · {invoice.status === 'PAID' ? 'Plaćeno' : 'Otvoreno'}</>}
             </p>
           </div>
           <InvoicePdfDownload invoice={invoice} />
@@ -148,7 +152,7 @@ export default function SharedInvoicePage({ params }: { params: { token: string 
             {profile.giroAccount && <>
               <p className="text-muted-foreground">Žiro-račun</p>
               <p className="font-semibold">{profile.giroAccount}</p>
-              <p className="mt-1 text-muted-foreground">Pri uplati navedite broj fakture {invoice.invoiceNumber}.</p>
+              <p className="mt-1 text-muted-foreground">Pri uplati navedite broj {isProformaDoc ? 'predračuna' : 'fakture'} {invoice.invoiceNumber}.</p>
             </>}
           </div>
           <div className="w-full space-y-1 text-sm sm:w-72">

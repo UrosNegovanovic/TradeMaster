@@ -14,6 +14,7 @@ import {
 import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { accessExpiredResponse } from '@/lib/access-guard'
+import { PROFORMA_PAID_MESSAGE, stockStatusFor } from '@/lib/document-type'
 
 export const dynamic = 'force-dynamic'
 
@@ -120,9 +121,16 @@ export async function PUT(
     const parsed = parseInvoiceWriteBody(body)
     const updatedInvoice = await prisma.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<
-        Array<{ id: string; status: string; vatEnabled: boolean }>
+        Array<{
+          id: string
+          status: string
+          vatEnabled: boolean
+          documentType: string
+          convertedInvoiceId: string | null
+        }>
       >`
-        SELECT id, status, "vatEnabled" FROM invoices WHERE id = ${id} AND "profileId" = ${profile.id} FOR UPDATE
+        SELECT id, status, "vatEnabled", "documentType"::text AS "documentType", "convertedInvoiceId"
+        FROM invoices WHERE id = ${id} AND "profileId" = ${profile.id} FOR UPDATE
       `
 
       if (locked.length === 0) {
@@ -133,6 +141,9 @@ export async function PUT(
       }
 
       assertInvoiceContentEditable(locked[0].status)
+      if (locked[0].convertedInvoiceId) {
+        throw new InvoiceClientError('Predračun je već pretvoren u fakturu i ne menja se.', 409)
+      }
 
       // A draft follows the company setting; an issued invoice keeps the setting it was issued with.
       const vatEnabled =
@@ -176,7 +187,7 @@ export async function PUT(
         profileId: profile.id,
         invoiceId: id,
         invoiceNumber: parsed.invoiceNumber,
-        status: locked[0].status,
+        status: stockStatusFor(locked[0].documentType, locked[0].status),
         items,
       })
 
@@ -234,9 +245,9 @@ export async function PATCH(
 
     const updatedInvoice = await prisma.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<
-        Array<{ id: string; status: string; invoiceNumber: string; paidAt: Date | null }>
+        Array<{ id: string; status: string; invoiceNumber: string; paidAt: Date | null; documentType: string }>
       >`
-        SELECT id, status, "invoiceNumber", "paidAt"
+        SELECT id, status, "invoiceNumber", "paidAt", "documentType"::text AS "documentType"
         FROM invoices
         WHERE id = ${id} AND "profileId" = ${profile.id}
         FOR UPDATE
@@ -248,6 +259,10 @@ export async function PATCH(
 
       if (hasContentChange) {
         assertInvoiceContentEditable(locked[0].status)
+      }
+
+      if (locked[0].documentType === 'PROFORMA' && parsed.status === 'PAID') {
+        throw new InvoiceClientError(PROFORMA_PAID_MESSAGE, 409)
       }
 
       const paidAt =
@@ -300,7 +315,7 @@ export async function PATCH(
           profileId: profile.id,
           invoiceId: id,
           invoiceNumber: invoice.invoiceNumber,
-          status: invoice.status,
+          status: stockStatusFor(invoice.documentType, invoice.status),
           items: invoice.items,
         })
       }

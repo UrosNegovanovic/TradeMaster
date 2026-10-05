@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { invoiceStatusView } from './invoice-status-view'
+import { documentStatusView, invoiceStatusView } from './invoice-status-view'
 
 const now = new Date('2026-10-10T10:00:00+02:00')
 
@@ -27,5 +27,34 @@ describe('invoiceStatusView', () => {
 
   it('treats a missing due date as open', () => {
     expect(invoiceStatusView('UNPAID', null, now).tone).toBe('warning')
+  })
+})
+
+describe('documentStatusView', () => {
+  it('falls back to the invoice view for invoices', () => {
+    expect(documentStatusView({ documentType: 'INVOICE', status: 'PAID', dueDate: '2026-01-01' }, now)).toEqual({
+      tone: 'success',
+      label: 'Plaćeno',
+    })
+  })
+
+  it('never shows a proforma as overdue', () => {
+    expect(documentStatusView({ documentType: 'PROFORMA', status: 'UNPAID', dueDate: '2026-10-01' }, now)).toEqual({
+      tone: 'neutral',
+      label: 'Istekao',
+    })
+    expect(documentStatusView({ documentType: 'PROFORMA', status: 'UNPAID', dueDate: '2026-10-20' }, now)).toEqual({
+      tone: 'warning',
+      label: 'Čeka uplatu',
+    })
+  })
+
+  it('shows a converted proforma as done', () => {
+    expect(
+      documentStatusView(
+        { documentType: 'PROFORMA', status: 'UNPAID', dueDate: '2026-10-01', convertedInvoiceId: 'inv-1' },
+        now
+      )
+    ).toEqual({ tone: 'success', label: 'Pretvoren u fakturu' })
   })
 })

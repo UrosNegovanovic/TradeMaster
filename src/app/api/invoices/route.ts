@@ -14,6 +14,7 @@ import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { reserveNextInvoiceNumber } from '@/lib/invoice-number'
 import { accessExpiredResponse } from '@/lib/access-guard'
+import { PROFORMA_PAID_MESSAGE, stockStatusFor } from '@/lib/document-type'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,12 +105,16 @@ export async function POST(request: NextRequest) {
     const parsed = parseInvoiceCreateBody(body)
     const vatEnabled = profile.inVatSystem
     const { items, vatAmount, totalAmount } = computeInvoiceAmounts(parsed.items, vatEnabled)
+    const documentType = parsed.documentType ?? 'INVOICE'
     const status = parsed.status ?? OPEN_INVOICE_STATUS
+    if (documentType === 'PROFORMA' && status === 'PAID') {
+      throw new InvoiceClientError(PROFORMA_PAID_MESSAGE, 409)
+    }
     const paidAt = nextPaidAt('UNPAID', null, status)
 
     const invoice = await prisma.$transaction(async (tx) => {
       const productCosts = await assertOwnedProducts(profile.id, items, tx)
-      const invoiceNumber = await reserveNextInvoiceNumber(tx, profile.id)
+      const invoiceNumber = await reserveNextInvoiceNumber(tx, profile.id, new Date(), documentType)
 
       const newInvoice = await tx.invoice.create({
         data: {
@@ -123,6 +128,7 @@ export async function POST(request: NextRequest) {
           totalAmount,
           vatEnabled,
           vatAmount,
+          documentType,
           profileId: profile.id,
         },
       })
@@ -149,7 +155,7 @@ export async function POST(request: NextRequest) {
         profileId: profile.id,
         invoiceId: newInvoice.id,
         invoiceNumber,
-        status,
+        status: stockStatusFor(documentType, status),
         items,
       })
 

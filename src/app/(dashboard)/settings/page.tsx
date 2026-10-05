@@ -181,6 +181,22 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="registrationNumber">Matični broj</Label>
+                <Input
+                  id="registrationNumber"
+                  inputMode="numeric"
+                  placeholder="8 cifara"
+                  {...register('registrationNumber')}
+                />
+                {errors.registrationNumber && (
+                  <p className="text-sm text-destructive">
+                    {errors.registrationNumber.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">Potreban za XML fakture za SEF.</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="contactEmail">Email</Label>
                 <Input
                   id="contactEmail"

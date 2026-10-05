@@ -24,6 +24,26 @@ export function invoiceStatusView(
   return { tone: 'warning', label: 'Otvoreno' }
 }
 
+/**
+ * Proforma (predračun): draft is neutral, a sent one waits for payment, past its "važi do" day it has
+ * expired, and once turned into an invoice it is done. It is never overdue: nobody owes it.
+ */
+export function documentStatusView(
+  doc: {
+    documentType?: string | null
+    status: string | null | undefined
+    dueDate: Date | string | null | undefined
+    convertedInvoiceId?: string | null
+  },
+  now = new Date()
+): InvoiceStatusView {
+  if (doc.documentType !== 'PROFORMA') return invoiceStatusView(doc.status, doc.dueDate, now)
+  if (doc.convertedInvoiceId) return { tone: 'success', label: 'Pretvoren u fakturu' }
+  if (doc.status === 'DRAFT') return { tone: 'neutral', label: 'Nacrt' }
+  if (doc.dueDate && daysOverdue(doc.dueDate, now) > 0) return { tone: 'neutral', label: 'Istekao' }
+  return { tone: 'warning', label: 'Čeka uplatu' }
+}
+
 export const INVOICE_TONE_BADGE_VARIANT = {
   neutral: 'secondary',
   warning: 'warning',

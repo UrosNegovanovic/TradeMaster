@@ -1,4 +1,5 @@
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { onlyInvoices } from '@/lib/document-type'
 import {
   addLocalMonths,
   belgradeMonthIndex,
@@ -25,6 +26,8 @@ export type FinanceInvoiceInput = {
   invoiceNumber: string
   clientName: string
   status: string
+  /** PROFORMA rows (predračuni) are ignored: they are neither receivables nor revenue. */
+  documentType?: string | null
   totalAmount: number | string | { toString(): string }
   vatAmount?: number | string | { toString(): string } | null
   createdAt: Date | string
@@ -222,9 +225,10 @@ function formatMonthLabel(date: Date): string {
 }
 
 export function buildFinanceSnapshot(
-  invoices: FinanceInvoiceInput[],
+  documents: FinanceInvoiceInput[],
   now = new Date()
 ): FinanceSnapshot {
+  const invoices = onlyInvoices(documents)
   const open = invoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status))
   const paid = invoices
     .filter((invoice) => isPaidInvoiceStatus(invoice.status))

@@ -16,7 +16,8 @@ import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions
 import { InvoiceExport } from '@/components/invoices/InvoiceExport'
 import { cn } from '@/lib/utils'
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
-import { INVOICE_TONE_BADGE_VARIANT, invoiceStatusView } from '@/lib/invoice-status-view'
+import { INVOICE_TONE_BADGE_VARIANT, documentStatusView } from '@/lib/invoice-status-view'
+import { isProforma, onlyInvoices } from '@/lib/document-type'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
 import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
@@ -49,13 +50,16 @@ function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString('sr-RS')
 }
 
-function getStatusBadge(status: InvoiceStatus | string, dueDate: Date | string) {
-  const view = invoiceStatusView(status, dueDate)
+function getStatusBadge(invoice: Invoice) {
+  const view = documentStatusView(invoice)
   return <Badge variant={INVOICE_TONE_BADGE_VARIANT[view.tone]}>{view.label}</Badge>
 }
 
-function parseInvoiceView(value: string | null): 'open' | 'paid' {
-  return value === 'paid' ? 'paid' : 'open'
+type InvoiceListView = 'open' | 'paid' | 'proforma'
+
+function parseInvoiceView(status: string | null, view: string | null): InvoiceListView {
+  if (view === 'proforma') return 'proforma'
+  return status === 'paid' ? 'paid' : 'open'
 }
 
 interface InvoiceCardProps {
@@ -75,7 +79,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
               {invoice.clientName}
             </CardDescription>
           </div>
-          {getStatusBadge(invoice.status, invoice.dueDate)}
+          {getStatusBadge(invoice)}
         </div>
       </CardHeader>
       <CardContent>
@@ -87,18 +91,20 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Rok</span>
+            <span className="text-muted-foreground">{isProforma(invoice) ? 'Važi do' : 'Rok'}</span>
             <span>{formatDate(invoice.dueDate)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Kreirano</span>
             <span>{formatDate(invoice.createdAt)}</span>
           </div>
-          <InvoiceStatusActions
-            invoiceId={invoice.id}
-            status={invoice.status}
-            className="w-full"
-          />
+          {isProforma(invoice) ? null : (
+            <InvoiceStatusActions
+              invoiceId={invoice.id}
+              status={invoice.status}
+              className="w-full"
+            />
+          )}
           <div className="flex flex-wrap gap-2 border-t pt-2">
             <Button variant="outline" size="sm" className="min-h-11 flex-1" asChild>
               <Link href={`/invoices/${invoice.id}`}>
@@ -106,7 +112,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
                 PDF
               </Link>
             </Button>
-            {!isPaidInvoiceStatus(invoice.status) && (
+            {!isPaidInvoiceStatus(invoice.status) && !(isProforma(invoice) && invoice.convertedInvoiceId) && (
               <Button variant="outline" size="sm" className="min-h-11" asChild>
                 <Link href={`/invoices/${invoice.id}/edit`}>
                   <Edit className="h-4 w-4" />
@@ -166,7 +172,7 @@ export default function InvoicesPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const request = useAuthorizedFetch()
-  const view = parseInvoiceView(searchParams.get('status'))
+  const view = parseInvoiceView(searchParams.get('status'), searchParams.get('view'))
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ['invoices'],
@@ -206,8 +212,8 @@ export default function InvoicesPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['stockMovements'] })
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] })
-      notify.success('Faktura je obrisana', {
-        description: 'Faktura je uklonjena iz evidencije.',
+      notify.success('Dokument je obrisan', {
+        description: 'Uklonjen je iz evidencije.',
         duration: 5000,
       })
     },
@@ -221,7 +227,7 @@ export default function InvoicesPage() {
 
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDialog({
-      title: 'Obrisati ovu fakturu?',
+      title: view === 'proforma' ? 'Obrisati ovaj predračun?' : 'Obrisati ovu fakturu?',
       description: 'Ova radnja se ne može opozvati.',
       confirmLabel: 'Obriši',
       cancelLabel: 'Otkaži',
@@ -232,24 +238,26 @@ export default function InvoicesPage() {
     }
   }
 
-  const setView = (nextView: 'open' | 'paid') => {
+  const setView = (nextView: InvoiceListView) => {
     const params = new URLSearchParams(searchParams.toString())
-    if (nextView === 'paid') {
-      params.set('status', 'paid')
-    } else {
-      params.delete('status')
-    }
+    params.delete('status')
+    params.delete('view')
+    if (nextView === 'paid') params.set('status', 'paid')
+    if (nextView === 'proforma') params.set('view', 'proforma')
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
-  const { openInvoices, paidInvoices, visibleInvoices } = useMemo(() => {
-    const open = invoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status))
-    const paid = invoices.filter((invoice) => isPaidInvoiceStatus(invoice.status))
+  const { openInvoices, paidInvoices, proformas, visibleInvoices } = useMemo(() => {
+    const realInvoices = onlyInvoices(invoices)
+    const open = realInvoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status))
+    const paid = realInvoices.filter((invoice) => isPaidInvoiceStatus(invoice.status))
+    const proformaList = invoices.filter((invoice) => isProforma(invoice))
     return {
       openInvoices: open,
       paidInvoices: paid,
-      visibleInvoices: view === 'paid' ? paid : open,
+      proformas: proformaList,
+      visibleInvoices: view === 'paid' ? paid : view === 'proforma' ? proformaList : open,
     }
   }, [invoices, view])
 
@@ -282,14 +290,23 @@ export default function InvoicesPage() {
       <PageHeader
         className="mb-6"
         title="Fakture"
-        description="Otvorene fakture čekaju uplatu. Plaćene idu u arhivu."
+        description="Otvorene fakture čekaju uplatu. Plaćene idu u arhivu. Predračun šaljete pre uplate."
         action={
-          <Button asChild className="w-full sm:w-auto">
-            <Link href="/invoices/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova faktura
-            </Link>
-          </Button>
+          view === 'proforma' ? (
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/invoices/new?type=proforma">
+                <Plus className="mr-2 h-4 w-4" />
+                Novi predračun
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/invoices/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Nova faktura
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -314,7 +331,17 @@ export default function InvoicesPage() {
             >
               Plaćene ({paidInvoices.length})
             </Button>
+            <Button
+              type="button"
+              variant={view === 'proforma' ? 'default' : 'outline'}
+              className="min-h-11 flex-1 sm:flex-none"
+              aria-pressed={view === 'proforma'}
+              onClick={() => setView('proforma')}
+            >
+              Predračuni ({proformas.length})
+            </Button>
           </div>
+          {view === 'proforma' ? null : (
           <Card>
             <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
               {view === 'paid' ? (
@@ -339,6 +366,7 @@ export default function InvoicesPage() {
               </Button>
             </CardContent>
           </Card>
+          )}
         </div>
       ) : null}
 
@@ -350,6 +378,22 @@ export default function InvoicesPage() {
 
       {!hasAnyInvoices ? (
         <FirstRunEmptyState kind="invoice" />
+      ) : isEmptyView && view === 'proforma' ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <h3 className="text-lg font-semibold mb-2">Nema predračuna</h3>
+            <p className="text-muted-foreground text-center mb-4 max-w-md">
+              Predračun pošaljite kupcu pre uplate. Ne skida robu sa magacina; kada kupac uplati, jednim
+              klikom ga pretvorite u fakturu.
+            </p>
+            <Button asChild>
+              <Link href="/invoices/new?type=proforma">
+                <Plus className="mr-2 h-4 w-4" />
+                Novi predračun
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : isEmptyView && view === 'paid' ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

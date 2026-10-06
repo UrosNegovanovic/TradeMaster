@@ -19,6 +19,7 @@ import {
   countByCategory,
   deselectAll,
   filterPickerProducts,
+  latestPerSku,
   selectAll,
   toggleCategory,
 } from '@/lib/catalog-picker'
@@ -39,13 +40,16 @@ async function fetchCategories(): Promise<Category[]> {
 }
 
 export function ProductPicker({
-  products,
+  products: allProducts,
   selectedProductIds,
   onSelectionChange,
 }: ProductPickerProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
+  // Legacy batch rows share a SKU: offer only the newest row per SKU (plus rows already in the catalog).
+  const products = useMemo(() => latestPerSku(allProducts, selectedProductIds), [allProducts, selectedProductIds])
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],

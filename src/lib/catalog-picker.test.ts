@@ -4,6 +4,7 @@ import {
   countByCategory,
   deselectAll,
   filterPickerProducts,
+  latestPerSku,
   selectAll,
   toggleCategory,
 } from './catalog-picker'
@@ -68,5 +69,34 @@ describe('countByCategory', () => {
       { key: 'slatko', total: 1, selected: 0 },
       { key: NO_CATEGORY, total: 1, selected: 1 },
     ])
+  })
+})
+
+describe('latestPerSku', () => {
+  const batches = [
+    { id: 'a1', sku: '111', createdAt: '2026-09-01T10:00:00.000Z' },
+    { id: 'b1', sku: '222', createdAt: '2026-09-01T10:00:00.000Z' },
+    { id: 'a2', sku: '111', createdAt: '2026-09-03T10:00:00.000Z' },
+    { id: 'a3', sku: '111', createdAt: new Date('2026-09-02T10:00:00.000Z') },
+  ]
+
+  it('keeps only the newest row per SKU, in input order', () => {
+    expect(ids(latestPerSku(batches))).toEqual(['b1', 'a2'])
+  })
+
+  it('breaks a createdAt tie by the larger id, like product intake', () => {
+    const tie = [
+      { id: 'x1', sku: '9', createdAt: '2026-09-01T10:00:00.000Z' },
+      { id: 'x2', sku: '9', createdAt: '2026-09-01T10:00:00.000Z' },
+    ]
+    expect(ids(latestPerSku(tie))).toEqual(['x2'])
+  })
+
+  it('keeps older rows that are already selected', () => {
+    expect(ids(latestPerSku(batches, ['a1']))).toEqual(['a1', 'b1', 'a2'])
+  })
+
+  it('leaves unique SKUs untouched', () => {
+    expect(ids(latestPerSku(products))).toEqual(['p1', 'p2', 'p3', 'p4', 'p5'])
   })
 })

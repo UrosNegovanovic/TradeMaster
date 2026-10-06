@@ -34,28 +34,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     position: 'relative',
   },
+  // Same header as the invoice PDF: white, bottom rule, logo + company on the left,
+  // contacts on the right; all three blocks centered vertically, contacts flush right.
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 25,
+    alignItems: 'center',
+    marginBottom: 20,
     paddingBottom: 15,
-    paddingTop: 10,
     borderBottom: '2 solid #e5e7eb',
-    backgroundColor: '#f9fafb',
-    padding: 15,
-    borderRadius: 4,
   },
   headerLeft: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 15,
     flex: 1,
   },
   logoContainer: {
     width: 70,
     height: 70,
-    border: '2 solid #e5e7eb',
+    padding: 4,
+    border: '1 solid #e5e7eb',
     borderRadius: 4,
     display: 'flex',
     alignItems: 'center',
@@ -63,8 +62,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     objectFit: 'contain',
   },
   companyInfo: {
@@ -84,33 +83,39 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     alignItems: 'flex-end',
-    gap: 3,
+    gap: 6,
     minWidth: 180,
+    maxWidth: 220,
+  },
+  contactBlock: {
+    alignItems: 'flex-end',
   },
   contactInfo: {
     fontSize: 9,
     color: '#374151',
     lineHeight: 1.4,
+    textAlign: 'right',
   },
   contactLabel: {
     fontSize: 8,
     color: '#6b7280',
     fontWeight: 'bold',
     marginBottom: 1,
+    textAlign: 'right',
   },
   titleSection: {
     marginBottom: 25,
   },
   catalogTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   catalogSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7280',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   discountBadge: {
     backgroundColor: '#dbeafe',
@@ -491,27 +496,18 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
   const header = (
     <View style={styles.header}>
       <View style={styles.headerLeft}>
-        {isValidImageUrl(profile.logoUrl) ? (
-          <PdfImage src={profile.logoUrl!} style={styles.logo} />
-        ) : (
-          <View style={styles.logoContainer}>
+        <View style={styles.logoContainer}>
+          {isValidImageUrl(profile.logoUrl) ? (
+            <PdfImage src={profile.logoUrl!} style={styles.logo} />
+          ) : (
             <Text style={{ fontSize: 8, color: '#9ca3af' }}>LOGO</Text>
-          </View>
-        )}
+          )}
+        </View>
         <View style={styles.companyInfo}>
           <Text style={styles.companyName}>
             {profile.companyName || 'Naziv firme'}
           </Text>
-          {catalog.clientName && (
-            <Text style={styles.companyDetails}>
-              Katalog za: {catalog.clientName}
-            </Text>
-          )}
-          {catalog.name && (
-            <Text style={styles.companyDetails}>
-              {catalog.name}
-            </Text>
-          )}
+          {profile.address && <Text style={styles.companyDetails}>{profile.address}</Text>}
           {profile.pib && (
             <Text style={styles.companyDetails}>
               PIB: {profile.pib}
@@ -521,21 +517,15 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
       </View>
       <View style={styles.headerRight}>
         {profile.contactEmail && (
-          <View style={{ marginBottom: 4 }}>
+          <View style={styles.contactBlock}>
             <Text style={styles.contactLabel}>Email:</Text>
             <Text style={styles.contactInfo}>{profile.contactEmail}</Text>
           </View>
         )}
         {profile.contactPhone && (
-          <View style={{ marginBottom: 4 }}>
+          <View style={styles.contactBlock}>
             <Text style={styles.contactLabel}>Telefon:</Text>
             <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
-          </View>
-        )}
-        {profile.address && (
-          <View>
-            <Text style={styles.contactLabel}>Adresa:</Text>
-            <Text style={styles.contactInfo}>{profile.address}</Text>
           </View>
         )}
       </View>
@@ -553,6 +543,10 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
   // Category title sits on the same row as the discount badge so grouped pages keep the same height.
   const titleSection = (category: string | null) => (
     <View style={styles.titleSection}>
+      {catalog.name && <Text style={styles.catalogTitle}>{catalog.name}</Text>}
+      {catalog.clientName && (
+        <Text style={styles.catalogSubtitle}>Katalog za: {catalog.clientName}</Text>
+      )}
       {catalog.notes && <Text style={styles.notes}>{catalog.notes}</Text>}
       {(category || discountBadge) && (
         <View style={styles.titleRow}>

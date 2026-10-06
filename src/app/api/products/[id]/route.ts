@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { persistProductImage, scheduleProductImagePersist } from '@/lib/persist-product-image'
 import { productSchema } from '@/lib/validations'
-import { productPutFields } from '@/lib/product-put'
+import { bodyHasQuantity, productPutFields } from '@/lib/product-put'
 import { accessExpiredResponse } from '@/lib/access-guard'
 
 export const dynamic = 'force-dynamic'
@@ -87,7 +87,7 @@ export async function PUT(
     const product = await prisma.product.update({
       where: { id: params.id },
       data: {
-        ...productPutFields(validatedData),
+        ...productPutFields(validatedData, { quantityProvided: bodyHasQuantity(body) }),
         imageUrl,
       },
       include: {

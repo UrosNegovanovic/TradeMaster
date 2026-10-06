@@ -9,7 +9,7 @@ vi.mock('@clerk/nextjs/server', () => ({
 const mocks = vi.hoisted(() => {
   const prisma = {
     profile: { findUnique: vi.fn() },
-    product: { findUnique: vi.fn(), update: vi.fn() },
+    product: { findUnique: vi.fn(), updateMany: vi.fn() },
     stockMovement: { create: vi.fn() },
     $transaction: vi.fn(),
   }
@@ -54,7 +54,7 @@ describe('POST /api/stock-movements', () => {
       quantity: 2,
       product: { id: 'product-a', name: 'Sok', sku: '86001' },
     })
-    mocks.product.update.mockResolvedValue(product)
+    mocks.product.updateMany.mockResolvedValue({ count: 1 })
   })
 
   it('updates costPrice in the same transaction when stock-in includes it', async () => {
@@ -68,9 +68,9 @@ describe('POST /api/stock-movements', () => {
       })
     )
     expect(response.status).toBe(201)
-    expect(mocks.product.update).toHaveBeenCalledWith({
-      where: { id: 'product-a' },
-      data: { quantity: 12, costPrice: 18.5, costPriceZeroReason: null },
+    expect(mocks.product.updateMany).toHaveBeenCalledWith({
+      where: { id: 'product-a', profileId: 'profile-a' },
+      data: { quantity: { increment: 2 }, costPrice: 18.5, costPriceZeroReason: null },
     })
     expect(mocks.stockMovement.create).toHaveBeenCalled()
   })
@@ -85,9 +85,9 @@ describe('POST /api/stock-movements', () => {
       })
     )
     expect(response.status).toBe(201)
-    expect(mocks.product.update).toHaveBeenCalledWith({
-      where: { id: 'product-a' },
-      data: { quantity: 12 },
+    expect(mocks.product.updateMany).toHaveBeenCalledWith({
+      where: { id: 'product-a', profileId: 'profile-a' },
+      data: { quantity: { increment: 2 } },
     })
   })
 
@@ -102,7 +102,7 @@ describe('POST /api/stock-movements', () => {
       })
     )
     expect(response.status).toBe(400)
-    expect(mocks.product.update).not.toHaveBeenCalled()
+    expect(mocks.product.updateMany).not.toHaveBeenCalled()
   })
 
   it('does not write costPrice on stock-out even if a client sends one', async () => {
@@ -122,9 +122,31 @@ describe('POST /api/stock-movements', () => {
       })
     )
     expect(response.status).toBe(201)
-    expect(mocks.product.update).toHaveBeenCalledWith({
-      where: { id: 'product-a' },
-      data: { quantity: 8 },
+    expect(mocks.product.updateMany).toHaveBeenCalledWith({
+      where: { id: 'product-a', profileId: 'profile-a', quantity: { gte: 2 } },
+      data: { quantity: { decrement: 2 } },
     })
+  })
+
+  it('rejects a stock-out when a concurrent request already took the stock', async () => {
+    // The pre-check saw 10 items, but by the time the conditional update runs fewer are left.
+    mocks.product.updateMany.mockResolvedValue({ count: 0 })
+    const response = await POST(
+      postRequest({
+        productId: 'product-a',
+        type: MovementType.OUT,
+        quantity: 9,
+        reason: 'Korekcija',
+      })
+    )
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ error: 'Insufficient stock' })
+    expect(mocks.stockMovement.create).not.toHaveBeenCalled()
+  })
+
+  it('never writes an absolute quantity read before the transaction', async () => {
+    await POST(postRequest({ productId: 'product-a', type: MovementType.IN, quantity: 3, reason: 'Nabavka' }))
+    const call = mocks.product.updateMany.mock.calls[0][0]
+    expect(call.data.quantity).toEqual({ increment: 3 })
   })
 })

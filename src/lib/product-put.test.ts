@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { productPutFields } from './product-put'
+import { bodyHasQuantity, productPutFields } from './product-put'
 import { productSchema } from './validations'
 
 const priced = {
@@ -55,5 +55,26 @@ describe('productPutFields', () => {
     })
     expect(omitted.price).toBe(0)
     expect(productPutFields(omitted).price).toBe(0)
+  })
+})
+
+describe('product PUT quantity', () => {
+  const { quantity: _omitted, ...withoutQuantity } = priced
+
+  it('does not write stock when the request sent no quantity', () => {
+    const validated = productSchema.parse(withoutQuantity)
+    expect(validated.quantity).toBe(1) // schema default, must not reach the database
+    const fields = productPutFields(validated, { quantityProvided: bodyHasQuantity(withoutQuantity) })
+    expect(fields).not.toHaveProperty('quantity')
+  })
+
+  it('writes the sent quantity', () => {
+    const validated = productSchema.parse(priced)
+    expect(productPutFields(validated, { quantityProvided: bodyHasQuantity(priced) }).quantity).toBe(10)
+  })
+
+  it('treats an explicit undefined quantity as not sent', () => {
+    expect(bodyHasQuantity({ ...priced, quantity: undefined })).toBe(false)
+    expect(bodyHasQuantity(null)).toBe(false)
   })
 })

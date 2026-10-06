@@ -39,7 +39,7 @@ Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (
 
 ## Data model in one paragraph
 
-`Profile` (one per Clerk user, created lazily by `GET /api/profile`; every other API returns 404 "Profile not found" until then; there is no multi-user company membership) owns `Product`, `Category`, `Catalog`/`CatalogItem`, `Invoice`/`InvoiceItem`, `StockMovement`, `ProductIntake` (idempotency receipts). Invoice status is `DRAFT | UNPAID | PAID` (UI: Nacrt / Otvoreno / Plaćeno). Finance is cash-basis: revenue books on `paidAt`, open invoices are receivables. Invoice numbers are `YYYY-NNN` per company, reserved under an advisory lock in the same transaction. Stock moves are idempotent via `StockMovement.sourceKey` (`intake:<key>`, `invoice:<invoiceId>:<productId>`).
+`Profile` (one per Clerk user, created lazily by `GET /api/profile`; every other API returns 404 "Profile not found" until then; there is no multi-user company membership) owns `Product`, `Category`, `Catalog`/`CatalogItem`, `Invoice`/`InvoiceItem`, `StockMovement`, `ProductIntake` (idempotency receipts). Invoice status is `DRAFT | UNPAID | PAID` (UI: Nacrt / Otvoreno / Plaćeno). Finance is cash-basis: revenue books on `paidAt`, open invoices are receivables. Invoice numbers are `NN/YYYY` per company and Belgrade year (predračun `PR-NN/YYYY`), reserved under an advisory lock in the same transaction (`src/lib/invoice-number.ts`); older free-form and `YYYY-NNN` numbers stay as they are and are ignored by the sequence. Stock moves are idempotent via `StockMovement.sourceKey` (`intake:<key>`, `invoice:<invoiceId>:<productId>`).
 
 ## Rules (never)
 

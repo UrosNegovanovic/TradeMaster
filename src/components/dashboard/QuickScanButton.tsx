@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@clerk/nextjs'
 import { createIntakeQueue } from '@/lib/intake-request'
 import { createScanGate } from '@/lib/scan-gate'
+import { scanBeep } from '@/lib/scan-beep'
 
 interface ProductMetadata {
   name: string
@@ -295,7 +296,9 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
       showSuccessToast(saved, barcode, cleanBarcode, 'updated')
       try {
         const saveResult = await autoSaveProduct(saved, cleanBarcode)
-        if (!saveResult.success) showSaveFailed(cleanBarcode)
+        // The "+N" toast is instant; the beep confirms that the server stored it.
+        if (saveResult.success) void scanBeep.play()
+        else showSaveFailed(cleanBarcode)
       } finally {
         endScanWork()
       }
@@ -313,11 +316,14 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
         if (saveResult.success) {
           savedMetadataRef.current.set(cleanBarcode, metadata)
           showSuccessToast(metadata, barcode, cleanBarcode, saveResult.action ?? 'created')
+          void scanBeep.play()
         } else {
           showSaveFailed(cleanBarcode)
         }
       } else if (scannerOpenRef.current) {
         // ❌ PRODUCT NOT FOUND: Redirect to Inventory Add Product page
+        // The code was read correctly, so it still gets the beep before the redirect.
+        void scanBeep.play()
         // ✅ Keep error toast visible (user needs to know why redirect happened)
         notify.error('Proizvod nije pronađen', {
           description: 'Preusmjeravanje na stranicu za dodavanje proizvoda...',
@@ -352,6 +358,8 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
     <QuickScanContext.Provider value={{
       openScanner: (trigger) => {
         if (processingRef.current) return
+        // Inside the tap, so iOS lets the later post-save beep play.
+        scanBeep.unlock()
         triggerRef.current = trigger
         setScannerOpen(true)
       },

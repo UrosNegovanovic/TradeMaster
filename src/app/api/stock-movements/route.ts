@@ -100,6 +100,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
+class InsufficientStockError extends Error {}
+
 /**
  * POST /api/stock-movements
  * Create a new stock movement and update product quantity
@@ -167,15 +170,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate new quantity
-    const newQuantity = type === MovementType.IN 
-      ? product.quantity + quantity 
-      : product.quantity - quantity
-
-    // Create stock movement and update product quantity in a transaction
+    // Apply the change atomically: increment/decrement in SQL, and a stock-out only matches while
+    // enough stock remains, so two concurrent requests can never overwrite each other's quantity.
     const result = await prisma.$transaction(async (tx) => {
-      // Create stock movement
-      const movement = await tx.stockMovement.create({
+      const updated = await tx.product.updateMany({
+        where: {
+          id: productId,
+          profileId: profile.id,
+          ...(type === MovementType.OUT ? { quantity: { gte: quantity } } : {}),
+        },
+        data: {
+          quantity: type === MovementType.IN ? { increment: quantity } : { decrement: quantity },
+          ...(type === MovementType.IN && costPrice !== undefined && costPrice !== null
+            ? productCostWriteFields({ costPrice, costPriceZeroReason })
+            : {}),
+        },
+      })
+      if (updated.count === 0) {
+        throw new InsufficientStockError()
+      }
+
+      return tx.stockMovement.create({
         data: {
           type,
           quantity,
@@ -193,22 +208,16 @@ export async function POST(request: NextRequest) {
           },
         },
       })
-
-      await tx.product.update({
-        where: { id: productId },
-        data: {
-          quantity: newQuantity,
-          ...(type === MovementType.IN && costPrice !== undefined && costPrice !== null
-            ? productCostWriteFields({ costPrice, costPriceZeroReason })
-            : {}),
-        },
-      })
-
-      return movement
     })
 
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
+    if (error instanceof InsufficientStockError) {
+      return NextResponse.json(
+        { error: 'Insufficient stock', details: 'Stock changed in the meantime; not enough items left.' },
+        { status: 400 }
+      )
+    }
     console.error('Error creating stock movement:', error)
     return NextResponse.json(
       { error: 'Failed to create stock movement' },

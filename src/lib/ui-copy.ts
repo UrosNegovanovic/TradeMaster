@@ -155,6 +155,7 @@ export const sr = {
     tryAgain: 'Pokušajte ponovo.',
     confirmDelete: 'Da li sigurno želite da obrišete ovaj katalog?',
     priceOnRequest: 'Cena na upit',
+    skuLabel: 'Šifra',
     display: 'Prikaz kataloga',
     displayDescription: 'Isti izgled važi za PDF i za javni link.',
     layout: 'Raspored',

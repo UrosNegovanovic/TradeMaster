@@ -35,7 +35,7 @@ function Prices({ item, display, large }: { item: CatalogViewItem; display: Cata
       {display.showOriginalPrice && discounted < original && (
         <p className="text-sm text-muted-foreground line-through">{formatRsd(original)}</p>
       )}
-      <p className={cn('font-bold text-primary', large ? 'text-xl' : 'text-base')}>{formatRsd(discounted)}</p>
+      <p className={cn('font-bold text-primary', large ? 'text-base sm:text-xl' : 'text-sm sm:text-base')}>{formatRsd(discounted)}</p>
     </div>
   )
 }
@@ -61,9 +61,11 @@ export function CatalogItemsView<T extends CatalogViewItem>({ sections, display 
                   <div key={item.id} className="flex items-center gap-3 p-3">
                     <ProductImage src={product.imageUrl} alt={product.name} size={48} className="shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium leading-tight">{product.name}</p>
+                      <p className="line-clamp-2 break-words font-medium leading-tight" title={product.name}>
+                        {product.name}
+                      </p>
                       {display.showSku && product.sku && (
-                        <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                        <p className="text-xs text-muted-foreground">{sr.catalog.skuLabel}: {product.sku}</p>
                       )}
                       {display.showDescription && product.description && (
                         <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
@@ -79,8 +81,9 @@ export function CatalogItemsView<T extends CatalogViewItem>({ sections, display 
           ) : (
             <div
               className={cn(
-                'grid gap-4',
-                compact ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'gap-6 md:grid-cols-2 lg:grid-cols-3'
+                'grid',
+                // Two columns on phones (three when compact) so square product photos fill the card width.
+                compact ? 'grid-cols-3 gap-2 sm:gap-3 md:grid-cols-4 lg:grid-cols-6' : 'grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3'
               )}
             >
               {section.items.map((item) => {
@@ -88,26 +91,34 @@ export function CatalogItemsView<T extends CatalogViewItem>({ sections, display 
                 if (!product) return null
                 return (
                   <Card key={item.id}>
-                    <CardContent className={compact ? 'p-3' : 'p-6'}>
-                      <div className={compact ? 'space-y-2' : 'space-y-4'}>
+                    <CardContent className={compact ? 'p-2 sm:p-3' : 'p-3 sm:p-4'}>
+                      <div className={compact ? 'space-y-1.5' : 'space-y-3'}>
                         <ProductImage
                           src={product.imageUrl}
                           alt={product.name}
-                          className={compact ? 'h-28 w-full' : 'h-48 w-full'}
+                          className="aspect-square h-auto w-full"
                           imageClassName="object-contain"
                         />
-                        <div>
-                          <h4 className={cn('font-semibold', compact ? 'text-sm' : 'mb-1 text-lg')}>{product.name}</h4>
+                        <div className="min-w-0">
+                          <h4
+                            className={cn(
+                              'line-clamp-2 break-words font-semibold leading-snug',
+                              compact ? 'text-xs sm:text-sm' : 'mb-1 text-sm sm:text-base'
+                            )}
+                            title={product.name}
+                          >
+                            {product.name}
+                          </h4>
                           {display.showSku && product.sku && (
                             <p className={cn('text-muted-foreground', compact ? 'text-xs' : 'mb-2 text-sm')}>
-                              SKU: <code className="rounded bg-muted px-1">{product.sku}</code>
+                              {sr.catalog.skuLabel}: <code className="break-all rounded bg-muted px-1">{product.sku}</code>
                             </p>
                           )}
                           {display.showDescription && product.description && (
                             <p
                               className={cn(
                                 'text-muted-foreground',
-                                compact ? 'line-clamp-2 text-xs' : 'mb-4 line-clamp-2 text-sm'
+                                compact ? 'line-clamp-2 text-xs' : 'mb-2 line-clamp-2 text-sm'
                               )}
                             >
                               {product.description}

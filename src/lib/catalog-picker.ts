@@ -19,6 +19,35 @@ export type PickerFilter = {
   matchesDate?: ((createdAt: Date | string) => boolean) | null
 }
 
+function createdAtMs(value: Date | string): number {
+  return value instanceof Date ? value.getTime() : Date.parse(value)
+}
+
+/**
+ * One row per SKU: the newest by createdAt, then id (the same row product intake updates).
+ * Legacy daily-batch rows share a SKU; showing all of them puts duplicates in a catalog.
+ * Rows in `keepIds` (already in the catalog) always stay, so editing an older catalog loses nothing.
+ * Input order is kept.
+ */
+export function latestPerSku<T extends Pick<PickerProduct, 'id' | 'sku' | 'createdAt'>>(
+  products: readonly T[],
+  keepIds: readonly string[] = []
+): T[] {
+  const newest = new Map<string, T>()
+  for (const product of products) {
+    const current = newest.get(product.sku)
+    if (
+      !current ||
+      createdAtMs(product.createdAt) > createdAtMs(current.createdAt) ||
+      (createdAtMs(product.createdAt) === createdAtMs(current.createdAt) && product.id > current.id)
+    ) {
+      newest.set(product.sku, product)
+    }
+  }
+  const keep = new Set(keepIds)
+  return products.filter((product) => keep.has(product.id) || newest.get(product.sku) === product)
+}
+
 export function categoryKey(product: Pick<PickerProduct, 'categoryId'>): string {
   return product.categoryId ?? NO_CATEGORY
 }

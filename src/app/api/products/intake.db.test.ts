@@ -107,7 +107,9 @@ describe('product intake against a dedicated test database', () => {
     const stored = await rows(sku)
     expect(stored).toHaveLength(1)
     expect(stored[0].quantity).toBe(2)
-    expect(await prisma.stockMovement.count({ where: { productId: stored[0].id, source: 'INTAKE' } })).toBe(1)
+    // One movement per real intake (keyed and unkeyed); the retry adds none.
+    expect(await prisma.stockMovement.count({ where: { productId: stored[0].id, source: 'INTAKE' } })).toBe(2)
+    expect(await prisma.stockMovement.count({ where: { sourceKey: `intake:${key}` } })).toBe(1)
   })
 
   it('applies simultaneous retries of one operation exactly once', async () => {

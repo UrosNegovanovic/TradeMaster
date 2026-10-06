@@ -16,6 +16,16 @@ describe('nextInvoiceNumber', () => {
     )
   })
 
+  it('continues after a test account that mixes free-form, short-lived YYYY-NNN and NN/YYYY numbers', () => {
+    const existing = [
+      '202601-0001', 'Test2026-01', 'Test2026-02',
+      '01/2026', '02/2026', '04/2026', '06/2026',
+      '2026-001', '2026-002',
+      '07/2026', '08/2026', '09/2026', '10/2026',
+    ]
+    expect(nextInvoiceNumber(2026, existing)).toBe('11/2026')
+  })
+
   it('scopes the sequence to the given year and ignores other years', () => {
     expect(nextInvoiceNumber(2026, ['05/2025', '99/2025'])).toBe('01/2026')
   })

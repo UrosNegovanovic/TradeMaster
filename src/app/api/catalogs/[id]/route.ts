@@ -76,9 +76,10 @@ export async function GET(
     }
 
     if (catalog.profileId !== profile.id) {
+      // Same answer as a missing catalog, so another tenant cannot tell that the id exists.
       return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
+        { error: 'Catalog not found' },
+        { status: 404 }
       )
     }
 
@@ -133,9 +134,10 @@ export async function PATCH(
     }
 
     if (existingCatalog.profileId !== profile.id) {
+      // Same answer as a missing catalog, so another tenant cannot tell that the id exists.
       return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
+        { error: 'Catalog not found' },
+        { status: 404 }
       )
     }
 
@@ -289,9 +291,10 @@ export async function DELETE(
     }
 
     if (existingCatalog.profileId !== profile.id) {
+      // Same answer as a missing catalog, so another tenant cannot tell that the id exists.
       return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
+        { error: 'Catalog not found' },
+        { status: 404 }
       )
     }
 

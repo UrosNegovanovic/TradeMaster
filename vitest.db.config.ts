@@ -10,6 +10,7 @@ export default defineConfig({
       'src/app/api/invoices/invoice.db.test.ts',
       'src/app/api/products/intake.db.test.ts',
       'src/app/api/tenant-isolation.db.test.ts',
+      'src/app/api/catalogs/catalog-access.db.test.ts',
     ],
     fileParallelism: false,
   },

@@ -193,12 +193,15 @@ describe('invoice handlers against a real test database', () => {
     const numbers = created.map((invoice) => invoice.invoiceNumber).sort()
     expect(new Set(numbers).size).toBe(2)
 
-    const sequences = numbers.map((number) => Number(number.split('-')[1]))
-    expect(numbers.every((number) => number.startsWith(`${year}-`))).toBe(true)
+    // Server-assigned "NN/YYYY" (src/lib/invoice-number.ts); the client invoiceNumber is ignored on create.
+    const pattern = new RegExp(`^(\\d{2,})/${year}$`)
+    expect(numbers.every((number) => pattern.test(number))).toBe(true)
+    const sequences = numbers.map((number) => Number(pattern.exec(number)?.[1])).sort((x, y) => x - y)
     expect(sequences[1] - sequences[0]).toBe(1)
   })
 
   it('isolates owners through the application handlers', async () => {
+    const before = await prisma.invoice.count({ where: { profileId: users.a.profileId } })
     const response = await POST(
       postRequest({
         invoiceNumber: `${testPrefix}-002`,
@@ -217,10 +220,7 @@ describe('invoice handlers against a real test database', () => {
     )
 
     expect(response.status).toBe(400)
-    const leftover = await prisma.invoice.findFirst({
-      where: { invoiceNumber: `${testPrefix}-002` },
-    })
-    expect(leftover).toBeNull()
+    expect(await prisma.invoice.count({ where: { profileId: users.a.profileId } })).toBe(before)
   })
 
   it('rolls back PUT item replacement when a later write fails', async () => {
@@ -530,6 +530,7 @@ describe('invoice handlers against a real test database', () => {
   })
 
   it('blocks an issued invoice when stock would go negative', async () => {
+    const before = await prisma.invoice.count({ where: { profileId: users.a.profileId } })
     const response = await POST(
       postRequest({
         invoiceNumber: `${testPrefix}-stock-002`,
@@ -552,7 +553,7 @@ describe('invoice handlers against a real test database', () => {
       error: expect.stringContaining('Nema dovoljno na stanju'),
     })
     expect((await prisma.product.findUnique({ where: { id: users.a.productId } }))?.quantity).toBe(100)
-    expect(await prisma.invoice.findFirst({ where: { invoiceNumber: `${testPrefix}-stock-002` } })).toBeNull()
+    expect(await prisma.invoice.count({ where: { profileId: users.a.profileId } })).toBe(before)
   })
 
   it('does not deduct draft invoices until they are issued', async () => {

@@ -42,7 +42,7 @@ describe('GET /api/catalogs/[id] (owner API)', () => {
     expect(mocks.catalog.findUnique).not.toHaveBeenCalled()
   })
 
-  it('returns 403 when another company is signed in', async () => {
+  it('returns 404 when another company is signed in, same as a missing catalog', async () => {
     vi.mocked(auth).mockResolvedValue({ userId: 'user-b' } as never)
     mocks.profile.findUnique.mockResolvedValue({ id: 'profile-b', clerkUserId: 'user-b' })
     mocks.catalog.findUnique.mockResolvedValue({
@@ -52,7 +52,7 @@ describe('GET /api/catalogs/[id] (owner API)', () => {
       items: [],
     })
     const response = await GET(getRequest('cat-1'), { params: { id: 'cat-1' } })
-    expect(response.status).toBe(403)
+    expect(response.status).toBe(404)
   })
 })
 

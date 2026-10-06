@@ -2,7 +2,7 @@
 
 Short-lived file: update it when something changes. Stable rules live in `CLAUDE.md`, the plan in `docs/ROADMAP.md`.
 
-_Last updated: 2026-10-02. Target release: 2026-11-01._
+_Last updated: 2026-10-06. Target release: 2026-11-01 (owner decision 2026-10-06: domain purchase and start of sales on 1 November; until then the app is polished, see `docs/ROADMAP.md`)._
 
 ## Done on main
 

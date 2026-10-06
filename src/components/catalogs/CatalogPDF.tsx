@@ -141,29 +141,36 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0, // Allow flex to shrink if needed
   },
+  // White card without an inner frame: a photo's own white background blends into the card,
+  // so a portrait or landscape photo in a square box does not show empty bands.
   productCard: {
     width: '48%',
     marginBottom: 20,
     border: '1 solid #e5e7eb',
     borderRadius: 4,
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
   },
   productImageContainer: {
     width: '100%',
     height: 120,
     marginBottom: 10,
-    border: '1 solid #e5e7eb',
-    borderRadius: 4,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
   },
   productImage: {
     width: '100%',
     height: 120,
     objectFit: 'contain',
+  },
+  noImage: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 4,
   },
   productInfo: {
     gap: 4,
@@ -375,21 +382,22 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
   // Dynamic styles based on layout (4 or 12 items per page)
   const getDynamicStyles = () => {
     if (isCompact) {
-      // Compact layout: 12 items per page (very small cards, small images to fit A4)
+      // Compact layout: 12 items per page as 4 columns x 3 rows; 122pt cards with a 110pt square photo.
       return {
         productCard: {
           ...styles.productCard,
+          width: 122,
           padding: 6,
-          marginBottom: 8,
+          marginBottom: 0,
         },
         productImageContainer: {
           ...styles.productImageContainer,
-          height: 60,
-          marginBottom: 4,
+          height: 110,
+          marginBottom: 5,
         },
         productImage: {
           ...styles.productImage,
-          height: 60,
+          height: 110,
         },
         productName: {
           ...styles.productName,
@@ -421,25 +429,26 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
         },
         productGrid: {
           ...styles.productGrid,
-          gap: 8,
+          gap: 9,
         },
       }
     } else {
-      // Large layout: 4 items per page (larger cards, larger images)
+      // Large layout: 4 items per page as 2 x 2; the photo box is close to square (218 x 200pt).
       return {
         productCard: {
           ...styles.productCard,
+          width: 248,
           padding: 15,
-          marginBottom: 25,
+          marginBottom: 0,
         },
         productImageContainer: {
           ...styles.productImageContainer,
-          height: 180,
+          height: 200,
           marginBottom: 12,
         },
         productImage: {
           ...styles.productImage,
-          height: 180,
+          height: 200,
         },
         productName: {
           ...styles.productName,
@@ -579,12 +588,18 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
           {isValidImageUrl(product.imageUrl) ? (
             <PdfImage src={product.imageUrl!} style={dynamicStyles.productImage} />
           ) : (
-            <Text style={{ fontSize: isCompact ? 7 : 8, color: '#9ca3af' }}>Nema slike</Text>
+            <View style={styles.noImage}>
+              <Text style={{ fontSize: isCompact ? 7 : 8, color: '#9ca3af' }}>Nema slike</Text>
+            </View>
           )}
         </View>
         <View style={styles.productInfo}>
           <Text style={dynamicStyles.productName}>{product.name}</Text>
-          {display.showSku && <Text style={dynamicStyles.productSku}>SKU: {product.sku}</Text>}
+          {display.showSku && (
+            <Text style={dynamicStyles.productSku}>
+              {sr.catalog.skuLabel}: {product.sku}
+            </Text>
+          )}
           {display.showDescription && product.description && (
             <Text style={dynamicStyles.productDescription}>{product.description}</Text>
           )}
@@ -630,7 +645,11 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
         )}
         <View style={styles.listNameCell}>
           <Text style={styles.listName}>{product.name}</Text>
-          {display.showSku && <Text style={styles.listSku}>SKU: {product.sku}</Text>}
+          {display.showSku && (
+            <Text style={styles.listSku}>
+              {sr.catalog.skuLabel}: {product.sku}
+            </Text>
+          )}
           {display.showDescription && product.description && (
             <Text style={styles.listDescription}>{product.description}</Text>
           )}

@@ -121,7 +121,7 @@ export default async function FinancePage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Profit ovog meseca</CardTitle>
-                <CardDescription>Prihod umanjen za evidentiranu nabavnu vrednost</CardDescription>
+                <CardDescription>{sr.finance.profitMonth}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {snapshot.monthProfit === null ? (
@@ -168,7 +168,7 @@ export default async function FinancePage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Profit ove godine</CardTitle>
-                <CardDescription>Profit na naplaćenim fakturama od 1. januara</CardDescription>
+                <CardDescription>{sr.finance.profitYear}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {snapshot.yearProfit === null ? (
@@ -206,6 +206,8 @@ export default async function FinancePage() {
               </CardContent>
             </Card>
           </div>
+
+          <p className="text-sm text-muted-foreground">{sr.finance.profitNote}</p>
 
           <Card>
             <CardHeader>

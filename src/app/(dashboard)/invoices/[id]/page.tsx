@@ -17,6 +17,7 @@ import { INVOICE_TONE_BADGE_VARIANT, documentStatusView } from '@/lib/invoice-st
 import { Badge } from '@/components/ui/badge'
 import { ProformaConvertButton } from '@/components/invoices/ProformaConvertButton'
 import { SefXmlDownloadButton } from '@/components/invoices/SefXmlDownloadButton'
+import { DeliveryNoteButton } from '@/components/invoices/DeliveryNoteButton'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 import { invoiceCopyHref } from '@/lib/invoice-copy'
 
@@ -137,7 +138,7 @@ export default function InvoiceDetailPage() {
           </Button>
           {canPrintDeliveryNote(invoice) ? (
             <>
-              <InvoicePdfDownload invoice={invoice} variant="delivery" label="Otpremnica" buttonVariant="outline" />
+              <DeliveryNoteButton invoice={invoice} />
               <SefXmlDownloadButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} />
             </>
           ) : null}

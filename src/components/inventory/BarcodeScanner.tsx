@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { Camera, Flashlight, FlashlightOff, RotateCcw, Volume2, Loader2, SwitchCamera, ZoomIn } from 'lucide-react'
 import { notify } from '@/lib/notify'
+import { scanBeep } from '@/lib/scan-beep'
 import { sr } from '@/lib/ui-copy'
 import { cameraAccessMessage, getCamerasWithTimeout } from '@/lib/camera-access'
 
@@ -97,7 +98,7 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
   const [selectedCamera, setSelectedCamera] = useState<string>('')
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchEnabled, setTorchEnabled] = useState(false)
-  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [soundEnabled, setSoundEnabled] = useState(() => scanBeep.isEnabled())
   // ✅ Visual feedback state for "reticle" overlay (idle -> detecting -> success)
   const [scanStatus, setScanStatus] = useState<'idle' | 'detecting' | 'success'>('idle')
   
@@ -502,11 +503,8 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                 // ✅ Visual feedback: Success (green flash)
                 setScanStatus('success')
                 
-                // ✅ Only beep and emit when validated (prevents false positives)
-                // ✅ Play beep asynchronously to ensure it's not blocked
-                playBeep().catch(err => {
-                  console.warn('Beep playback failed:', err)
-                })
+                // Silent here: in continuous (Quick Scan) mode the parent beeps only after the save
+                // is confirmed (docs/scanner-ux-rules.md, "Single Beep" rule).
                 onScanSuccessRef.current(decodedText)
                 
                 // Reset buffer for next scan (allow new code to be detected)
@@ -840,7 +838,10 @@ export function BarcodeScanner({ open, onClose, onScanSuccess, continuousMode = 
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  onClick={() => {
+                    setSoundEnabled(!soundEnabled)
+                    scanBeep.setEnabled(!soundEnabled)
+                  }}
                   className="h-12 w-12 rounded-full shadow-lg bg-background"
                   title={sr.camera.sound}
                 >

@@ -12,3 +12,11 @@ describe('finance profit copy', () => {
     }
   })
 })
+
+describe('page intro copy', () => {
+  it('tells Asortiman (what you sell, at what price) apart from Magacin (how much you have)', () => {
+    expect(sr.pages.inventory).toMatch(/^Šta prodajete i po kojoj ceni\./)
+    expect(sr.pages.warehouse).toMatch(/^Koliko robe imate/)
+    expect(sr.pages.warehouse).toMatch(/ulaz, izlaz/)
+  })
+})

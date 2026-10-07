@@ -23,6 +23,11 @@ export const sr = {
     notFoundDescription: 'Ova adresa ne postoji ili je uklonjena.',
     loading: 'Učitavanje…',
   },
+  pages: {
+    inventory:
+      'Šta prodajete i po kojoj ceni. Svaki red je jedan unos po datumu, a ne zbirno trenutno stanje.',
+    warehouse: 'Koliko robe imate i kretanje robe: ulaz, izlaz i uvoz.',
+  },
   product: {
     addTitle: 'Dodaj novi proizvod',
     editTitle: 'Izmeni proizvod',

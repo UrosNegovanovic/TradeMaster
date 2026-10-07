@@ -26,6 +26,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import { readApiErrorMessage } from '@/lib/api-error'
+import { sr } from '@/lib/ui-copy'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -195,7 +196,7 @@ export default function WarehousePage() {
       <div className="space-y-6">
         <PageHeader
           title="Magacin"
-          description="Pratite stanje i kretanje robe"
+          description={sr.pages.warehouse}
           action={importActions}
         />
         <Card>
@@ -224,7 +225,7 @@ export default function WarehousePage() {
     <div className="space-y-4 lg:space-y-6">
       <PageHeader
         title="Magacin"
-        description="Pratite stanje i kretanje robe"
+        description={sr.pages.warehouse}
         action={
           <>
             {importActions}

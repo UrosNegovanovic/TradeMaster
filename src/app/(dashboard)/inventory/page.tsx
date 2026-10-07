@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { sr } from '@/lib/ui-copy'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
 import { ProductFormData } from '@/lib/validations'
 import { toast } from 'sonner'
@@ -359,7 +360,7 @@ export default function InventoryPage() {
     <div className="space-y-4 lg:space-y-6">
       <PageHeader
         title="Asortiman"
-        description="Istorija unosa po datumu — svaki red je jedan unos, a ne zbirno trenutno stanje."
+        description={sr.pages.inventory}
         action={
           <Button className="w-full sm:w-auto" onClick={() => setIsFormOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />

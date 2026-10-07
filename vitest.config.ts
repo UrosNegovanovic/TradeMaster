@@ -53,6 +53,7 @@ export default defineConfig({
       'src/lib/landing-copy.test.ts',
       'src/lib/ui-copy.test.ts',
       'src/lib/invoice-scan.test.ts',
+      'src/lib/invoice-copy.test.ts',
       'src/lib/catalog-layout.test.ts',
       'src/lib/catalog-picker.test.ts',
       'src/lib/unsaved-changes.test.ts',

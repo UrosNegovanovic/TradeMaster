@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { ProformaConvertButton } from '@/components/invoices/ProformaConvertButton'
 import { SefXmlDownloadButton } from '@/components/invoices/SefXmlDownloadButton'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
+import { invoiceCopyHref } from '@/lib/invoice-copy'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
   ssr: false,
@@ -128,6 +129,12 @@ export default function InvoiceDetailPage() {
             />
           )}
           <InvoicePdfDownload invoice={invoice} />
+          <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+            <Link href={invoiceCopyHref(invoice)}>
+              <Copy className="mr-2 h-4 w-4" />
+              Kopiraj
+            </Link>
+          </Button>
           {canPrintDeliveryNote(invoice) ? (
             <>
               <InvoicePdfDownload invoice={invoice} variant="delivery" label="Otpremnica" buttonVariant="outline" />

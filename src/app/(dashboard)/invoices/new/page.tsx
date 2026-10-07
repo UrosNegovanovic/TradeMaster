@@ -7,13 +7,14 @@ import { BackLink } from '@/components/layout/BackLink'
 import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
-import { InvoiceCreateInput } from '@/types/invoice'
+import { InvoiceCreateInput, InvoiceWithItems } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import { documentLabels, parseDocumentType } from '@/lib/document-type'
 import type { SessionFetch } from '@/lib/authorized-fetch'
+import { invoiceCopyPrefill } from '@/lib/invoice-copy'
 
 async function fetchProducts(): Promise<Product[]> {
   const response = await fetch('/api/products')
@@ -51,7 +52,10 @@ export default function NewInvoicePage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const request = useAuthorizedFetch()
-  const documentType = parseDocumentType(useSearchParams().get('type') === 'proforma' ? 'PROFORMA' : null)
+  const searchParams = useSearchParams()
+  const documentType = parseDocumentType(searchParams.get('type') === 'proforma' ? 'PROFORMA' : null)
+  // "Kopiraj" on a document opens this page with ?copyFrom=<id> (ROADMAP A5).
+  const copyFromId = searchParams.get('copyFrom')
   const isProformaDoc = documentType === 'PROFORMA'
   const labels = documentLabels(documentType)
   const listHref = isProformaDoc ? '/invoices?view=proforma' : '/invoices'
@@ -77,6 +81,18 @@ export default function NewInvoicePage() {
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ['profile'],
     queryFn: fetchProfile,
+  })
+
+  // A failed or foreign source just opens an empty form.
+  const { data: copySource, isLoading: isLoadingCopySource } = useQuery<InvoiceWithItems>({
+    queryKey: ['invoice', copyFromId],
+    queryFn: async () => {
+      const response = await fetch(`/api/invoices/${copyFromId}`)
+      if (!response.ok) throw new Error('Failed to fetch invoice')
+      return response.json()
+    },
+    enabled: Boolean(copyFromId),
+    retry: false,
   })
 
   // Create invoice mutation
@@ -107,7 +123,7 @@ export default function NewInvoicePage() {
     await createMutation.mutateAsync(data)
   }
 
-  if (isLoadingProducts || isLoadingProfile) {
+  if (isLoadingProducts || isLoadingProfile || (copyFromId && isLoadingCopySource)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -127,11 +143,21 @@ export default function NewInvoicePage() {
     )
   }
 
+  const inVatSystem = profile?.inVatSystem === true
+  const prefill = copySource
+    ? invoiceCopyPrefill({ ...copySource, items: copySource.items ?? [] }, products, inVatSystem)
+    : undefined
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <BackLink href={listHref}>{backLabel}</BackLink>
         <h1 className="text-2xl font-bold lg:text-3xl">{labels.newTitle}</h1>
+        {copySource ? (
+          <p className="mt-2 text-sm font-medium">
+            Kopija dokumenta {copySource.invoiceNumber}: današnje cene, proverite stavke pre čuvanja.
+          </p>
+        ) : null}
         <p className="text-muted-foreground mt-2">
           {isProformaDoc
             ? 'Predračun ne skida robu sa magacina. Kada kupac uplati, pretvorite ga u fakturu.'
@@ -142,11 +168,12 @@ export default function NewInvoicePage() {
       <InvoiceForm
         products={products}
         clients={clients}
-        inVatSystem={profile?.inVatSystem === true}
+        inVatSystem={inVatSystem}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending}
         cancelHref={listHref}
         documentType={documentType}
+        prefill={prefill}
       />
     </div>
   )

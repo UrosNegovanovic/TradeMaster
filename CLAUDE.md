@@ -33,7 +33,7 @@ npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-02, after the catalog PR): 71 test files / 413 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-07, after #80): 77 test files / 472 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
 `vitest.config.ts` has an explicit `include` list: a new `*.test.ts` file does not run until you add it there.
 `test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
 

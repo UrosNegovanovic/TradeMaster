@@ -2,7 +2,7 @@
 
 Short-lived file: update it when something changes. Stable rules live in `CLAUDE.md`, the plan in `docs/ROADMAP.md`.
 
-_Last updated: 2026-10-06. Target release: 2026-11-01 (owner decision 2026-10-06: domain purchase and start of sales on 1 November; until then the app is polished, see `docs/ROADMAP.md`)._
+_Last updated: 2026-10-07. Target release: 2026-11-01 (owner decision 2026-10-06: domain purchase and start of sales on 1 November; until then the app is polished, see `docs/ROADMAP.md`)._
 
 ## Done on main
 
@@ -19,12 +19,15 @@ _Last updated: 2026-10-06. Target release: 2026-11-01 (owner decision 2026-10-06
 - Analytics + errors (ROADMAP #8), both off until env vars are set in Vercel: `NEXT_PUBLIC_ANALYTICS=on` (Vercel Analytics script + milestone events signup/first_product/first_invoice/catalog_shared/invoice_shared, sent once per browser from the dashboard, no properties) and `NEXT_PUBLIC_SENTRY_DSN` (Sentry, scrubbed: no user, cookies, bodies, breadcrumbs, only first line of messages). Optional `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` upload source maps. Web Analytics must also be enabled in the Vercel project.
 - Dashboard "Kasni naplata" card (ROADMAP #7): UNPAID invoices past due, oldest first, with total and days late (`src/lib/overdue-invoices.ts`). Low stock card already existed.
 - IPS QR on the invoice PDF (ROADMAP #6): `src/lib/ips-qr.ts`; shown for unpaid invoices when the company giro account has valid control digits. Needs a real scan with a Serbian banking app before launch.
-- Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed.
+- Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed. PDV-aware: osnovica, PDV and payable columns from `totalAmount`/`vatAmount`; the IPS QR amount is `totalAmount`.
+- Predračun and otpremnica, XML za SEF for manual upload (#70, #71). Migrations `invoice_document_type` and `registration_numbers` applied in production 2026-10-05. The XML is checked only for well-formedness until the owner uploads a sample on the SEF demo environment (ROADMAP A1.1).
+- Data correctness before launch (ROADMAP A2.1-A2.3, A2.5, A2.6): atomic Ulaz/Izlaz without going below zero, product PUT without quantity keeps stock (#74); catalog on phones and picker without duplicate SKUs (#73); tenant isolation test across all owner API routes, foreign catalog returns 404 (#78, #79).
 
-## In review
+## In review (draft PRs, waiting for the owner's "merge")
 
-- Predračun and otpremnica (owner chose "both" with SEF XML, 2026-10-05): needs migration `20261005090000_invoice_document_type.sql` applied in production **before** the deploy (the app selects `documentType`).
-- XML za SEF (same PR): needs migration `20261005100000_registration_numbers.sql` (matični broj on profiles and clients) applied before the deploy too. The file is checked only for well-formedness; upload a sample on the SEF demo environment before telling customers it works.
+- #81 ROADMAP A2.4: the scanner beeps only after the save is confirmed.
+- #82 ROADMAP A2.7: Finansije explains what profit includes.
+- #83 ROADMAP A2.8: one-line intro under Asortiman and Magacin. #82 and #83 both add `src/lib/ui-copy.test.ts`; the second to merge needs a small rebase.
 
 ## Blocked on the owner
 
@@ -35,13 +38,12 @@ _Last updated: 2026-10-06. Target release: 2026-11-01 (owner decision 2026-10-06
 | Real operator data (legal name, 9-digit PIB, address) | `src/lib/operator.ts` still has placeholder values; required for legal pages | `src/lib/operator.ts` |
 | Billing decision (manual vs Stripe/other) | Landing says manual payment, first 60 days free, then 20 EUR/month (single source: `PRICING_OFFER` in `src/lib/landing-copy.ts`); no checkout exists | `src/lib/landing-copy.ts` |
 
-No paid ads until the first three are done.
+No paid ads until the first three are done. Owner deadlines for these and the rest (SEF demo upload, device checklist, demo company, backup restore, smoke test) are in ROADMAP A1. Most urgent: A1.3, change the test user's password and make `TradeMasterPW` private by 12 October (the password is in public commit history).
 
 ## Known gaps (from code review, 2026-10-01)
 
-- PDV is on invoices (see Done). Still missing: PDV-aware CSV export (roadmap #5) and IPS QR amount (roadmap #6) must use `totalAmount` (payable) and `vatAmount`.
 - No transactional email (invoice delivery, password-less onboarding mails).
-- No product analytics or error monitoring.
+- Analytics and Sentry exist but stay off until `NEXT_PUBLIC_ANALYTICS=on` and `NEXT_PUBLIC_SENTRY_DSN` are set in Vercel (ROADMAP A1.12).
 - `README.md` and `SEO_DEVOPS_AUDIT.md` are partly outdated (January 2026); the 2026-09-23 launch-readiness doc predates the catalog-share and debug-ingest fixes.
 - No team access: one Clerk user = one company (`Profile.clerkUserId` is unique). Do not advertise multi-user.
 - Rate limiting is shared across instances only when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (or Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN`) are set in Vercel; without them it is the in-memory per-instance speed bump. A store outage never blocks users (falls back to memory).
@@ -49,4 +51,4 @@ No paid ads until the first three are done.
 - Manual billing (ROADMAP #9): first 60 days free, then 20 EUR per month, paid by invoice. `profiles.accessExpiresAt` (migration `20261002150000_profile_access_expiry.sql`, applied in production 2026-10-02): new companies get 60 days (`INITIAL_ACCESS_DAYS`), NULL = no limit (existing companies). A banner shows in the last 14 days and after expiry. **After expiry the account is read-only**: every write API route returns 402 `ACCESS_EXPIRED` (`accessExpiredResponse` in `src/lib/access-guard.ts`); reading, CSV/XLSX export, the company form, revoking share links and the public share links of issued catalogs/invoices keep working. Terms live in one place (`PRICING_OFFER` etc. in `src/lib/landing-copy.ts`). The owner extends access by hand after each paid month with: `UPDATE profiles SET "accessExpiresAt" = ((GREATEST(COALESCE("accessExpiresAt", now() AT TIME ZONE 'UTC'), now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Belgrade')::date + INTERVAL '1 month') AT TIME ZONE 'Europe/Belgrade' AT TIME ZONE 'UTC' WHERE id = '<profile id>';` (adds one Belgrade calendar month to the later of the current expiry and today). No checkout, no cancellation.
 - PWA install (2026-10-02): the site is installable (Chromium reports no installability errors). Android's menu item "Dodaj na početni ekran" can create only a shortcut, so the in-app button is "Instaliraj aplikaciju" (native prompt, confirmation, menu guide) and the dashboard shows an install card on mobile (`src/lib/use-pwa-install.ts`).
 - Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening. Run `docs/device-checklist.md` on both phones before launch.
-- Baseline verified 2026-10-02 (catalog PR): typecheck clean, lint 5 warnings, 316/316 unit tests.
+- Baseline verified 2026-10-07 on main (after #80): typecheck clean, lint 5 known warnings, 77 test files / 472 unit tests.

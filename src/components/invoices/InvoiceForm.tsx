@@ -9,7 +9,12 @@ import { Input } from '@/components/ui/input'
 import { DraftNumberInput } from '@/components/ui/draft-number-input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertTriangle, ScanBarcode } from 'lucide-react'
+import { BarcodeScanner } from '@/components/inventory/BarcodeScanner'
+import { notify } from '@/lib/notify'
+import { scanBeep } from '@/lib/scan-beep'
+import { createScanGate } from '@/lib/scan-gate'
+import { findProductByScan, scanTarget } from '@/lib/invoice-scan'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
 import { clientToInvoiceFields } from '@/lib/client-fill'
@@ -106,6 +111,11 @@ export function InvoiceForm({
     },
   ])
   const [formError, setFormError] = useState<string | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const scanGateRef = useRef(createScanGate())
+  // Latest rows for scan reads that arrive faster than React re-renders.
+  const itemsRef = useRef(items)
+  itemsRef.current = items
 
   // ✅ Populate form with initial data for edit mode
   useEffect(() => {
@@ -275,6 +285,71 @@ export function InvoiceForm({
     )
   }
 
+  const skuForLine = (line: InvoiceItemRow) =>
+    line.productId ? productsById.get(line.productId)?.sku ?? null : null
+
+  const openScanner = () => {
+    // iOS only lets audio start inside a tap.
+    scanBeep.unlock()
+    scanGateRef.current.reset()
+    setScannerOpen(true)
+  }
+
+  // ROADMAP A4: a scan adds the product as a line, or one more unit of a line it is already on.
+  const handleScan = (code: string) => {
+    const match = findProductByScan(products, code)
+    if (match.kind === 'noise') return
+    if (!scanGateRef.current.accept(match.kind === 'found' ? match.product.sku : match.code, Date.now())) return
+
+    if (match.kind === 'not-found') {
+      notify.error('Proizvod nije u asortimanu', {
+        description: `Šifra ${match.code}. Dodajte ga u Asortiman ili izaberite ručno.`,
+        duration: 3000,
+      })
+      return
+    }
+
+    const product = match.product
+    const salePrice = Number(product.price)
+    const unitPrice = Number.isFinite(salePrice) && salePrice > 0 ? salePrice : 0
+    const current = itemsRef.current
+    const target = scanTarget(current, product.sku, skuForLine)
+    let quantity = 1
+    let next: InvoiceItemRow[]
+
+    if (target.action === 'increment') {
+      next = current.map((item) => {
+        if (item.id !== target.lineId) return item
+        quantity = item.quantity + 1
+        return {
+          ...item,
+          quantity,
+          total: lineTotal(quantity, item.unitPrice, clampDiscountPercent(item.discount)),
+        }
+      })
+    } else {
+      const line: InvoiceItemRow = {
+        id: target.action === 'fill' ? target.lineId : `scan-${Date.now()}`,
+        productId: product.id,
+        productName: product.name,
+        quantity: 1,
+        unitPrice,
+        discount: 0,
+        vatRate: defaultVatRate,
+        total: lineTotal(1, unitPrice, 0),
+      }
+      next =
+        target.action === 'fill'
+          ? current.map((item) => (item.id === target.lineId ? line : item))
+          : [...current, line]
+    }
+
+    itemsRef.current = next
+    setItems(next)
+    void scanBeep.play()
+    notify.success(product.name, { description: `Količina: ${quantity}`, duration: 1500 })
+  }
+
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -338,6 +413,7 @@ export function InvoiceForm({
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header Section */}
       <Card>
@@ -441,15 +517,16 @@ export function InvoiceForm({
                 Dodajte proizvode na fakturu
               </CardDescription>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 shrink-0 self-start"
-              onClick={addItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Dodaj stavku
-            </Button>
+            <div className="flex shrink-0 gap-2 self-start">
+              <Button type="button" variant="outline" className="h-11" onClick={openScanner}>
+                <ScanBarcode className="mr-2 h-4 w-4" />
+                Skeniraj
+              </Button>
+              <Button type="button" variant="outline" className="h-11" onClick={addItem}>
+                <Plus className="mr-2 h-4 w-4" />
+                Dodaj stavku
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -672,5 +749,14 @@ export function InvoiceForm({
         </Button>
       </div>
     </form>
+
+    {/* Outside the form: no scanner button can submit the invoice. */}
+    <BarcodeScanner
+      open={scannerOpen}
+      onClose={() => setScannerOpen(false)}
+      onScanSuccess={handleScan}
+      continuousMode
+    />
+    </>
   )
 }

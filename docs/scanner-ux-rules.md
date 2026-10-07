@@ -7,6 +7,7 @@
     * ✅ **Success Beep:** Play ONLY when a product is successfully saved/updated or successfully identified as "Not Found" (before redirect).
     * ❌ **Silence:** Do NOT beep on duplicate scans (cooldown block). Do NOT beep on "processing".
 * **Where it lives:** `src/lib/scan-beep.ts` (`scanBeep`). QuickScanButton calls `scanBeep.unlock()` in the tap that opens the scanner (iOS needs a gesture) and `scanBeep.play()` after the save response or the "Not Found" result. A repeat scan shows "+N" at once and beeps when its background save is confirmed. The scanner's sound toggle sets `scanBeep.setEnabled`.
+* **Invoice / proforma form (ROADMAP A4):** `InvoiceForm` opens the scanner in continuous mode, matches the read against the products already loaded (`src/lib/invoice-scan.ts`, newest row per SKU), and beeps only after the line is added or its quantity raised. Unknown codes show an error toast without a beep; short digit slices are ignored. Same-code cooldown comes from `scan-gate.ts`.
 * **Exception:** single-scan mode (ProductForm SKU field, `continuousMode` off) still beeps on the confirmed read, because filling the field is the whole action.
 
 ## 2. Quantity Logic ("+1" Feedback)

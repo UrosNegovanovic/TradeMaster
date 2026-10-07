@@ -16,7 +16,7 @@ Vlasnik male B2B firme (1-10 ljudi) koji sam vodi robu i ponude i prodaje **drug
 
 Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ katalog na WhatsApp, napraviš predračun, pretvoriš ga u fakturu i otpremnicu, kupac plati skeniranjem IPS QR koda.
 
-## Šta je urađeno (2026-10-06)
+## Šta je urađeno (2026-10-07)
 
 | # | Šta | PR |
 |---|---|---|
@@ -35,6 +35,9 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A2.1-2 | Ulaz/Izlaz bez trke (atomski upis, Izlaz ne ide ispod nule); izmena proizvoda bez količine čuva stanje | #74 |
 | A2.5-6 | Katalog na telefonu: kvadratne slike, 2 kolone, "Šifra"; izbor proizvoda bez duplikata SKU | #73 |
 | A2.3 | Test izolacije firmi kroz sve API rute; tuđi katalog vraća 404; DB testovi usklađeni sa brojevima `NN/YYYY` | #78, #79 |
+| A2.4 | Skener pišti tek kad je snimanje potvrđeno | #81 |
+| A2.7-8 | Finansije objašnjavaju profit; jedna rečenica ispod Asortimana i Magacina | #82, #83 |
+| A4 | Skeniranje u fakturu i predračun (dugme "Skeniraj" u stavkama) | #85 |
 
 Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 2026-10-05 (provereno u listi migracija Supabase projekta 2026-10-06). Baza je u `eu-west-1`, Vercel funkcije u `dub1` (EU).
 
@@ -67,18 +70,18 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A2.1 | ✅ (#74) **Ulaz/Izlaz bez trke** | Visoka | S | `POST /api/stock-movements` čita količinu van transakcije i upisuje apsolutnu vrednost; dva istovremena zahteva gube jedan upis. Uslovni `increment`/`decrement` u transakciji, Izlaz odbijen ako bi stanje palo ispod nule. |
 | A2.2 | ✅ (#74) **Izmena proizvoda ne resetuje stanje** | Visoka | S | `productSchema` ima `quantity ... .default(1)` i `productPutFields` piše `quantity ?? 1`: PUT bez količine tiho postavlja stanje na 1. PUT bez količine čuva postojeće stanje. |
 | A2.3 | ✅ (#78, #79) **Test izolacije tenanta** | Visoka | S-M | Firma A ne može da čita ni menja proizvode, fakture, kupce, kataloge i kretanja firme B (DB test pored `catalog-access.db.test.ts`). |
-| A2.4 | **Skener pišti tek posle snimanja** | Srednja | S | `BarcodeScanner.tsx` pušta zvuk na svako čitanje; `docs/scanner-ux-rules.md` kaže da zvuk pušta samo `QuickScanButton` posle snimanja. Samo zvuk, bez refaktora. |
+| A2.4 | ✅ (#81) **Skener pišti tek posle snimanja** | Srednja | S | `BarcodeScanner.tsx` pušta zvuk na svako čitanje; `docs/scanner-ux-rules.md` kaže da zvuk pušta samo `QuickScanButton` posle snimanja. Samo zvuk, bez refaktora. |
 | A2.5 | ✅ (#73) **Katalog na telefonu bez praznog prostora** | Visoka | S | Mreža 4 na telefonu je jedna kolona sa slikom `h-48` i `object-contain`, pa četvrtasta slika ima prazno levo i desno. Kvadratna slika, 2 kolone na telefonu (kompaktno 3), naziv u najviše 2 reda, "Šifra" umesto "SKU". |
 | A2.6 | ✅ (#73) **Duplikati SKU u izboru za katalog** | Srednja | S | Stari dnevni batch redovi imaju isti `(profileId, sku)`; izbor proizvoda za katalog prikazuje samo najnoviji red po SKU (isto pravilo kao prijem robe), bez brisanja redova. |
-| A2.7 | "Profit" objašnjen | Srednja | S | Na Finansijama: "Zarada = naplaćeno (osnovica) minus nabavna vrednost prodate robe; ne uključuje ostale troškove firme." |
-| A2.8 | Asortiman i Magacin objašnjeni | Srednja | S | Jedna rečenica ispod naslova: Asortiman = šta prodaješ i po kojoj ceni; Magacin = koliko imaš i kretanja robe. |
+| A2.7 | ✅ (#82) "Profit" objašnjen | Srednja | S | Na Finansijama: "Zarada = naplaćeno (osnovica) minus nabavna vrednost prodate robe; ne uključuje ostale troškove firme." |
+| A2.8 | ✅ (#83) Asortiman i Magacin objašnjeni | Srednja | S | Jedna rečenica ispod naslova: Asortiman = šta prodaješ i po kojoj ceni; Magacin = koliko imaš i kretanja robe. |
 
 **Nedelja 2-3 (13-26. okt): ono što kupci koriste najviše**
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
 | A3 | **Slanje fakture u SEF jednim klikom (opcija)** | Visoka | L | Konty i Minimax ga daju u ceni. Uključuje se samo kad firma u Podešavanjima unese svoj SEF API ključ; bez ključa ništa se ne menja. Šalje se postojeći UBL iz `src/lib/sef-ubl.ts` (`POST /api/publicApi/sales-invoice/ubl`), status (poslato, prihvaćeno, odbijeno) se vidi na fakturi, posle slanja faktura se ne briše i ne menja (storno ide kroz SEF). Ključ šifrovan po tenantu, nikad u logu ni na klijentu. Migracija za ključ i SEF status. Prvo na SEF demo okruženju; produkcija tek kad A1.1 i demo slanje prođu. Ako ne bude gotovo do 24. okt, ostaje za B1 i ne pominje se na landingu. |
-| A4 | **Skeniranje u fakturu i predračun** | Visoka | M | Dugme "Skeniraj" u formi dodaje stavku po barkodu (ili povećava količinu postojeće). Komercijalista u magacinu kuca fakturu kamerom. Postojeći skener, bez izmene `BarcodeScanner.tsx`. |
+| A4 | ✅ (#85) **Skeniranje u fakturu i predračun** | Visoka | M | Dugme "Skeniraj" u formi dodaje stavku po barkodu (ili povećava količinu postojeće). Komercijalista u magacinu kuca fakturu kamerom. Postojeći skener, bez izmene `BarcodeScanner.tsx`. |
 | A5 | **Kopiraj dokument** | Srednja | S | "Kopiraj" na fakturi i predračunu pravi novi nacrt sa istim kupcem i stavkama, današnjim cenama i troškovima. Stalni kupci često naručuju isto. |
 | A6 | **Otpremnica za teren** | Srednja | S | Na PDF otpremnice: adresa isporuke (ako se razlikuje), polja "Robu izdao" / "Robu primio" sa potpisom i datumom, broj paketa. Bez nove šeme ako adresa isporuke ide u napomenu; inače mala migracija. |
 | A7 | **Podsetnik za naplatu** | Srednja | S | Na kartici "Kasni naplata": dugme koje otvara WhatsApp/Viber sa porukom (broj fakture, iznos, link sa IPS QR). |

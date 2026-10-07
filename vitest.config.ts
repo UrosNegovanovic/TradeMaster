@@ -50,6 +50,7 @@ export default defineConfig({
       'src/lib/rate-limit.test.ts',
       'src/lib/after-auth.test.ts',
       'src/lib/landing-copy.test.ts',
+      'src/lib/ui-copy.test.ts',
       'src/lib/catalog-layout.test.ts',
       'src/lib/catalog-picker.test.ts',
       'src/lib/unsaved-changes.test.ts',

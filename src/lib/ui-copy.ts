@@ -56,6 +56,10 @@ export const sr = {
     lookupFailedDescription: 'Unesite podatke o proizvodu ručno.',
   },
   finance: {
+    profitMonth: 'Naplaćeno ovog meseca bez PDV-a, minus nabavna vrednost prodate robe',
+    profitYear: 'Naplaćeno od 1. januara bez PDV-a, minus nabavna vrednost prodate robe',
+    profitNote:
+      'Profit = naplaćeno (osnovica, bez PDV-a) minus nabavna vrednost prodate robe. Ne uključuje ostale troškove firme (zakup, plate, prevoz, porez).',
     missingCost: 'Nedostaje nabavna cena',
     missingCostDescription: (count: number) =>
       `${count} ${count === 1 ? 'plaćena faktura nema kompletne troškove' : 'plaćene fakture nemaju kompletne troškove'}.`,

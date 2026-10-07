@@ -15,6 +15,7 @@ import { notify } from '@/lib/notify'
 import { scanBeep } from '@/lib/scan-beep'
 import { createScanGate } from '@/lib/scan-gate'
 import { findProductByScan, scanTarget } from '@/lib/invoice-scan'
+import type { InvoiceCopyPrefill } from '@/lib/invoice-copy'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
 import { clientToInvoiceFields } from '@/lib/client-fill'
@@ -45,6 +46,8 @@ interface InvoiceFormProps {
   initialData?: any // Invoice data for edit mode
   /** New documents only; an edited one keeps initialData.documentType. */
   documentType?: 'INVOICE' | 'PROFORMA'
+  /** New documents only: buyer and lines copied from another document ("Kopiraj"). */
+  prefill?: InvoiceCopyPrefill
 }
 
 interface InvoiceItemRow {
@@ -74,6 +77,7 @@ export function InvoiceForm({
   initialData,
   cancelHref,
   documentType: newDocumentType = 'INVOICE',
+  prefill,
 }: InvoiceFormProps) {
   const documentType: 'INVOICE' | 'PROFORMA' =
     initialData?.documentType === 'PROFORMA' || (!initialData && newDocumentType === 'PROFORMA')
@@ -95,21 +99,29 @@ export function InvoiceForm({
     date.setDate(date.getDate() + 30)
     return date.toISOString().split('T')[0]
   })
-  const [clientName, setClientName] = useState('')
-  const [clientAddress, setClientAddress] = useState('')
-  const [clientPib, setClientPib] = useState('')
-  const [items, setItems] = useState<InvoiceItemRow[]>([
-    {
-      id: '1',
-      productId: null,
-      productName: '',
-      quantity: 1,
-      unitPrice: 0,
-      discount: 0,
-      vatRate: inVatSystem ? DEFAULT_VAT_RATE : 0,
-      total: 0,
-    },
-  ])
+  const [clientName, setClientName] = useState(prefill?.clientName ?? '')
+  const [clientAddress, setClientAddress] = useState(prefill?.clientAddress ?? '')
+  const [clientPib, setClientPib] = useState(prefill?.clientPib ?? '')
+  const [items, setItems] = useState<InvoiceItemRow[]>(() =>
+    prefill && prefill.items.length > 0
+      ? prefill.items.map((item, index) => ({
+          ...item,
+          id: `copy-${index}`,
+          total: lineTotal(item.quantity, item.unitPrice, clampDiscountPercent(item.discount)),
+        }))
+      : [
+          {
+            id: '1',
+            productId: null,
+            productName: '',
+            quantity: 1,
+            unitPrice: 0,
+            discount: 0,
+            vatRate: inVatSystem ? DEFAULT_VAT_RATE : 0,
+            total: 0,
+          },
+        ]
+  )
   const [formError, setFormError] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
   const scanGateRef = useRef(createScanGate())

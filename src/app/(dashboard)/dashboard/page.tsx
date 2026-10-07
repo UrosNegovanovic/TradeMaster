@@ -17,6 +17,8 @@ import {
 import Link from 'next/link'
 import { Decimal } from '@prisma/client/runtime/library'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
+import { PaymentReminderButtons } from '@/components/dashboard/PaymentReminderButtons'
+import { invoiceSharePath } from '@/lib/public-invoice'
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
 import { AnalyticsMilestones } from '@/components/analytics/AnalyticsMilestones'
 import { InstallAppCard } from '@/components/pwa/InstallAppCard'
@@ -128,7 +130,15 @@ async function getDashboardData(profileId: string) {
     }),
     prisma.invoice.findMany({
       where: { profileId, documentType: 'INVOICE', status: InvoiceStatus.UNPAID, dueDate: { lt: startOfToday } },
-      select: { id: true, invoiceNumber: true, clientName: true, totalAmount: true, dueDate: true },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        clientName: true,
+        totalAmount: true,
+        dueDate: true,
+        shareEnabled: true,
+        shareToken: true,
+      },
       orderBy: { dueDate: 'asc' },
       take: DASHBOARD_OVERDUE_PREVIEW,
     }),
@@ -316,6 +326,18 @@ export default async function DashboardPage() {
                       {formatRsd(Number(invoice.totalAmount))}
                     </span>
                   </Link>
+                  <div className="mt-1.5">
+                    <PaymentReminderButtons
+                      invoiceId={invoice.id}
+                      invoiceNumber={invoice.invoiceNumber}
+                      amount={Number(invoice.totalAmount)}
+                      dueDate={invoice.dueDate.toISOString()}
+                      companyName={profile.companyName}
+                      sharePath={
+                        invoice.shareEnabled && invoice.shareToken ? invoiceSharePath(invoice.shareToken) : null
+                      }
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

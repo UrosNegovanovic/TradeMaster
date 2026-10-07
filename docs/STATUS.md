@@ -21,13 +21,13 @@ _Last updated: 2026-10-07. Target release: 2026-11-01 (owner decision 2026-10-06
 - IPS QR on the invoice PDF (ROADMAP #6): `src/lib/ips-qr.ts`; shown for unpaid invoices when the company giro account has valid control digits. Needs a real scan with a Serbian banking app before launch.
 - Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed. PDV-aware: osnovica, PDV and payable columns from `totalAmount`/`vatAmount`; the IPS QR amount is `totalAmount`.
 - Predračun and otpremnica, XML za SEF for manual upload (#70, #71). Migrations `invoice_document_type` and `registration_numbers` applied in production 2026-10-05. The XML is checked only for well-formedness until the owner uploads a sample on the SEF demo environment (ROADMAP A1.1).
+- Scanner beeps only after the save is confirmed (A2.4, #81); Finansije explains what profit includes (A2.7, #82); one-line intro under Asortiman and Magacin (A2.8, #83).
+- Scan into invoice and proforma (A4, #85): "Skeniraj" in the item list, `src/lib/invoice-scan.ts`. Not yet tried on a phone camera (device checklist).
 - Data correctness before launch (ROADMAP A2.1-A2.3, A2.5, A2.6): atomic Ulaz/Izlaz without going below zero, product PUT without quantity keeps stock (#74); catalog on phones and picker without duplicate SKUs (#73); tenant isolation test across all owner API routes, foreign catalog returns 404 (#78, #79).
 
-## In review (draft PRs, waiting for the owner's "merge")
+## In review
 
-- #81 ROADMAP A2.4: the scanner beeps only after the save is confirmed.
-- #82 ROADMAP A2.7: Finansije explains what profit includes.
-- #83 ROADMAP A2.8: one-line intro under Asortiman and Magacin. #82 and #83 both add `src/lib/ui-copy.test.ts`; the second to merge needs a small rebase.
+Nothing open. Next in ROADMAP: A5 (copy a document).
 
 ## Blocked on the owner
 
@@ -51,4 +51,4 @@ No paid ads until the first three are done. Owner deadlines for these and the re
 - Manual billing (ROADMAP #9): first 60 days free, then 20 EUR per month, paid by invoice. `profiles.accessExpiresAt` (migration `20261002150000_profile_access_expiry.sql`, applied in production 2026-10-02): new companies get 60 days (`INITIAL_ACCESS_DAYS`), NULL = no limit (existing companies). A banner shows in the last 14 days and after expiry. **After expiry the account is read-only**: every write API route returns 402 `ACCESS_EXPIRED` (`accessExpiredResponse` in `src/lib/access-guard.ts`); reading, CSV/XLSX export, the company form, revoking share links and the public share links of issued catalogs/invoices keep working. Terms live in one place (`PRICING_OFFER` etc. in `src/lib/landing-copy.ts`). The owner extends access by hand after each paid month with: `UPDATE profiles SET "accessExpiresAt" = ((GREATEST(COALESCE("accessExpiresAt", now() AT TIME ZONE 'UTC'), now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Belgrade')::date + INTERVAL '1 month') AT TIME ZONE 'Europe/Belgrade' AT TIME ZONE 'UTC' WHERE id = '<profile id>';` (adds one Belgrade calendar month to the later of the current expiry and today). No checkout, no cancellation.
 - PWA install (2026-10-02): the site is installable (Chromium reports no installability errors). Android's menu item "Dodaj na početni ekran" can create only a shortcut, so the in-app button is "Instaliraj aplikaciju" (native prompt, confirmation, menu guide) and the dashboard shows an install card on mobile (`src/lib/use-pwa-install.ts`).
 - Physical-device checks never done: camera/audio on Android and iPhone, PWA install, real-phone catalog opening. Run `docs/device-checklist.md` on both phones before launch.
-- Baseline verified 2026-10-07 on main (after #80): typecheck clean, lint 5 known warnings, 77 test files / 472 unit tests.
+- Baseline verified 2026-10-07 on main (after #85): typecheck clean, lint 5 known warnings, 80 test files / 488 unit tests.

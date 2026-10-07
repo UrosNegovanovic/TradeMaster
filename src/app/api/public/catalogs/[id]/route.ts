@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { publicCatalogSelect, toPublicCatalog } from '@/lib/public-catalog'
 import { enforceRateLimit, rateLimits } from '@/lib/rate-limit'
+import { recordCatalogView } from '@/lib/catalog-view-counter'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,7 @@ export async function GET(
       return NextResponse.json({ error: 'Catalog not found' }, { status: 410, headers })
     }
 
+    await recordCatalogView({ id: catalog.id })
     const { shareEnabled: _shareEnabled, ...publicRecord } = catalog
     return NextResponse.json(toPublicCatalog(publicRecord), { headers })
   } catch (error) {

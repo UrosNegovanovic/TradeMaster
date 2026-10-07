@@ -9,7 +9,10 @@ import {
   // Aliased: react-pdf Image has no alt attribute, unlike next/image
   Image as PdfImage,
   StyleSheet,
+  Svg,
+  Path,
 } from '@react-pdf/renderer'
+import { ipsQrMatrix } from '@/lib/ips-qr'
 import { CatalogWithItems } from '@/types/catalog'
 import { Profile } from '@/types/profile'
 import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
@@ -89,6 +92,17 @@ const styles = StyleSheet.create({
   },
   contactBlock: {
     alignItems: 'flex-end',
+  },
+  headerRightWithQr: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  shareQrHint: {
+    fontSize: 7,
+    color: '#6b7280',
+    textAlign: 'right',
+    maxWidth: 110,
   },
   contactInfo: {
     fontSize: 9,
@@ -337,6 +351,8 @@ type PdfTextStyle = (typeof styles)[keyof typeof styles]
 
 interface CatalogPDFProps {
   catalog: CatalogWithItems & { profile: Profile }
+  /** Active public link; printed as a QR code so a paper catalog leads to the live one (ROADMAP A8). */
+  shareUrl?: string | null
 }
 
 const formatPrice = (price: unknown) =>
@@ -357,7 +373,7 @@ const isValidImageUrl = (url: string | null | undefined): boolean => {
 }
 
 /** Layout, grouping, order and visible fields come from the catalog's saved display settings. */
-export function CatalogPDF({ catalog }: CatalogPDFProps) {
+export function CatalogPDF({ catalog, shareUrl }: CatalogPDFProps) {
   const profile = catalog.profile
   const display = readCatalogDisplay(catalog)
   const discount = Number(catalog.discount)
@@ -492,6 +508,8 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
   }
 
   const dynamicStyles = getDynamicStyles()
+  // ipsQrMatrix draws any text as a QR matrix, not only IPS payloads.
+  const shareQr = shareUrl ? ipsQrMatrix(shareUrl) : null
 
   const header = (
     <View style={styles.header}>
@@ -515,18 +533,26 @@ export function CatalogPDF({ catalog }: CatalogPDFProps) {
           )}
         </View>
       </View>
-      <View style={styles.headerRight}>
-        {profile.contactEmail && (
-          <View style={styles.contactBlock}>
-            <Text style={styles.contactLabel}>Email:</Text>
-            <Text style={styles.contactInfo}>{profile.contactEmail}</Text>
-          </View>
-        )}
-        {profile.contactPhone && (
-          <View style={styles.contactBlock}>
-            <Text style={styles.contactLabel}>Telefon:</Text>
-            <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
-          </View>
+      <View style={shareQr ? styles.headerRightWithQr : undefined}>
+        <View style={styles.headerRight}>
+          {profile.contactEmail && (
+            <View style={styles.contactBlock}>
+              <Text style={styles.contactLabel}>Email:</Text>
+              <Text style={styles.contactInfo}>{profile.contactEmail}</Text>
+            </View>
+          )}
+          {profile.contactPhone && (
+            <View style={styles.contactBlock}>
+              <Text style={styles.contactLabel}>Telefon:</Text>
+              <Text style={styles.contactInfo}>{profile.contactPhone}</Text>
+            </View>
+          )}
+          {shareQr && <Text style={styles.shareQrHint}>Skenirajte QR kod za ažurne cene i ponudu</Text>}
+        </View>
+        {shareQr && (
+          <Svg width={62} height={62} viewBox={`0 0 ${shareQr.size} ${shareQr.size}`}>
+            <Path d={shareQr.path} fill="#000000" />
+          </Svg>
         )}
       </View>
     </View>

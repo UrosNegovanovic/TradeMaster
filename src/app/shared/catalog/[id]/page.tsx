@@ -50,6 +50,9 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
   const { data: catalog, isLoading, error } = useQuery({
     queryKey: ['public-catalog', params.id],
     queryFn: () => fetchCatalog(params.id),
+    // Each fetch counts as an open of the link (ROADMAP A8); refocusing the tab is not a new open.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   const [query, setQuery] = useState('')

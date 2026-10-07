@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { publicCatalogSelect, toPublicCatalogBody } from '@/lib/public-catalog'
 import { enforceRateLimit, rateLimits } from '@/lib/rate-limit'
+import { recordCatalogView } from '@/lib/catalog-view-counter'
 
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' }
@@ -19,5 +20,6 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     select: publicCatalogSelect,
   })
   if (!catalog) return NextResponse.json({ error: 'Catalog not found' }, { status: 404, headers })
+  await recordCatalogView({ shareToken: params.token })
   return NextResponse.json(toPublicCatalogBody(catalog), { headers })
 }

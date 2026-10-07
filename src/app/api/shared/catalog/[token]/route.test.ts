@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { consumeRateLimit, rateLimitKey, rateLimits, resetRateLimitStore } from '@/lib/rate-limit'
 
 const mocks = vi.hoisted(() => ({
-  catalog: { findFirst: vi.fn() },
+  catalog: { findFirst: vi.fn(), updateMany: vi.fn() },
 }))
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks }))
@@ -118,5 +118,27 @@ describe('GET /api/shared/catalog/[token]', () => {
     expect(blocked.status).toBe(429)
     await expect(blocked.json()).resolves.toEqual({ error: 'Too many requests' })
     expect(mocks.catalog.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('counts an open of the enabled link and still answers when counting fails', async () => {
+    mocks.catalog.findFirst.mockResolvedValue({ name: 'Ponuda', discount: '0', profile: {}, items: [] })
+    mocks.catalog.updateMany.mockRejectedValueOnce(new Error('db down'))
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const response = await GET(new NextRequest(`http://localhost/api/shared/catalog/${token}`), { params: { token } })
+
+    expect(response.status).toBe(200)
+    expect(mocks.catalog.updateMany).toHaveBeenCalledWith({
+      where: { shareToken: token, shareEnabled: true },
+      data: { shareViewCount: { increment: 1 }, shareLastViewedAt: expect.any(Date) },
+    })
+    errorLog.mockRestore()
+  })
+
+  it('does not count a revoked or unknown link', async () => {
+    mocks.catalog.findFirst.mockResolvedValue(null)
+    const response = await GET(new NextRequest(`http://localhost/api/shared/catalog/${token}`), { params: { token } })
+    expect(response.status).toBe(404)
+    expect(mocks.catalog.updateMany).not.toHaveBeenCalled()
   })
 })

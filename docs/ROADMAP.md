@@ -42,6 +42,7 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A6 | Otpremnica za teren: adresa isporuke i broj paketa se unose pri štampi (ne čuvaju se), polja za ime, potpis i datum | #89 |
 | A7 | Podsetnik za naplatu (WhatsApp/Viber) na kartici "Kasni naplata" | #88 |
 | A8 | QR kod ka živom linku na PDF-u kataloga, broj otvaranja linka; migracija `catalog_share_views` u produkciji od 2026-10-07 | #90 |
+| A2.9 | Landing (deo bez podataka vlasnika): "Ceo posao iz telefona" u 6 koraka, "Šta TradeMaster nije", "Vaši podaci", predračun i otpremnica u paketu, ton "vi", FAQ o instalaciji, kontakt WhatsApp/Viber/telefon iz `operator.ts` | #94 |
 
 Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 2026-10-05 (provereno u listi migracija Supabase projekta 2026-10-06). Baza je u `eu-west-1`, Vercel funkcije u `dub1` (EU).
 
@@ -95,7 +96,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A2.9 | **Landing: poverenje i dokaz** | Visoka | M | Redosled sekcija iz marketing dokumenta: kontakt (WhatsApp/Viber, telefon) u hero-u i footeru; "Ceo posao iz telefona" u 6 koraka; demo video; dugmad "Otvori primer kataloga/fakture" (demo firma); predračun i otpremnica u sekciji o fakturi i u `pricingIncludes`; "Šta TradeMaster nije"; "Vaši podaci" (EU serveri, izvoz, samo-pregled posle isteka); jedan ton ("vi"); FAQ o instalaciji usklađen sa dugmetom "Instaliraj aplikaciju". FAQ o SEF-u menjati tek posle A1.1, a o slanju tek kad A3 radi u produkciji. |
+| A2.9 | 🟡 (#94) **Landing: poverenje i dokaz** — čeka samo A1.7 (`landingExamples` u `src/lib/landing-copy.ts`: linkovi demo kataloga i fakture) i A1.8 (novi `public/landing-demo.mp4` i poster; sadašnji poster još kaže "Skeniraj robu"). Cena ostaje 20 € (A1.6). | Visoka | M | Redosled sekcija iz marketing dokumenta: kontakt (WhatsApp/Viber, telefon) u hero-u i footeru; "Ceo posao iz telefona" u 6 koraka; demo video; dugmad "Otvori primer kataloga/fakture" (demo firma); predračun i otpremnica u sekciji o fakturi i u `pricingIncludes`; "Šta TradeMaster nije"; "Vaši podaci" (EU serveri, izvoz, samo-pregled posle isteka); jedan ton ("vi"); FAQ o instalaciji usklađen sa dugmetom "Instaliraj aplikaciju". FAQ o SEF-u menjati tek posle A1.1, a o slanju tek kad A3 radi u produkciji. |
 | A2.10 | Ugovor o obradi podataka (DPA) u /uslovi i obaveštenje o kolačićima kad je analitika uključena | Srednja | S | Tekst da pregleda knjigovođa ili pravnik. |
 | A2.11 | Stranice po delatnosti (veleprodaja, paušalci koji prodaju robu, proizvođači), sitemap, kanonski URL, OG slika | Srednja | M | Posle A1.10; ako domen stiže 28. okt, ovo ide prvih dana novembra. |
 
@@ -107,7 +108,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 - [ ] /uslovi i /privatnost imaju prave podatke operatera
 - [x] A2.1-A2.3 spojeni (stanje robe i izolacija firmi)
 - [ ] Smoke test na produkcijskom domenu prolazi (A1.13)
-- [ ] Landing ima kontakt, primere i nijednu tvrdnju koja ne radi
+- [ ] Landing ima kontakt, primere i nijednu tvrdnju koja ne radi (kontakt i tvrdnje ✅ #94; primeri čekaju A1.7)
 - [ ] Analitika i Sentry uključeni
 - [ ] Backup vraćen bar jednom
 

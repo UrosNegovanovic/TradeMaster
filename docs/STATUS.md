@@ -2,7 +2,7 @@
 
 Short-lived file: update it when something changes. Stable rules live in `CLAUDE.md`, the plan in `docs/ROADMAP.md`.
 
-_Last updated: 2026-10-08. Target release: 2026-11-01 (owner decision 2026-10-06: domain purchase and start of sales on 1 November; until then the app is polished, see `docs/ROADMAP.md`)._
+_Last updated: 2026-10-09. Target release: 2026-11-01 (owner decision 2026-10-06: domain purchase and start of sales on 1 November; until then the app is polished, see `docs/ROADMAP.md`)._
 
 ## Done on main
 
@@ -20,7 +20,7 @@ _Last updated: 2026-10-08. Target release: 2026-11-01 (owner decision 2026-10-06
 - Dashboard "Kasni naplata" card (ROADMAP #7): UNPAID invoices past due, oldest first, with total and days late (`src/lib/overdue-invoices.ts`). Low stock card already existed.
 - IPS QR on the invoice PDF (ROADMAP #6): `src/lib/ips-qr.ts`; shown for unpaid invoices when the company giro account has valid control digits. Needs a real scan with a Serbian banking app before launch.
 - Accountant export (ROADMAP #5): `GET /api/invoices/export?from&to&format=csv|xlsx`, no migration needed. PDV-aware: osnovica, PDV and payable columns from `totalAmount`/`vatAmount`; the IPS QR amount is `totalAmount`.
-- Predračun and otpremnica, XML za SEF for manual upload (#70, #71). Migrations `invoice_document_type` and `registration_numbers` applied in production 2026-10-05. The XML is checked only for well-formedness until the owner uploads a sample on the SEF demo environment (ROADMAP A1.1).
+- Predračun and otpremnica, XML za SEF for manual upload (#70, #71). Migrations `invoice_document_type` and `registration_numbers` applied in production 2026-10-05. On 2026-10-09 the owner generated a correct XML (invoice 11/2026: totals, PDV, split address, account checked); uploading it on the SEF demo portal (A1.1) is still open.
 - Scanner beeps only after the save is confirmed (A2.4, #81); Finansije explains what profit includes (A2.7, #82); one-line intro under Asortiman and Magacin (A2.8, #83).
 - Scan into invoice and proforma (A4, #85): "Skeniraj" in the item list, `src/lib/invoice-scan.ts`. Not yet tried on a phone camera (device checklist).
 - Copy a document (A5, #87): "Kopiraj" opens a new invoice/predračun with the same buyer and lines at today's prices (`src/lib/invoice-copy.ts`).
@@ -35,7 +35,7 @@ _Last updated: 2026-10-08. Target release: 2026-11-01 (owner decision 2026-10-06
 ## In review
 
 - #93 ROADMAP A2.10 (DPA in /uslovi, privacy notice, sign-up consent line): draft, waits for the lawyer's review.
-- A3 (#95, merged): send to SEF with the company's API key. Migration `20261009090000_sef_sending.sql` and `SEF_KEY_ENCRYPTION_KEY` are in production; `SEF_API_BASE_URL` is not set, so sending goes to the SEF demo. First XML test (2026-10-08) led to data checks, merged: PIB control digit on save (#99), city required in SEF addresses (#100), žiro-račun checked on save (#101), test that invoices work without a SEF key (#102). Switching to real SEF (`SEF_API_BASE_URL`, `SEF_ALLOW_PRODUCTION=on`) waits for a demo send with the real company PIB (ROADMAP A3.4).
+- A3 (#95, merged): send to SEF with the company's API key. Migration `20261009090000_sef_sending.sql` and `SEF_KEY_ENCRYPTION_KEY` are in production; `SEF_API_BASE_URL` is not set, so sending goes to the SEF demo. First XML test (2026-10-08) led to data checks, merged: PIB control digit on save (#99), city required in SEF addresses (#100), žiro-račun checked on save (#101), test that invoices work without a SEF key (#102). Then #104 (XML problems say where to fix: Podešavanja, the invoice, or Kupci) and #105 (Podešavanja and Kupci use the SEF rules from `src/lib/company-fields.ts` with per-field errors; Podešavanja now require naziv, PIB, matični broj, adresa with city and žiro-račun; invoices only warn). Owner decision 2026-10-09: SEF stays on demo for testing and moves to production just before launch/marketing (ROADMAP A1.14); until then every company sees the SEF key card labelled demo (A3.6).
 
 All roadmap code items that do not wait on the owner are done; the rest of phase A is owner work (A1) or the PRs above.
 

@@ -30,4 +30,12 @@ describe('shouldProtectHtmlRoute', () => {
     expect(shouldProtectHtmlRoute(request('/shared/invoice/token'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/api/shared/invoice/token'))).toBe(false)
   })
+
+  it('leaves trade pages and link-preview images public (A2.11)', () => {
+    expect(shouldProtectHtmlRoute(request('/za/veleprodaju'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/za/proizvodjace/opengraph-image'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/opengraph-image'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/twitter-image'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/zaliha'))).toBe(true)
+  })
 })

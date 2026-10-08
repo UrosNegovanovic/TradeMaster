@@ -8,6 +8,7 @@ import { Providers } from "./providers"
 import { Toaster } from "sonner"
 import { AFTER_AUTH_PATH } from "@/lib/after-auth"
 import { VercelAnalytics } from "@/components/analytics/VercelAnalytics"
+import { siteUrl } from "@/lib/site-url"
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] })
 
@@ -26,14 +27,15 @@ export const viewport: Viewport = {
 
 // Enhanced SEO metadata with OpenGraph and Twitter Card support
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'),
+  // One source for the domain (src/lib/site-url.ts); set NEXT_PUBLIC_APP_URL when the domain exists (A1.10).
+  metadataBase: new URL(siteUrl()),
   
   title: {
     default: "TradeMaster — od barkoda do fakture",
     template: "%s | TradeMaster",
   },
   
-  description: "Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za plaćanje. Na telefonu i računaru.",
+  description: "Skenirajte robu, pošaljite katalog kupcu i izdajte fakturu sa PDV-om i QR kodom za plaćanje. Na telefonu i računaru.",
   
   keywords: [
     'B2B magacin',
@@ -78,23 +80,15 @@ export const metadata: Metadata = {
     locale: 'sr_RS',
     url: '/',
     title: 'TradeMaster — od barkoda do fakture',
-    description: 'Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za plaćanje. Za trgovce i malu veleprodaju.',
+    description: 'Skenirajte robu, pošaljite katalog kupcu i izdajte fakturu sa QR kodom za plaćanje. Za trgovce i malu veleprodaju.',
     siteName: 'TradeMaster',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'TradeMaster — od barkoda do fakture',
-      },
-    ],
+    // Image: src/app/opengraph-image.tsx (and per trade page under /za/[slug]).
   },
   
   twitter: {
     card: 'summary_large_image',
     title: 'TradeMaster — od barkoda do fakture',
-    description: 'Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za plaćanje.',
-    images: ['/og-image.png'],
+    description: 'Skenirajte robu, pošaljite katalog kupcu i izdajte fakturu sa QR kodom za plaćanje.',
   },
   
   icons: {

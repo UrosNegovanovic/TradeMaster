@@ -1,60 +1,20 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
+import { absoluteUrl } from '@/lib/site-url'
+import { tradePagePath, tradePages } from '@/lib/trade-pages'
 
 /**
- * Dynamic sitemap generation for TradeMaster
- * This tells search engines about all public pages on the site
- * 
- * Priority scale: 0.0 - 1.0 (1.0 = highest)
- * Change frequency: always, hourly, daily, weekly, monthly, yearly, never
+ * Public, indexable pages only (ROADMAP A2.11). Sign-in/sign-up, the app and shared customer
+ * links (/shared/…) stay out: robots.ts disallows them and they carry noindex.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  // Use environment variable or fallback to Vercel URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'
-  
   return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 1.0, // Homepage - highest priority
-    },
-    {
-      url: `${baseUrl}/sign-up`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8, // Sign-up is important for conversion
-    },
-    {
-      url: `${baseUrl}/sign-in`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5, // Sign-in is less important for SEO
-    },
-    {
-      url: `${baseUrl}/privatnost`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/uslovi`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    // Note: Public catalog pages (/shared/catalog/[id]) are dynamic
-    // Consider adding them from database in the future:
-    // 
-    // const catalogs = await prisma.catalog.findMany({
-    //   where: { isPublic: true },
-    //   select: { id: true, updatedAt: true }
-    // })
-    // 
-    // ...catalogs.map(catalog => ({
-    //   url: `${baseUrl}/shared/catalog/${catalog.id}`,
-    //   lastModified: catalog.updatedAt,
-    //   changeFrequency: 'weekly',
-    //   priority: 0.7,
-    // }))
+    { url: absoluteUrl('/'), changeFrequency: 'weekly', priority: 1 },
+    ...tradePages.map((page) => ({
+      url: absoluteUrl(tradePagePath(page)),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
+    { url: absoluteUrl('/privatnost'), changeFrequency: 'yearly', priority: 0.3 },
+    { url: absoluteUrl('/uslovi'), changeFrequency: 'yearly', priority: 0.3 },
   ]
 }

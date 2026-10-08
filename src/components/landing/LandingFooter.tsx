@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { landingShell } from './landing-shell'
+import { tradePagePath, tradePages } from '@/lib/trade-pages'
 
 const footerLink =
   'inline-flex min-h-11 items-center rounded-md text-[15px] text-neutral-700 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
@@ -18,13 +19,28 @@ export function LandingFooter({ stickyCtaPad = false }: LandingFooterProps) {
       className={`border-t border-neutral-100 pt-10 ${stickyCtaPad ? 'pb-24 sm:pb-10' : 'pb-10'}`}
     >
       <div className={landingShell}>
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.45fr)_repeat(3,minmax(0,0.85fr))] lg:items-start lg:gap-12">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.45fr)_repeat(4,minmax(0,0.85fr))] lg:items-start lg:gap-12">
           <div className="min-w-0 max-w-sm">
             <TradeMasterWordmark size="sm" href="/" />
             <p className="mt-3 text-[14px] leading-relaxed text-neutral-600">
               Sken, lager, katalog i faktura. Jedan nalog po firmi.
             </p>
           </div>
+
+          <nav aria-labelledby="footer-za-koga">
+            <h2 id="footer-za-koga" className={heading}>
+              Za koga
+            </h2>
+            <ul className="mt-2 flex flex-col">
+              {tradePages.map((page) => (
+                <li key={page.slug}>
+                  <Link href={tradePagePath(page)} className={footerLink}>
+                    {page.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
           <nav aria-labelledby="footer-proizvod">
             <h2 id="footer-proizvod" className={heading}>

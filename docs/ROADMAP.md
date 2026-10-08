@@ -16,7 +16,7 @@ Vlasnik male B2B firme (1-10 ljudi) koji sam vodi robu i ponude i prodaje **drug
 
 Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ katalog na WhatsApp, napraviš predračun, pretvoriš ga u fakturu i otpremnicu, kupac plati skeniranjem IPS QR koda.
 
-## Šta je urađeno (2026-10-08)
+## Šta je urađeno (2026-10-09)
 
 | # | Šta | PR |
 |---|---|---|
@@ -43,6 +43,10 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A7 | Podsetnik za naplatu (WhatsApp/Viber) na kartici "Kasni naplata" | #88 |
 | A8 | QR kod ka živom linku na PDF-u kataloga, broj otvaranja linka; migracija `catalog_share_views` u produkciji od 2026-10-07 | #90 |
 | A2.9 | Landing (deo bez podataka vlasnika): "Ceo posao iz telefona" u 6 koraka, "Šta TradeMaster nije", "Vaši podaci", predračun i otpremnica u paketu, ton "vi", FAQ o instalaciji, kontakt WhatsApp/Viber/telefon iz `operator.ts` | #94 |
+| A3 | Slanje u SEF jednim klikom sa API ključem firme (SEF demo); migracija `sef_sending` i `SEF_KEY_ENCRYPTION_KEY` u produkciji | #95 |
+| A3.1-3 | PIB sa kontrolnom cifrom, adresa sa mestom za SEF, žiro-račun proveren pri čuvanju | #99, #100, #101 |
+| A3.4 | Test: faktura radi bez SEF ključa (kod); prelazak na pravi SEF čeka A1.14 | #102 |
+| A3.x | Poruke za XML kažu gde se ispravlja (Podešavanja / faktura / Kupci); Podešavanja i Kupci imaju ista pravila kao SEF, sa greškom ispod polja (PIB 9 cifara + kontrolna, MB 8 cifara, adresa sa mestom, žiro-račun); faktura samo upozorava | #104, #105 |
 | A2.11 | Stranice `/za/veleprodaju`, `/za/preduzetnike`, `/za/proizvodjace`; jedan izvor adrese (`src/lib/site-url.ts`); sitemap i robots očišćeni (`/shared/` se ne indeksira); OG slike iz koda; JSON-LD | #97 |
 
 Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 2026-10-05 (provereno u listi migracija Supabase projekta 2026-10-06). Baza je u `eu-west-1`, Vercel funkcije u `dub1` (EU).
@@ -53,7 +57,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 
 | # | Šta | Rok | Zašto |
 |---|---|---|---|
-| A1.1 | XML za SEF učitan na SEF demo okruženju (demo nalog firme) | 15. okt | Uslov za A3 i za bilo kakvu SEF rečenicu na landingu |
+| A1.1 | 🟡 XML za SEF učitan na SEF demo okruženju (demo nalog firme). 2026-10-09: XML fakture 11/2026 sa ispravnim podacima napravljen i proveren (iznosi, PDV, adrese, račun); ostaje učitavanje na portal. Demo prihvata samo PIB firme kojom ste prijavljeni i kupca registrovanog na SEF-u. | 15. okt | Uslov za A3 i za bilo kakvu SEF rečenicu na landingu |
 | A1.2 | `docs/device-checklist.md` na Android i iPhone telefonu; IPS QR skeniran pravom bankarskom aplikacijom | 19. okt | Skener i QR su glavne scene u reklami |
 | A1.3 | Promeniti lozinku test korisnika u Clerk Dev i učiniti repo `TradeMasterPW` privatnim (lozinka je u javnoj istoriji commit-a) | 12. okt | Bezbednost |
 | A1.4 | Pravi podaci operatera za `src/lib/operator.ts` (naziv, PIB od 9 cifara, adresa) | 20. okt | /uslovi i /privatnost sada imaju `12312412312` i "test" |
@@ -65,6 +69,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A1.10 | **Domen** (kupiti najkasnije 28. okt, da ostanu 3 dana za DNS i Clerk), povezati na Vercel, `NEXT_PUBLIC_APP_URL` | 28. okt | Odluka: prodaja 1. novembra |
 | A1.11 | **Clerk Production** (`pk_live_`) na domenu; registracija i prijava sa 2FA do kraja | 29. okt | Danas `pk_test_`; korisnici sa 2FA mogu da zapnu |
 | A1.12 | U Vercelu: `NEXT_PUBLIC_ANALYTICS=on`, `NEXT_PUBLIC_SENTRY_DSN`, Upstash ključevi, Web Analytics | 29. okt | Bez toga ne znamo gde ljudi odustaju |
+| A1.14 | **SEF na produkciju pred marketing** (odluka vlasnika 2026-10-09: do tada SEF ostaje na demo radi testiranja). Demo slanje sa pravim PIB-om firme i kupcem na SEF-u, pa u Vercelu `SEF_API_BASE_URL=https://efaktura.mfin.gov.rs` i `SEF_ALLOW_PRODUCTION=on`, redeploy. Ako se ne stigne, A3.6. | 28. okt | Prvi kupci ne smeju da "šalju" u demo misleći da je pravi SEF |
 | A1.13 | Smoke test na produkcijskom domenu: Playwright `TradeMasterPW` smoke prema novom URL-u + jedna ručna faktura od registracije do PDF-a | 30. okt | Smoke prijavljenog korisnika na produkciji nikad nije prošao |
 
 ### A2. Kod pre lansiranja (mali draft PR-ovi, po redu)
@@ -89,8 +94,10 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A3 | ✅ (#95, SEF demo) **Slanje fakture u SEF jednim klikom (opcija)** | Visoka | L | Konty i Minimax ga daju u ceni. Uključuje se samo kad firma u Podešavanjima unese svoj SEF API ključ; bez ključa ništa se ne menja. Šalje se postojeći UBL iz `src/lib/sef-ubl.ts` (`POST /api/publicApi/sales-invoice/ubl`), status (poslato, prihvaćeno, odbijeno) se vidi na fakturi, posle slanja faktura se ne briše i ne menja (storno ide kroz SEF). Ključ šifrovan po tenantu, nikad u logu ni na klijentu. Migracija za ključ i SEF status. Prvo na SEF demo okruženju; produkcija tek kad A1.1 i demo slanje prođu. Ako ne bude gotovo do 24. okt, ostaje za B1 i ne pominje se na landingu. |
 | A3.1 | ✅ (#99) **PIB sa kontrolnom cifrom** | Visoka | S | Nađeno u testu XML-a 2026-10-08: `123124129` i `123456777` imaju 9 cifara, ali ne prolaze kontrolnu cifru (ISO 7064 MOD 11,10), pa ih SEF odbija. Provera pri čuvanju u Podešavanjima i Kupcima (Zod na klijentu i serveru) i u spisku problema za XML/slanje. PIB kupca na samoj fakturi se ne blokira: faktura bez SEF-a radi i sa takvim PIB-om. |
 | A3.2 | ✅ (#100) **Adresa sa mestom za SEF** | Visoka | S | Adresa bez zareza ("Kralja Petra I") ide u XML i kao ulica i kao grad. Za XML/slanje adresa mora imati mesto ("Kralja Petra I 10, 11000 Beograd"); polja adrese u Podešavanjima, Kupcima i fakturi dobijaju taj primer. Čuvanje adrese i obična faktura se ne blokiraju. |
-| A3.3 | ✅ (#101) **Žiro-račun proveren pri čuvanju** | Srednja | S | Danas se proverava tek na XML-u i IPS QR-u ("1600045454878" je prošao čuvanje). Podešavanja odbijaju račun koji nije 18 cifara sa ispravnim kontrolnim brojem (`normalizeGiroAccount`), sa primerom "160-0000000123456-78". Prazan račun ostaje dozvoljen. |
-| A3.4 | 🟡 (#102, kod gotov; čeka vlasnika) **SEF u produkciji, fakture i bez SEF-a** | Visoka | S | Kod: test da faktura (izdavanje, PDF, plaćanje) ne zavisi od SEF ključa ni od `SEF_KEY_ENCRYPTION_KEY`, i da se bez ključa SEF panel ne prikazuje niti zove SEF. Vlasnik: demo slanje sa pravim PIB-om firme i kupcem koji je na SEF-u (A1.1), pa tek onda u Vercelu `SEF_API_BASE_URL=https://efaktura.mfin.gov.rs` i `SEF_ALLOW_PRODUCTION=on`. Na produkciji je od 2026-10-08 postavljen samo `SEF_KEY_ENCRYPTION_KEY`, pa slanje ide na demo. |
+| A3.3 | ✅ (#101) **Žiro-račun proveren pri čuvanju** | Srednja | S | Danas se proverava tek na XML-u i IPS QR-u ("1600045454878" je prošao čuvanje). Podešavanja odbijaju račun koji nije 18 cifara sa ispravnim kontrolnim brojem (`normalizeGiroAccount`), sa primerom "160-0000000123456-54". Od #105 je račun u Podešavanjima obavezan. |
+| A3.4 | 🟡 (#102, kod gotov; prelazak = A1.14) **SEF u produkciji, fakture i bez SEF-a** | Visoka | S | Kod: test da faktura (izdavanje, PDF, plaćanje) ne zavisi od SEF ključa ni od `SEF_KEY_ENCRYPTION_KEY`, i da se bez ključa SEF panel ne prikazuje niti zove SEF. Vlasnik: demo slanje sa pravim PIB-om firme i kupcem koji je na SEF-u (A1.1), pa tek onda u Vercelu `SEF_API_BASE_URL=https://efaktura.mfin.gov.rs` i `SEF_ALLOW_PRODUCTION=on`. Na produkciji je od 2026-10-08 postavljen samo `SEF_KEY_ENCRYPTION_KEY`, pa slanje ide na demo. |
+| A3.5 | **"Preuzmi podatke iz Kupaca" na fakturi** | Visoka | S | Nađeno 2026-10-09: faktura čuva svoj snimak kupca, pa ispravka u Kupcima ne popravlja staru fakturu i XML i dalje pada (10/2026, 11/2026). Na izmeni fakture dugme koje upiše naziv, PIB i adresu sačuvanog kupca; uz grešku za XML i u SEF panelu link "Izmeni fakturu". Samo za Nacrt i Otvoreno, nikad posle slanja u SEF. |
+| A3.6 | **SEF kartica samo kad je SEF stvarno uključen** | Visoka | S | Danas se "SEF API ključ" u Podešavanjima prikazuje svakoj firmi čim postoji `SEF_KEY_ENCRYPTION_KEY`, sa napomenom "SEF demo". Ako A1.14 ne stigne do lansiranja: env prekidač koji karticu i SEF panel prikazuje samo test nalozima, ostali vide samo "XML za SEF". |
 | A4 | ✅ (#85) **Skeniranje u fakturu i predračun** | Visoka | M | Dugme "Skeniraj" u formi dodaje stavku po barkodu (ili povećava količinu postojeće). Komercijalista u magacinu kuca fakturu kamerom. Postojeći skener, bez izmene `BarcodeScanner.tsx`. |
 | A5 | ✅ (#87) **Kopiraj dokument** | Srednja | S | "Kopiraj" na fakturi i predračunu pravi novi nacrt sa istim kupcem i stavkama, današnjim cenama i troškovima. Stalni kupci često naručuju isto. |
 | A6 | ✅ (#89) **Otpremnica za teren** | Srednja | S | Na PDF otpremnice: adresa isporuke (ako se razlikuje), polja "Robu izdao" / "Robu primio" sa potpisom i datumom, broj paketa. Bez nove šeme ako adresa isporuke ide u napomenu; inače mala migracija. |
@@ -103,6 +110,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 |---|---|---|---|---|
 | A2.9 | 🟡 (#94) **Landing: poverenje i dokaz** — čeka samo A1.7 (`landingExamples` u `src/lib/landing-copy.ts`: linkovi demo kataloga i fakture) i A1.8 (novi `public/landing-demo.mp4` i poster; sadašnji poster još kaže "Skeniraj robu"). Cena ostaje 20 € (A1.6). | Visoka | M | Redosled sekcija iz marketing dokumenta: kontakt (WhatsApp/Viber, telefon) u hero-u i footeru; "Ceo posao iz telefona" u 6 koraka; demo video; dugmad "Otvori primer kataloga/fakture" (demo firma); predračun i otpremnica u sekciji o fakturi i u `pricingIncludes`; "Šta TradeMaster nije"; "Vaši podaci" (EU serveri, izvoz, samo-pregled posle isteka); jedan ton ("vi"); FAQ o instalaciji usklađen sa dugmetom "Instaliraj aplikaciju". FAQ o SEF-u menjati tek posle A1.1, a o slanju tek kad A3 radi u produkciji. |
 | A2.10 | Ugovor o obradi podataka (DPA) u /uslovi i obaveštenje o kolačićima kad je analitika uključena | Srednja | S | Tekst da pregleda knjigovođa ili pravnik. |
+| A2.12 | Landing i `/za/*` FAQ o SEF-u posle A1.14 | Srednja | S | Danas tačno piše "Ne šalje fakture u SEF" (`landing-copy.ts`, `trade-pages.ts`). Kad slanje radi na pravom SEF-u: "Šalje fakturu u SEF jednim dodirom, sa vašim API ključem". Do tada se može dodati samo "XML za ručno učitavanje na SEF" kad A1.1 prođe. |
 | A2.11 | 🟡 (#97) Stranice po delatnosti (veleprodaja, paušalci koji prodaju robu, proizvođači), sitemap, kanonski URL, OG slika | Srednja | M | Posle A1.10; ako domen stiže 28. okt, ovo ide prvih dana novembra. Kod je gotov; posle domena (A1.10) vlasnik podešava `NEXT_PUBLIC_APP_URL` i prijavljuje sitemap u Google Search Console. |
 
 **Zamrzavanje koda: 28. oktobar.** Posle toga samo popravke grešaka nađenih u A1.13.
@@ -114,6 +122,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 - [x] A2.1-A2.3 spojeni (stanje robe i izolacija firmi)
 - [ ] Smoke test na produkcijskom domenu prolazi (A1.13)
 - [ ] Landing ima kontakt, primere i nijednu tvrdnju koja ne radi (kontakt i tvrdnje ✅ #94; primeri čekaju A1.7)
+- [ ] SEF: pravi SEF uključen (A1.14) ili SEF kartica sakrivena (A3.6); landing usklađen (A2.12)
 - [ ] Analitika i Sentry uključeni
 - [ ] Backup vraćen bar jednom
 

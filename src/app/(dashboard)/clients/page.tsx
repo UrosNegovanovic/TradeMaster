@@ -13,6 +13,7 @@ import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { clientWriteSchema } from '@/lib/validations'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { sr } from '@/lib/ui-copy'
 import type { Client } from '@/types/client'
 
 async function fetchClients(): Promise<Client[]> {
@@ -176,7 +177,7 @@ export default function ClientsPage() {
                     id="clientAddress"
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Ulica i broj, mesto"
+                    placeholder={sr.address.placeholder}
                   />
                 </div>
               </div>

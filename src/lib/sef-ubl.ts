@@ -99,6 +99,8 @@ function partyProblems(party: SefParty, who: 'firme' | 'kupca'): string[] {
   else if (!isValidPib(pib)) problems.push(`PIB ${who} nije ispravan (kontrolna cifra ne odgovara).`)
   if (!/^\d{8}$/.test(text(party.registrationNumber))) problems.push(`Matični broj ${who} mora imati 8 cifara.`)
   if (!text(party.address)) problems.push(`Adresa ${who} je obavezna (ulica i mesto).`)
+  else if (!text(party.address).includes(','))
+    problems.push(`Adresi ${who} nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".`)
   return problems
 }
 

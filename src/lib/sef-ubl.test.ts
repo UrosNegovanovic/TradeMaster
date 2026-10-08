@@ -134,6 +134,20 @@ describe('buildSefInvoiceXml', () => {
     ])
   })
 
+  it('asks for the city when an address has none, instead of repeating the street as the city', () => {
+    const result = buildSefInvoiceXml({
+      ...input,
+      seller: { ...input.seller, address: 'Kralja Petra I' },
+      buyer: { ...input.buyer, address: 'Zarka Koraca I' },
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.problems).toEqual([
+      'Adresi firme nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".',
+      'Adresi kupca nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".',
+    ])
+  })
+
   it('refuses 0% lines on a PDV invoice because the exemption reason is unknown', () => {
     const result = buildSefInvoiceXml({
       ...input,

@@ -1,12 +1,19 @@
 import { isAnalyticsEnabled } from '@/lib/analytics'
-import { SENTRY_DSN } from '@/lib/sentry-options'
+import { SENTRY_DSN, isEuSentryDsn } from '@/lib/sentry-options'
 
 /**
  * Sub-processors and cookie facts for /uslovi (DPA, ROADMAP A2.10) and /privatnost.
- * Optional services are listed only while they are switched on, so the pages never
- * name a service that is not running, and never miss one that is.
+ * All six services are always listed: the DPA promises notice before a new sub-processor,
+ * so the list must not change by itself in a deploy. Env vars only switch the
+ * "uključeno" / "trenutno nije uključeno" label.
  */
-export type Subprocessor = { name: string; purpose: string; location: string }
+export type Subprocessor = {
+  name: string
+  purpose: string
+  location: string
+  /** False for services that exist in the code but are switched off in this deployment. */
+  enabled: boolean
+}
 
 export type ProcessingFlags = {
   analytics: boolean
@@ -17,7 +24,8 @@ export type ProcessingFlags = {
 export function currentProcessingFlags(env: NodeJS.ProcessEnv = process.env): ProcessingFlags {
   return {
     analytics: isAnalyticsEnabled(),
-    sentry: Boolean(SENTRY_DSN),
+    // Sentry runs only with an EU (de.sentry.io) DSN, so "EU (Nemačka)" below stays true.
+    sentry: isEuSentryDsn(SENTRY_DSN),
     sharedRateLimit: Boolean(
       (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) || (env.KV_REST_API_URL && env.KV_REST_API_TOKEN)
     ),
@@ -25,45 +33,50 @@ export function currentProcessingFlags(env: NodeJS.ProcessEnv = process.env): Pr
 }
 
 export function subprocessors(flags: ProcessingFlags): Subprocessor[] {
-  const list: Subprocessor[] = [
+  return [
     {
       name: 'Supabase Inc.',
       purpose: 'baza podataka i čuvanje slika (svi podaci naloga)',
-      location: 'EU, Irska (AWS eu-west-1)',
+      location: 'EU (Irska)',
+      enabled: true,
     },
     {
       name: 'Vercel Inc.',
-      purpose: 'hosting aplikacije i obrada zahteva',
-      location: 'serverske funkcije u EU (Dablin); kompanija iz SAD',
+      purpose:
+        'hosting aplikacije; zahteve obrađuju serverske funkcije u Dablinu, a kompanija iz SAD može imati pristup radi rada usluge (logovi, podrška)',
+      location: 'EU (Irska); kompanija iz SAD',
+      enabled: true,
     },
     {
       name: 'Clerk Inc.',
-      purpose: 'registracija, prijava i kolačići sesije (e-pošta i podaci za prijavu)',
+      purpose:
+        'registracija i prijava korisnika aplikacije (e-pošta, IP adresa, sesija); ne prima podatke vaših kupaca',
       location: 'SAD',
+      enabled: true,
     },
-  ]
-  if (flags.sharedRateLimit) {
-    list.push({
+    {
       name: 'Upstash Inc.',
       purpose: 'zaštita od zloupotrebe: kratkotrajni brojač zahteva po IP adresi, briše se posle nekoliko minuta',
-      location: 'prema regionu baze brojača',
-    })
-  }
-  if (flags.sentry) {
-    list.push({
+      location: 'EU (Irska)',
+      enabled: flags.sharedRateLimit,
+    },
+    {
       name: 'Functional Software Inc. (Sentry)',
       purpose: 'prijava tehničkih grešaka, bez podataka o korisniku, kolačića i sadržaja zahteva',
-      location: 'prema regionu Sentry naloga',
-    })
-  }
-  if (flags.analytics) {
-    list.push({
+      location: 'EU (Nemačka)',
+      enabled: flags.sentry,
+    },
+    {
       name: 'Vercel Inc. (Web Analytics)',
       purpose: 'zbirno merenje poseta i nekoliko koraka u aplikaciji, bez kolačića i bez podataka o korisniku',
       location: 'kompanija iz SAD',
-    })
-  }
-  return list
+      enabled: flags.analytics,
+    },
+  ]
+}
+
+export function subprocessorStatus(processor: Subprocessor): string {
+  return processor.enabled ? 'uključeno' : 'trenutno nije uključeno'
 }
 
 /** Plain statement about cookies; there is nothing to consent to while no optional cookie exists. */

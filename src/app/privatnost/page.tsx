@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
 import { operator } from '@/lib/operator'
-import { cookieStatement, currentProcessingFlags, subprocessors } from '@/lib/data-processing'
+import { cookieStatement, currentProcessingFlags, subprocessorStatus, subprocessors } from '@/lib/data-processing'
 
 export const metadata: Metadata = {
   title: 'Privatnost',
@@ -15,7 +15,7 @@ export default function PrivatnostPage() {
   const flags = currentProcessingFlags()
   const processors = subprocessors(flags)
   return (
-    <LegalDocument title="Privatnost" updated="Ažurirano 8. oktobra 2026.">
+    <LegalDocument title="Obaveštenje o privatnosti" updated="Ažurirano 8. oktobra 2026.">
       <LegalSection title="Šta je TradeMaster">
         <p>
           TradeMaster je veb aplikacija za trgovce i malu veleprodaju: skeniranje
@@ -24,17 +24,37 @@ export default function PrivatnostPage() {
           početni ekran.
         </p>
         <p>
-          Operater usluge je {operator.name}, PIB {operator.pib}. Kontakt:{' '}
-          {operator.email}, {operator.phone}. Adresa koju je vlasnik naveo je
-          „{operator.address}“.
+          Operater usluge i rukovalac za podatke opisane ovde je {operator.name}, PIB {operator.pib}
+          {operator.registrationNumber ? `, matični broj ${operator.registrationNumber}` : ''}. Sedište:{' '}
+          {operator.address}. Kontakt: {operator.email}, {operator.phone}.
+        </p>
+        <p>
+          Ovo obaveštenje važi za podatke korisnika aplikacije i posetilaca
+          sajta. Za podatke vaših kupaca koje unesete u aplikaciju vaša firma
+          je rukovalac, a mi obrađivač (vidi „Ko obrađuje podatke“ ispod).
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Pravni osnov i rok čuvanja">
+        <p>
+          Podatke vašeg naloga obrađujemo radi izvršenja ugovora o korišćenju
+          usluge (Uslovi korišćenja): bez njih ne možete da se prijavite ni da
+          koristite aplikaciju.
+        </p>
+        <p>
+          Čuvamo ih dok nalog postoji. Na vaš zahtev ih brišemo u roku od 30
+          dana. Ako pristup nije produžen 12 meseci posle isteka, šaljemo poruku
+          na e-poštu naloga i posle 30 dana brišemo podatke. Obrisani podaci
+          nestaju iz rezervnih kopija najkasnije 30 dana posle brisanja.
         </p>
       </LegalSection>
 
       <LegalSection title="Prijava preko Clerk-a">
         <p>
-          Registracija i prijava rade preko Clerk-a. Clerk prima podatke koje
-          unesete pri otvaranju naloga (npr. e-poštu) i postavlja kolačiće
-          potrebne da ostanete prijavljeni. TradeMaster čuva vezu tog naloga
+          Registracija i prijava rade preko Clerk-a (Clerk Inc., SAD), koji
+          za nas obrađuje podatke za prijavu: e-poštu, IP adresu i podatke o
+          sesiji, i postavlja kolačiće potrebne da ostanete prijavljeni. Clerk
+          ne prima podatke vaših kupaca. TradeMaster čuva vezu tog naloga
           (Clerk korisnički ID) sa podacima firme u aplikaciji.
         </p>
       </LegalSection>
@@ -91,11 +111,12 @@ export default function PrivatnostPage() {
         ) : null}
       </LegalSection>
 
-      <LegalSection title="Ko obrađuje podatke za nas">
+      <LegalSection title="Ko obrađuje podatke">
         <ul className="list-disc space-y-1 pl-5">
           {processors.map((processor) => (
             <li key={processor.name}>
-              <strong>{processor.name}</strong>: {processor.purpose}. Lokacija: {processor.location}.
+              <strong>{processor.name}</strong>: {processor.purpose}. Lokacija: {processor.location}. Status:{' '}
+              {subprocessorStatus(processor)}.
             </li>
           ))}
         </ul>
@@ -106,10 +127,21 @@ export default function PrivatnostPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="Zahtevi u vezi sa podacima">
+      <LegalSection title="Vaša prava i zahtevi">
         <p>
-          Podaci ostaju dok nalog postoji. Za uvid ili brisanje pišite na{' '}
-          {operator.email}.
+          Imate pravo na uvid, ispravku, brisanje, ograničenje obrade i
+          prenosivost svojih podataka, kao i pravo na prigovor. Zahtev pošaljite
+          na {operator.email}; odgovaramo, a podatke na zahtev brišemo, u roku
+          od 30 dana.
+        </p>
+        <p>
+          Ako smatrate da obrada krši zakon, imate pravo da podnesete pritužbu
+          Povereniku za informacije od javnog značaja i zaštitu podataka o
+          ličnosti (
+          <a href="https://www.poverenik.rs" className="underline" target="_blank" rel="noopener noreferrer">
+            poverenik.rs
+          </a>
+          ).
         </p>
       </LegalSection>
     </LegalDocument>

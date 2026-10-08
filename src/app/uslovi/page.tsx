@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
 import { operator } from '@/lib/operator'
 import { PRICING_OFFER } from '@/lib/landing-copy'
-import { currentProcessingFlags, subprocessors } from '@/lib/data-processing'
+import { currentProcessingFlags, subprocessorStatus, subprocessors } from '@/lib/data-processing'
 
 export const metadata: Metadata = {
   title: 'Uslovi',
@@ -24,9 +25,9 @@ export default function UsloviPage() {
           Play-a.
         </p>
         <p>
-          Uslugu nudi {operator.name}, PIB {operator.pib}. Kontakt:{' '}
-          {operator.email}, {operator.phone}. Adresa koju je vlasnik naveo je
-          „{operator.address}“.
+          Uslugu nudi {operator.name}, PIB {operator.pib}
+          {operator.registrationNumber ? `, matični broj ${operator.registrationNumber}` : ''}. Sedište:{' '}
+          {operator.address}. Kontakt: {operator.email}, {operator.phone}.
         </p>
       </LegalSection>
 
@@ -70,8 +71,10 @@ export default function UsloviPage() {
           drugih ljudi: ime i adresa kupca, PIB preduzetnika, kontakt osobe na
           katalogu i fakturi. Za te podatke vaša firma je <strong>rukovalac</strong>,
           a {operator.name} je <strong>obrađivač</strong> u smislu Zakona o
-          zaštiti podataka o ličnosti. Ovaj odeljak je ugovor o obradi između
-          vas i nas i važi dok koristite uslugu.
+          zaštiti podataka o ličnosti (ZZPL). Ovaj odeljak je ugovor o obradi
+          između vas i nas i važi dok koristite uslugu. Podatke za prijavu na
+          vaš nalog obrađujemo kao rukovalac; to je opisano u{' '}
+          <Link href="/privatnost" className="underline">Obaveštenju o privatnosti</Link>.
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
@@ -82,19 +85,20 @@ export default function UsloviPage() {
           </li>
           <li>
             <strong>Vrste podataka i lica:</strong> identifikacioni i kontakt
-            podaci vaših kupaca i kontakt osoba (naziv, adresa, PIB, matični
-            broj, telefon, e-pošta), stavke i iznosi dokumenata, i vaši podaci
-            za prijavu.
+            podaci vaših kupaca i njihovih kontakt osoba (naziv, adresa, PIB,
+            matični broj, telefon, e-pošta) i stavke i iznosi dokumenata.
           </li>
           <li>
             <strong>Uputstva:</strong> obrađujemo podatke samo onako kako vi
             radite u aplikaciji (unos, izmena, deljenje, brisanje) ili kako
-            nam pismeno naložite, osim ako zakon ne nalaže drugačije.
+            nam pismeno naložite, osim ako zakon ne nalaže drugačije. Ako
+            smatramo da vaše uputstvo krši zakon, odmah vas obaveštavamo.
           </li>
           <li>
-            <strong>Poverljivost:</strong> pristup podacima ima samo{' '}
+            <strong>Poverljivost:</strong> od ljudi pristup podacima ima samo{' '}
             {operator.name}, i to kada je potrebno za podršku koju tražite,
-            ispravku greške ili kada to nalaže zakon.
+            ispravku greške ili kada to nalaže zakon. Sva lica sa pristupom su
+            obavezana na poverljivost.
           </li>
           <li>
             <strong>Bezbednost:</strong> šifrovana veza (HTTPS), prijava preko
@@ -110,29 +114,41 @@ export default function UsloviPage() {
             ispunite svoje obaveze prema Povereniku i licima.
           </li>
           <li>
+            <strong>Pomoć rukovaocu:</strong> prema prirodi obrade i
+            informacijama koje imamo, pomažemo vam oko bezbednosti obrade,
+            obaveštavanja o povredi podataka i procene uticaja na zaštitu
+            podataka.
+          </li>
+          <li>
             <strong>Prava lica:</strong> pomažemo vam da odgovorite na zahtev
             lica (uvid, ispravka, brisanje): podatke možete sami izmeniti ili
             obrisati u aplikaciji i izvesti fakture u CSV/XLSX; za ostalo pišite
             na {operator.email}.
           </li>
           <li>
-            <strong>Kraj korišćenja:</strong> posle isteka pristupa nalog ostaje
-            dostupan samo za pregled i izvoz. Na vaš zahtev brišemo podatke
-            naloga u roku od 30 dana; rezervne kopije kod dobavljača baze nestaju
-            u njihovom redovnom ciklusu brisanja.
+            <strong>Kraj korišćenja:</strong> po prestanku korišćenja birate
+            da li vam podatke vraćamo (izvoz) ili ih brišemo. Posle isteka
+            pristupa nalog ostaje dostupan samo za pregled i izvoz. Na vaš
+            zahtev brišemo podatke naloga u roku od 30 dana. Ako pristup nije
+            produžen 12 meseci posle isteka, šaljemo poruku na e-poštu naloga i
+            posle 30 dana brišemo podatke. Obrisani podaci nestaju iz rezervnih
+            kopija najkasnije 30 dana posle brisanja.
           </li>
           <li>
             <strong>Podobrađivači:</strong> koristimo dobavljače navedene ispod,
-            sa kojima imamo njihove ugovore o obradi. O novom podobrađivaču vas
-            obaveštavamo na ovoj stranici pre nego što počne da obrađuje vaše
-            podatke; ako se ne slažete, možete prestati da koristite uslugu i
-            izvesti podatke.
+            sa kojima imamo ugovore o obradi. Ti ugovori ih obavezuju na iste
+            obaveze zaštite podataka koje mi imamo prema vama. O novom podobrađivaču
+            vas obaveštavamo na ovoj stranici pre nego što počne da obrađuje
+            vaše podatke; ako se ne slažete, možete prestati da koristite uslugu
+            i izvesti podatke.
           </li>
           <li>
-            <strong>Prenos van Srbije:</strong> baza je u EU (Irska). Prijava
-            (Clerk) i hosting (Vercel) su usluge kompanija iz SAD, pa deo
-            podataka može da se obrađuje i tamo, uz zaštitne mere iz ugovora
-            tih dobavljača.
+            {/* TODO(A2.10, posle pravnika): osnov prenosa u SAD (čl. 64/65 ZZPL, npr. standardne
+                ugovorne klauzule Poverenika) dodati tek kada ga možemo pokazati. */}
+            <strong>Gde su podaci:</strong> podaci vaših kupaca su u bazi u EU
+            (Irska) i obrađuju se na Vercel serverskim funkcijama u Dablinu.
+            Vercel Inc. je kompanija iz SAD i može imati pristup radi rada
+            usluge (logovi, podrška), na osnovu svog ugovora o obradi.
           </li>
           <li>
             <strong>Provera:</strong> na zahtev vam dajemo informacije potrebne
@@ -143,7 +159,8 @@ export default function UsloviPage() {
         <ul className="list-disc space-y-1 pl-5">
           {processors.map((processor) => (
             <li key={processor.name}>
-              <strong>{processor.name}</strong>: {processor.purpose}. Lokacija: {processor.location}.
+              <strong>{processor.name}</strong>: {processor.purpose}. Lokacija: {processor.location}. Status:{' '}
+              {subprocessorStatus(processor)}.
             </li>
           ))}
         </ul>

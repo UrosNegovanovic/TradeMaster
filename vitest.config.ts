@@ -58,6 +58,7 @@ export default defineConfig({
       'src/lib/delivery-note.test.ts',
       'src/lib/catalog-views.test.ts',
       'src/lib/data-processing.test.ts',
+      'src/lib/operator.test.ts',
       'src/lib/catalog-layout.test.ts',
       'src/lib/catalog-picker.test.ts',
       'src/lib/unsaved-changes.test.ts',

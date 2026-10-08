@@ -39,7 +39,7 @@ export function LandingStickyCta() {
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-100 bg-white/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
       <Button className="h-12 min-h-11 w-full rounded-full shadow-sm" size="lg" asChild>
         <Link href="/sign-up">
-          Registruj se
+          Registrujte se
           <ArrowRight className="ml-2 h-5 w-5" />
         </Link>
       </Button>

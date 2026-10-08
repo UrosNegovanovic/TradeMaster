@@ -56,7 +56,7 @@ export function LandingFooter({ stickyCtaPad = false }: LandingFooterProps) {
               </li>
               <li>
                 <Link href="/sign-up" className={footerLink}>
-                  Registruj se
+                  Registrujte se
                 </Link>
               </li>
             </ul>

@@ -51,7 +51,7 @@ export function LandingDemo() {
 
           {failed ? (
             <p className="absolute inset-0 z-10 flex items-center justify-center bg-neutral-950 px-6 text-center text-[15px] leading-relaxed text-white">
-              Demo nije mogao da se pusti. Osveži stranicu ili otvori je u drugom
+              Demo nije mogao da se pusti. Osvežite stranicu ili je otvorite u drugom
               pregledaču.
             </p>
           ) : playing ? null : (
@@ -65,7 +65,7 @@ export function LandingDemo() {
                   <Play className="ml-0.5 h-6 w-6" fill="currentColor" />
                 </span>
                 <span className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-3 py-1 text-[13px] font-medium text-neutral-900 shadow-sm">
-                  Pogledaj pregled · 19 s
+                  Pogledajte pregled · 19 s
                 </span>
               </span>
             </button>

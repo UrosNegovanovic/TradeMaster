@@ -24,10 +24,10 @@ export function InstallAppButton({ ios, guide, status, onInstall, className }: I
           <p className="font-medium text-neutral-900">Na iPhone-u</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-4">
             <li>
-              Tapni <span className="font-medium">Podeli</span> (kvadrat sa strelicom)
+              Dodirnite <span className="font-medium">Podeli</span> (kvadrat sa strelicom)
             </li>
             <li>
-              Izaberi <span className="font-medium">Dodaj na početni ekran</span>
+              Izaberite <span className="font-medium">Dodaj na početni ekran</span>
             </li>
           </ol>
         </div>
@@ -40,20 +40,20 @@ export function InstallAppButton({ ios, guide, status, onInstall, className }: I
           <p className="font-medium text-neutral-900">Na Androidu (Chrome)</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-4">
             <li>
-              Otvori meni <span className="font-medium">⋮</span> u gornjem desnom uglu
+              Otvorite meni <span className="font-medium">⋮</span> u gornjem desnom uglu
             </li>
             <li>
-              Izaberi <span className="font-medium">Instaliraj aplikaciju</span>
+              Izaberite <span className="font-medium">Instaliraj aplikaciju</span>
             </li>
           </ol>
           <p className="mt-1 text-neutral-600">
-            Ako vidiš samo „Dodaj na početni ekran“, to pravi prečicu, a ne aplikaciju. Osveži stranicu pa probaj ponovo.
+            Ako vidite samo „Dodaj na početni ekran“, to pravi prečicu, a ne aplikaciju. Osvežite stranicu pa probajte ponovo.
           </p>
         </div>
       ) : null}
       {guide === 'open-chrome' ? (
         <p role="status" className="mb-2 max-w-sm text-[13px] leading-relaxed text-neutral-600">
-          Otvori ovu stranicu u Chrome-u (Android) ili Safari-ju (iPhone) da bi mogao da instaliraš aplikaciju.
+          Otvorite ovu stranicu u Chrome-u (Android) ili Safariju (iPhone) da biste mogli da instalirate aplikaciju.
         </p>
       ) : null}
       {status === 'installing' ? (
@@ -65,7 +65,7 @@ export function InstallAppButton({ ios, guide, status, onInstall, className }: I
       {status === 'installed' ? (
         <p role="status" className="mb-2 flex max-w-sm items-start gap-2 text-[13px] leading-relaxed text-neutral-700">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
-          TradeMaster je instaliran. Otvori ga sa početnog ekrana.
+          TradeMaster je instaliran. Otvorite ga sa početnog ekrana.
         </p>
       ) : null}
       {status === 'installed' ? null : (

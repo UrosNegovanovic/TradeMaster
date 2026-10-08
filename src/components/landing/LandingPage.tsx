@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Camera, Check, FileText, Package, Play } from 'lucide-react'
+import { ArrowRight, Camera, Check, FileText, MessageCircle, Package, Phone, Play, ShieldCheck, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TradeMasterWordmark } from '@/components/brand/TradeMasterWordmark'
 import { LandingDemo } from './LandingDemo'
@@ -11,51 +11,29 @@ import { AssortmentLaptop, FeatureShot, InvoiceMock, PhoneScanner } from './mock
 import {
   MONTHLY_PRICE,
   PRICING_OFFER,
-  paymentFaq,
+  benefits as benefitCopy,
+  contactLinks,
+  dataPoints,
+  faqs,
+  heroLead,
+  invoicePoints,
+  landingContact,
+  landingExamples,
+  notList,
   pricingCardNote,
   pricingCardPeriod,
   pricingIncludes,
   pricingNote,
+  workflowSteps,
 } from '@/lib/landing-copy'
+import { getSafeCatalogSharePath } from '@/lib/public-catalog'
+import { getSafeInvoiceSharePath } from '@/lib/public-invoice'
 
 const navLink =
   'inline-flex min-h-11 items-center rounded-md px-2.5 text-[15px] text-neutral-700 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
-const benefits = [
-  {
-    title: 'Manje ručnog unosa',
-    line: 'Skeniraj barkod i skrati unos podataka o proizvodu.',
-    icon: Camera,
-  },
-  {
-    title: 'Pregled robe na jednom mestu',
-    line: 'Prati količine i pronađi proizvod kada ti zatreba.',
-    icon: Package,
-  },
-  {
-    title: 'Ponuda spremna za kupca',
-    line: 'Pripremi katalog sa cenama i popustom za kupca.',
-    icon: FileText,
-  },
-] as const
-
-const steps = [
-  {
-    n: '1',
-    title: 'Otvori nalog i podesi firmu',
-    line: 'Registruj se, pa u Podešavanjima unesi naziv, PIB i kontakt koji idu na katalog i fakturu.',
-  },
-  {
-    n: '2',
-    title: 'Dodaj ili skeniraj prvi proizvod',
-    line: 'Otvori skener na telefonu ili unesi artikal ručno. Ako barkod nije pronađen, dopuni naziv i cenu.',
-  },
-  {
-    n: '3',
-    title: 'Pregledaj magacin i pripremi katalog',
-    line: 'Vidi količine u Magacinu, sastavi katalog sa cenama i popustom, pa pošalji PDF ili link.',
-  },
-] as const
+const benefitIcons = [Camera, Package, FileText] as const
+const benefits = benefitCopy.map((item, index) => ({ ...item, icon: benefitIcons[index] }))
 
 const features = [
   {
@@ -78,43 +56,44 @@ const features = [
   },
 ] as const
 
-const invoicePoints = [
-  'PDV 20% i 10%, obračunat po stavkama',
-  'QR kod za plaćanje iz m-banking aplikacije',
-  'Izvoz za knjigovođu u Excel',
-] as const
+const contact = contactLinks(landingContact.phone)
+const exampleCatalog = getSafeCatalogSharePath(landingExamples.catalogPath)
+const exampleInvoice = getSafeInvoiceSharePath(landingExamples.invoicePath)
 
-const faqs = [
-  {
-    q: 'Radi li na telefonu i računaru?',
-    a: 'Da. Aplikacija na telefonu i na računaru, sa istim nalogom i istim lagerom.',
-  },
-  {
-    q: 'Da li moram da instaliram aplikaciju?',
-    a: 'Ne moraš. Radi i u pregledaču. Za telefon, na landingu tapni „Dodaj na početni ekran“ i koristi je kao aplikaciju.',
-  },
-  {
-    q: 'Šta ako barkod nije pronađen?',
-    a: 'Ako artikal nije u tvom asortimanu, sistem potraži javne baze. Ako ga ni tamo nema, otvara se forma da uneseš naziv i cenu. Nije svaki barkod u bazi.',
-  },
-  {
-    q: 'Da li je potreban internet?',
-    a: 'Da. TradeMaster radi online. Offline rad nije dostupan.',
-  },
-  {
-    q: 'Kako kupac dobija katalog?',
-    a: 'Pripremiš katalog sa cenama i popustom, pa pošalješ PDF ili link. Link otvara pregled bez prijave — dovoljno je znati adresu.',
-  },
-  {
-    q: 'Da li TradeMaster zamenjuje fiskalnu kasu ili šalje fakture u SEF?',
-    a: 'Ne. TradeMaster vodi vašu internu evidenciju robe, zaliha i B2B faktura — koristite ga uz svoju fiskalnu kasu i SEF, ne umesto njih.',
-  },
-  {
-    q: 'Mogu li da uvezem postojeći asortiman odjednom (Excel/CSV)?',
-    a: 'Da. Na Magacinu postoje dva odvojena uvoza: „Uvezi iz CSV/Excel“ za nove proizvode i „Ažuriraj stanje“ koje po SKU-u postavlja količinu postojećih artikala (uz kretanje u magacinu). Pregled prikaže neispravne redove i oni se ne šalju.',
-  },
-  paymentFaq,
-] as const
+const sectionTitle = 'text-[1.65rem] font-bold tracking-tight text-neutral-950 sm:text-[2rem]'
+const cardFrame =
+  'rounded-[16px] border border-neutral-200/80 bg-white shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)]'
+const card = `${cardFrame} p-5`
+
+/** Shown only once the owner has set a support phone (ROADMAP A1.5). */
+function ContactLinks({ className }: { className?: string }) {
+  if (!contact) return null
+  return (
+    <div className={className}>
+      <p className="text-[14px] text-neutral-600">Pitanja? Javite nam se:</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" className="min-h-11 rounded-full" asChild>
+          <a href={contact.whatsapp} target="_blank" rel="noopener noreferrer">
+            <MessageCircle className="mr-2 h-4 w-4" />
+            WhatsApp
+          </a>
+        </Button>
+        <Button variant="outline" size="sm" className="min-h-11 rounded-full" asChild>
+          <a href={contact.viber}>
+            <MessageCircle className="mr-2 h-4 w-4" />
+            Viber
+          </a>
+        </Button>
+        <Button variant="outline" size="sm" className="min-h-11 rounded-full" asChild>
+          <a href={contact.tel}>
+            <Phone className="mr-2 h-4 w-4" />
+            {contact.display}
+          </a>
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 function HeroActions({ className }: { className?: string }) {
   return (
@@ -125,7 +104,7 @@ function HeroActions({ className }: { className?: string }) {
         asChild
       >
         <Link href="/sign-up">
-          Registruj se
+          Registrujte se
           <ArrowRight className="ml-2 h-4 w-4" />
         </Link>
       </Button>
@@ -137,7 +116,7 @@ function HeroActions({ className }: { className?: string }) {
       >
         <Link href="#kako-radi">
           <Play className="mr-2 h-4 w-4" />
-          Pogledaj demo
+          Pogledajte demo
         </Link>
       </Button>
     </div>
@@ -162,8 +141,8 @@ export function LandingPage() {
             <Link href="#kako-radi" className={`hidden lg:inline-flex ${navLink}`}>
               Demo
             </Link>
-            <Link href="#kako-pocinjes" className={`hidden lg:inline-flex ${navLink}`}>
-              Početak
+            <Link href="#ceo-posao" className={`hidden lg:inline-flex ${navLink}`}>
+              Kako radi
             </Link>
             <Link href="#pitanja" className={`hidden lg:inline-flex ${navLink}`}>
               Pitanja
@@ -176,7 +155,7 @@ export function LandingPage() {
             </Button>
             <Button size="sm" className="h-10 min-h-11 rounded-full px-3 sm:px-4" asChild>
               <Link href="/sign-up">
-                Registruj se
+                Registrujte se
                 <ArrowRight className="ml-1.5 hidden h-4 w-4 sm:inline" />
               </Link>
             </Button>
@@ -196,14 +175,14 @@ export function LandingPage() {
               <span className="text-brand">do fakture.</span>
             </h1>
             <p className="mt-4 max-w-[36rem] text-[16px] leading-relaxed text-neutral-700 sm:text-[17px]">
-              Skeniraj robu, prati lager i pošalji fakturu sa PDV-om i QR kodom za
-              plaćanje. Na telefonu i računaru.
+              {heroLead}
             </p>
             <HeroActions className="mt-5 flex flex-wrap items-center gap-3" />
             <p className="mt-3 text-[14px] text-neutral-600">
-              Jedan nalog po firmi. Radi u pregledaču.
+              Jedan nalog po firmi. Radi u pregledaču. {PRICING_OFFER}.
             </p>
             <LandingInstall />
+            <ContactLinks className="mt-5" />
           </div>
 
           <div className="order-1 min-w-0 lg:order-2">
@@ -223,7 +202,7 @@ export function LandingPage() {
         <section className="border-y border-neutral-100" aria-labelledby="koristi-heading">
           <div className={`${landingShell} grid gap-8 py-8 sm:grid-cols-3 sm:gap-8 sm:py-10`}>
             <h2 id="koristi-heading" className="sr-only">
-              Šta dobijaš
+              Šta dobijate
             </h2>
             {benefits.map((item) => {
               const Icon = item.icon
@@ -241,52 +220,63 @@ export function LandingPage() {
         </section>
 
         <section
-          id="kako-radi"
-          aria-labelledby="kako-radi-heading"
+          id="ceo-posao"
+          aria-labelledby="ceo-posao-heading"
           className="scroll-mt-[80px] py-10 sm:py-12"
         >
-          <div className={`${landingShell} text-center`}>
-            <h2
-              id="kako-radi-heading"
-              className="text-[1.65rem] font-bold tracking-tight text-neutral-950 sm:text-[2rem]"
-            >
-              Pogledaj demo
+          <div className={landingShell}>
+            <h2 id="ceo-posao-heading" className={`text-center ${sectionTitle}`}>
+              Ceo posao iz telefona
             </h2>
-            <div className="mt-6 text-left">
-              <LandingDemo />
-            </div>
+            <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
+              Od robe na polici do uplate kupca, u šest koraka.
+            </p>
+            <ol className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {workflowSteps.map((step, index) => (
+                <li key={step.title} className={`${cardFrame} flex gap-3 p-4 sm:block sm:p-5`}>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-[14px] font-semibold text-white">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-[16px] font-semibold text-neutral-900 sm:mt-3">{step.title}</h3>
+                    <p className="mt-1 text-[15px] leading-snug text-neutral-600">{step.line}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
         <section
-          id="kako-pocinjes"
-          aria-labelledby="kako-pocinjes-heading"
+          id="kako-radi"
+          aria-labelledby="kako-radi-heading"
           className="scroll-mt-[80px] pb-10 sm:pb-12"
         >
-          <div className={landingShell}>
-            <h2
-              id="kako-pocinjes-heading"
-              className="text-center text-[1.65rem] font-bold tracking-tight text-neutral-950 sm:text-[2rem]"
-            >
-              Kako počinješ
+          <div className={`${landingShell} text-center`}>
+            <h2 id="kako-radi-heading" className={sectionTitle}>
+              Pogledajte demo
             </h2>
-            <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-neutral-600">
-              Imate svog čarobnjaka na telefonu i računaru.
-            </p>
-            <ol className="mt-8 grid gap-4 sm:grid-cols-3 sm:gap-5">
-              {steps.map((step) => (
-                <li
-                  key={step.n}
-                  className="rounded-[16px] border border-neutral-200/80 bg-white p-5 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.35)]"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-semibold text-white">
-                    {step.n}
-                  </span>
-                  <h3 className="mt-3 text-[16px] font-semibold text-neutral-900">{step.title}</h3>
-                  <p className="mt-1 text-[15px] leading-snug text-neutral-600">{step.line}</p>
-                </li>
-              ))}
-            </ol>
+            <div className="mt-6 text-left">
+              <LandingDemo />
+            </div>
+            {exampleCatalog || exampleInvoice ? (
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                {exampleCatalog ? (
+                  <Button variant="outline" className="min-h-11 rounded-full" asChild>
+                    <a href={exampleCatalog} target="_blank" rel="noopener noreferrer">
+                      Pogledajte primer kataloga
+                    </a>
+                  </Button>
+                ) : null}
+                {exampleInvoice ? (
+                  <Button variant="outline" className="min-h-11 rounded-full" asChild>
+                    <a href={exampleInvoice} target="_blank" rel="noopener noreferrer">
+                      Pogledajte primer fakture
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -331,7 +321,7 @@ export function LandingPage() {
                 id="faktura-heading"
                 className="text-[1.65rem] font-bold tracking-tight text-neutral-950 sm:text-[2rem]"
               >
-                Faktura koju kupac može odmah da plati
+                Predračun, faktura i otpremnica
               </h2>
               <ul className="mt-5 space-y-3">
                 {invoicePoints.map((point) => (
@@ -342,7 +332,7 @@ export function LandingPage() {
                 ))}
               </ul>
               <p className="mt-4 text-[14px] text-neutral-600">
-                Interna faktura, nije fiskalni račun i ne šalje se u SEF.
+                Interna faktura: nije fiskalni račun i ne šalje se u SEF.
               </p>
             </div>
             <figure className="m-0 min-w-0">
@@ -351,6 +341,42 @@ export function LandingPage() {
                 Primer sa izmišljenim podacima.
               </figcaption>
             </figure>
+          </div>
+        </section>
+
+        <section aria-labelledby="nije-heading" className="pb-10 sm:pb-12">
+          <div className={`${landingShell} grid gap-4 lg:grid-cols-2 lg:gap-5`}>
+            <div className={card}>
+              <h2 id="nije-heading" className="text-[1.3rem] font-bold tracking-tight text-neutral-950">
+                Šta TradeMaster nije
+              </h2>
+              <ul className="mt-4 space-y-3">
+                {notList.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-[15px] leading-snug text-neutral-700">
+                    <X className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" strokeWidth={2.4} aria-hidden />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div id="podaci" className={`${card} scroll-mt-[80px]`}>
+              <h2 className="text-[1.3rem] font-bold tracking-tight text-neutral-950">Vaši podaci</h2>
+              <ul className="mt-4 space-y-3">
+                {dataPoints.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-[15px] leading-snug text-neutral-700">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2.4} aria-hidden />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-[14px] text-neutral-600">
+                Detalji su u{' '}
+                <Link href="/privatnost" className="underline">
+                  Obaveštenju o privatnosti
+                </Link>
+                .
+              </p>
+            </div>
           </div>
         </section>
 
@@ -391,7 +417,7 @@ export function LandingPage() {
                 asChild
               >
                 <Link href="/sign-up">
-                  Probaj besplatno
+                  Probajte besplatno
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -460,10 +486,10 @@ export function LandingPage() {
           >
             <div className="max-w-xl">
               <h2 className="text-[1.35rem] font-bold tracking-tight sm:text-[1.6rem]">
-                Pogledaj TradeMaster na svom asortimanu.
+                Probajte TradeMaster na svom asortimanu.
               </h2>
               <p className="mt-1.5 text-[15px] text-white/90">
-                Otvori nalog, unesi firmu i dodaj prvi proizvod.
+                Otvorite nalog, unesite podatke firme i skenirajte prvi proizvod.
               </p>
             </div>
             <Button
@@ -472,11 +498,12 @@ export function LandingPage() {
               asChild
             >
               <Link href="/sign-up">
-                Registruj se
+                Registrujte se
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
+          <ContactLinks className="mt-6" />
         </section>
       </main>
 

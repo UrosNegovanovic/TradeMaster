@@ -25,7 +25,7 @@ export function LegalDocument({ title, updated, children }: LegalDocumentProps) 
             </Button>
             <Button size="sm" className="h-10 min-h-11 rounded-full px-3 sm:px-4" asChild>
               <Link href="/sign-up">
-                Registruj se
+                Registrujte se
                 <ArrowRight className="ml-1.5 hidden h-4 w-4 sm:inline" />
               </Link>
             </Button>

@@ -18,6 +18,7 @@ import {
   workflowSteps,
 } from './landing-copy'
 import { installButtonLabel } from './pwa-install'
+import { operator } from './operator'
 
 describe('landing pricing copy', () => {
   it('does not promise a cancelable in-app subscription', () => {
@@ -78,8 +79,9 @@ describe('landing page copy (A2.9)', () => {
     expect(installFaq.a).toContain(`„${installButtonLabel(true)}“`)
   })
 
-  it('keeps contact and example buttons hidden until the owner fills them in', () => {
-    expect(landingContact.phone).toBeNull()
+  it('takes the support phone from operator.ts and keeps example buttons hidden until set', () => {
+    expect(landingContact.phone).toBe(operator.phone)
+    expect(contactLinks(landingContact.phone)).not.toBeNull()
     expect(landingExamples).toEqual({ catalogPath: null, invoicePath: null })
   })
 })
@@ -93,6 +95,15 @@ describe('contactLinks', () => {
       viber: 'viber://chat?number=%2B381621234567',
     })
     expect(contactLinks('062/123-4567')?.whatsapp).toBe('https://wa.me/381621234567')
+  })
+
+  it('builds the links for the operator phone', () => {
+    expect(contactLinks('+381628372900')).toEqual({
+      display: '+381628372900',
+      tel: 'tel:+381628372900',
+      whatsapp: 'https://wa.me/381628372900',
+      viber: 'viber://chat?number=%2B381628372900',
+    })
   })
 
   it('returns null for a missing or broken number', () => {

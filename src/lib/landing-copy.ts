@@ -1,3 +1,5 @@
+import { operator } from '@/lib/operator'
+
 /** Honest early-access pricing. No in-app checkout until Phase 4. */
 export const FREE_PERIOD = '60 dana'
 /** Non-breaking space keeps the number and the euro sign on one line. */
@@ -107,10 +109,10 @@ export const faqs = [
 
 /**
  * Filled by the owner before launch; each part stays hidden while it is null.
- * - contact: ROADMAP A1.5 (support phone, also used for WhatsApp/Viber).
+ * - contact: ROADMAP A1.5. The support phone is the operator's phone (one source), also used for WhatsApp/Viber.
  * - examples: ROADMAP A1.7, public share paths of the demo company's catalog and invoice.
  */
-export const landingContact: { phone: string | null } = { phone: null }
+export const landingContact: { phone: string | null } = { phone: operator.phone }
 
 export const landingExamples: { catalogPath: string | null; invoicePath: string | null } = {
   catalogPath: null,

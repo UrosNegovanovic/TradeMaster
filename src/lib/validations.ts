@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CATALOG_LAYOUTS, CATALOG_SORT_MODES, DEFAULT_CATALOG_DISPLAY } from './catalog-layout'
+import { INVALID_GIRO_MESSAGE, normalizeGiroAccount } from './giro-account'
 import { INVALID_PIB_MESSAGE, isValidPib } from './pib'
 
 export const invoiceStatusSchema = z.enum(['DRAFT', 'PAID', 'UNPAID'])
@@ -351,6 +352,7 @@ export const profileSchema = z.object({
     .string()
     .trim()
     .max(80, 'Žiro-račun je predugačak')
+    .refine((value) => value === '' || normalizeGiroAccount(value) !== null, INVALID_GIRO_MESSAGE)
     .optional()
     .nullable()
     .or(z.literal('')),

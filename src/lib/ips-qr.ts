@@ -1,4 +1,7 @@
 import QRCode from 'qrcode'
+import { normalizeGiroAccount } from './giro-account'
+
+export { normalizeGiroAccount }
 
 /**
  * NBS IPS QR ("QR kod za uplatu"): payment request the payer's banking app scans.
@@ -11,26 +14,6 @@ const MAX_NAME_ADDRESS = 70
 const MAX_PURPOSE = 35
 const MAX_AMOUNT_LENGTH = 18
 const MAX_REFERENCE_DIGITS = 20
-
-/** ISO 7064 mod 97-10: a valid Serbian account (bank + account + control) is 1 mod 97 as one number. */
-function hasValidControlDigits(account: string): boolean {
-  let remainder = 0
-  for (const digit of account) {
-    remainder = (remainder * 10 + Number(digit)) % 97
-  }
-  return remainder === 1
-}
-
-/** `160-0000000123456-78`, `160000000012345678` and spaced variants become the 18-digit form, or null. */
-export function normalizeGiroAccount(value: string | null | undefined): string | null {
-  const compact = (value ?? '').replace(/\s+/g, '')
-  const dashed = /^(\d{3})-(\d{1,13})-(\d{2})$/.exec(compact)
-  const digits = dashed ? `${dashed[1]}${dashed[2].padStart(13, '0')}${dashed[3]}` : compact
-  if (!/^\d{18}$/.test(digits) || !hasValidControlDigits(digits)) {
-    return null
-  }
-  return digits
-}
 
 function clean(value: string | null | undefined): string {
   return (value ?? '').replace(/[|\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()

@@ -65,6 +65,9 @@ describe('PUT /api/profile', () => {
       putRequest({
         companyName: 'T&G Nest',
         pib: '123124128',
+        registrationNumber: '12345678',
+        address: 'Kralja Petra I 10, 11000 Beograd',
+        giroAccount: '160-0000045454878-79',
         logoUrl,
       })
     )
@@ -85,6 +88,9 @@ describe('PUT /api/profile', () => {
       putRequest({
         companyName: 'T&G Nest',
         pib: '123124128',
+        registrationNumber: '12345678',
+        address: 'Kralja Petra I 10, 11000 Beograd',
+        giroAccount: '160-0000045454878-79',
       })
     )
 
@@ -101,6 +107,9 @@ describe('PUT /api/profile', () => {
       putRequest({
         companyName: 'T&G Nest',
         pib: '123124128',
+        registrationNumber: '12345678',
+        address: 'Kralja Petra I 10, 11000 Beograd',
+        giroAccount: '160-0000045454878-79',
         logoUrl: 'data:image/png;base64,aaa',
       })
     )
@@ -139,7 +148,7 @@ describe('access period (manual billing)', () => {
     mocks.profile.upsert.mockResolvedValue({ id: 'p1' })
 
     const response = await PUT(
-      putRequest({ companyName: 'Firma', pib: '123124128', accessExpiresAt: '2099-01-01T00:00:00.000Z' })
+      putRequest({ companyName: 'Firma', pib: '123124128', registrationNumber: '12345678', address: 'Ulica 1, Beograd', giroAccount: '160000004545487879', accessExpiresAt: '2099-01-01T00:00:00.000Z' })
     )
 
     expect(response.status).toBe(200)

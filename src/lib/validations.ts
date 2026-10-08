@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { CATALOG_LAYOUTS, CATALOG_SORT_MODES, DEFAULT_CATALOG_DISPLAY } from './catalog-layout'
 import { INVALID_GIRO_MESSAGE, normalizeGiroAccount } from './giro-account'
-import { INVALID_PIB_MESSAGE, isValidPib } from './pib'
+import { ADDRESS_CITY_MESSAGE, addressHasCity, pibProblem, registrationNumberProblem } from './company-fields'
 
 export const invoiceStatusSchema = z.enum(['DRAFT', 'PAID', 'UNPAID'])
 
@@ -326,36 +326,37 @@ export const catalogSchema = z.object({
 export type CatalogFormData = z.infer<typeof catalogSchema>
 
 // Profile validations
+// Podešavanja use the same rules as the SEF XML (src/lib/company-fields.ts), so a saved company
+// is always valid for SEF and every error names its field.
+function fieldIssue(ctx: z.RefinementCtx, message: string | null) {
+  if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, message })
+}
+
+const requiredString = (message: string) => z.string({ required_error: message, invalid_type_error: message }).trim()
+
 export const profileSchema = z.object({
-  companyName: z.string().max(255).optional().nullable(),
+  companyName: requiredString('Naziv firme je obavezan.').min(1, 'Naziv firme je obavezan.').max(255),
   contactEmail: z
     .string()
-    .email('Invalid email')
+    .email('Email nije ispravan.')
     .optional()
     .nullable()
     .or(z.literal('')),
   contactPhone: z.string().max(50).optional().nullable(),
-  address: z.string().max(500).optional().nullable(),
-  pib: z
-    .string()
-    .trim()
-    .regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara')
-    .refine(isValidPib, INVALID_PIB_MESSAGE),
-  registrationNumber: z
-    .string()
-    .trim()
-    .regex(/^\d{8}$/, 'Matični broj mora imati tačno 8 cifara')
-    .optional()
-    .nullable()
-    .or(z.literal('')),
-  giroAccount: z
-    .string()
-    .trim()
-    .max(80, 'Žiro-račun je predugačak')
-    .refine((value) => value === '' || normalizeGiroAccount(value) !== null, INVALID_GIRO_MESSAGE)
-    .optional()
-    .nullable()
-    .or(z.literal('')),
+  address: requiredString('Adresa firme je obavezna.')
+    .max(500, 'Adresa je predugačka.')
+    .superRefine((value, ctx) =>
+      fieldIssue(ctx, !value ? 'Adresa firme je obavezna.' : addressHasCity(value) ? null : ADDRESS_CITY_MESSAGE)
+    ),
+  pib: requiredString('PIB je obavezan.').superRefine((value, ctx) => fieldIssue(ctx, pibProblem(value))),
+  registrationNumber: requiredString('Matični broj je obavezan.').superRefine((value, ctx) =>
+    fieldIssue(ctx, registrationNumberProblem(value))
+  ),
+  giroAccount: requiredString('Žiro-račun je obavezan.')
+    .max(80, 'Žiro-račun je predugačak.')
+    .superRefine((value, ctx) =>
+      fieldIssue(ctx, !value ? 'Žiro-račun je obavezan.' : normalizeGiroAccount(value) ? null : INVALID_GIRO_MESSAGE)
+    ),
   inVatSystem: z.boolean().optional(),
   logoUrl: z
     .union([
@@ -369,19 +370,36 @@ export const profileSchema = z.object({
 
 export type ProfileFormData = z.infer<typeof profileSchema>
 
-// Saved buyers (Client). PIB and address are optional; blank strings become null.
-// A saved buyer's PIB must pass the control digit; the PIB typed on an invoice only needs 9 digits.
-export const clientWriteSchema = z.object({
-  name: z.string().trim().min(1, 'Naziv kupca je obavezan').max(255),
-  pib: clientPibWriteSchema.refine((value) => value === null || !/^\d{9}$/.test(value) || isValidPib(value), INVALID_PIB_MESSAGE),
-  registrationNumber: z
-    .union([z.string(), z.null(), z.undefined()])
-    .transform((value) => normalizeClientPib(value) ?? null)
-    .refine((value) => value === null || /^\d{8}$/.test(value), 'Matični broj kupca mora imati tačno 8 cifara'),
-  address: z
-    .union([z.string(), z.null(), z.undefined()])
-    .transform((value) => normalizeClientPib(value) ?? null)
-    .refine((value) => value === null || value.length <= 500, 'Adresa je predugačka'),
-})
+const optionalTrimmed = z.union([z.string(), z.null(), z.undefined()]).transform((value) => normalizeClientPib(value) ?? null)
+
+// Saved buyers (Client). A buyer without PIB (e.g. a person) can be saved; a buyer with a PIB
+// needs a valid PIB and matični broj, and an address needs the city, because SEF needs them.
+// Blank strings become null. The PIB typed on an invoice itself only needs 9 digits.
+export const clientWriteSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Naziv kupca je obavezan.').max(255),
+    pib: optionalTrimmed.superRefine((value, ctx) => {
+      if (value !== null) fieldIssue(ctx, pibProblem(value))
+    }),
+    registrationNumber: optionalTrimmed.superRefine((value, ctx) => {
+      if (value !== null) fieldIssue(ctx, registrationNumberProblem(value))
+    }),
+    address: optionalTrimmed.superRefine((value, ctx) => {
+      if (value === null) return
+      fieldIssue(ctx, value.length > 500 ? 'Adresa je predugačka.' : addressHasCity(value) ? null : ADDRESS_CITY_MESSAGE)
+    }),
+  })
+  .superRefine((value, ctx) => {
+    if (value.pib !== null && value.registrationNumber === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['registrationNumber'],
+        message: 'Unesite i matični broj kupca (8 cifara). Bez njega faktura ne može u SEF.',
+      })
+    }
+    if (value.pib === null && value.registrationNumber !== null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pib'], message: 'Unesite i PIB kupca (9 cifara).' })
+    }
+  })
 
 export type ClientWriteInput = z.infer<typeof clientWriteSchema>

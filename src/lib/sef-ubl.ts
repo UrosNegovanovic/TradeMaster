@@ -2,6 +2,7 @@ import { Decimal } from '@prisma/client/runtime/library'
 import { calculateVatBreakdown, isVatRate, roundMoneyHalfUp } from '@/lib/invoice-totals'
 import { normalizeGiroAccount } from '@/lib/giro-account'
 import { formatLocalYmd } from '@/lib/local-date'
+import { addressHasCity } from '@/lib/company-fields'
 import { isValidPib } from '@/lib/pib'
 
 /**
@@ -103,7 +104,7 @@ function partyProblems(party: SefParty, who: 'firme' | 'kupca na fakturi', missi
   else if (!isValidPib(pib)) problems.push(`PIB ${who} nije ispravan (kontrolna cifra ne odgovara).`)
   if (!/^\d{8}$/.test(text(party.registrationNumber))) problems.push(missingRegistration)
   if (!text(party.address)) problems.push(`Adresa ${who} je obavezna (ulica i mesto).`)
-  else if (!text(party.address).includes(','))
+  else if (!addressHasCity(party.address))
     problems.push(`Adresi ${who} nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".`)
   return problems
 }

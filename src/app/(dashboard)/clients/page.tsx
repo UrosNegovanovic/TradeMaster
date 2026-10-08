@@ -12,6 +12,7 @@ import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { clientWriteSchema } from '@/lib/validations'
+import { PIB_LENGTH, REGISTRATION_NUMBER_LENGTH, digitsOnly } from '@/lib/company-fields'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import { sr } from '@/lib/ui-copy'
 import type { Client } from '@/types/client'
@@ -25,7 +26,28 @@ async function fetchClients(): Promise<Client[]> {
 }
 
 type FormState = { name: string; pib: string; registrationNumber: string; address: string }
+type FieldErrors = Partial<Record<keyof FormState, string>>
 const emptyForm: FormState = { name: '', pib: '', registrationNumber: '', address: '' }
+
+/** Same rules as SEF (clientWriteSchema), one message per field. */
+function validateClient(form: FormState): FieldErrors {
+  const parsed = clientWriteSchema.safeParse(form)
+  if (parsed.success) return {}
+  const errors: FieldErrors = {}
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0] as keyof FormState
+    errors[field] ??= issue.message
+  }
+  return errors
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  return message ? (
+    <p id={id} className="text-sm text-destructive" role="alert">
+      {message}
+    </p>
+  ) : null
+}
 
 export default function ClientsPage() {
   const queryClient = useQueryClient()
@@ -33,7 +55,8 @@ export default function ClientsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [submitted, setSubmitted] = useState(false)
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
@@ -44,7 +67,15 @@ export default function ClientsPage() {
     setShowForm(false)
     setEditingId(null)
     setForm(emptyForm)
-    setFormError(null)
+    setFieldErrors({})
+    setSubmitted(false)
+  }
+
+  // After the first "Sačuvaj", errors follow the typing so the user sees when a field is fixed.
+  const updateField = (field: keyof FormState, value: string) => {
+    const next = { ...form, [field]: field === 'pib' || field === 'registrationNumber' ? digitsOnly(value) : value }
+    setForm(next)
+    if (submitted) setFieldErrors(validateClient(next))
   }
 
   const saveMutation = useMutation({
@@ -95,18 +126,20 @@ export default function ClientsPage() {
       registrationNumber: client.registrationNumber ?? '',
       address: client.address ?? '',
     })
-    setFormError(null)
+    setFieldErrors({})
+    setSubmitted(false)
     setShowForm(true)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const parsed = clientWriteSchema.safeParse(form)
-    if (!parsed.success) {
-      setFormError(parsed.error.errors[0]?.message ?? 'Proverite unete podatke')
+    setSubmitted(true)
+    const errors = validateClient(form)
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      notify.error('Kupac nije sačuvan', { description: 'Ispravite polja označena crvenom bojom.' })
       return
     }
-    setFormError(null)
     saveMutation.mutate(form)
   }
 
@@ -136,7 +169,7 @@ export default function ClientsPage() {
       {showForm ? (
         <Card>
           <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="clientName">
                   Naziv kupca <span className="text-destructive">*</span>
@@ -144,9 +177,11 @@ export default function ClientsPage() {
                 <Input
                   id="clientName"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
+                  onChange={(e) => updateField('name', e.target.value)}
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  aria-describedby="clientName-error"
                 />
+                <FieldError id="clientName-error" message={fieldErrors.name} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -154,38 +189,45 @@ export default function ClientsPage() {
                   <Input
                     id="clientPib"
                     value={form.pib}
-                    onChange={(e) => setForm({ ...form, pib: e.target.value })}
+                    onChange={(e) => updateField('pib', e.target.value)}
                     placeholder="9 cifara"
                     inputMode="numeric"
-                    maxLength={9}
+                    maxLength={PIB_LENGTH}
+                    aria-invalid={Boolean(fieldErrors.pib)}
+                    aria-describedby="clientPib-error"
                   />
+                  <FieldError id="clientPib-error" message={fieldErrors.pib} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="clientRegistrationNumber">Matični broj</Label>
                   <Input
                     id="clientRegistrationNumber"
                     value={form.registrationNumber}
-                    onChange={(e) => setForm({ ...form, registrationNumber: e.target.value })}
+                    onChange={(e) => updateField('registrationNumber', e.target.value)}
                     placeholder="8 cifara, za SEF"
                     inputMode="numeric"
-                    maxLength={8}
+                    maxLength={REGISTRATION_NUMBER_LENGTH}
+                    aria-invalid={Boolean(fieldErrors.registrationNumber)}
+                    aria-describedby="clientRegistrationNumber-error"
                   />
+                  <FieldError id="clientRegistrationNumber-error" message={fieldErrors.registrationNumber} />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="clientAddress">Adresa</Label>
                   <Input
                     id="clientAddress"
                     value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    onChange={(e) => updateField('address', e.target.value)}
                     placeholder={sr.address.placeholder}
+                    aria-invalid={Boolean(fieldErrors.address)}
+                    aria-describedby="clientAddress-error"
                   />
+                  <FieldError id="clientAddress-error" message={fieldErrors.address} />
                 </div>
               </div>
-              {formError ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {formError}
-                </p>
-              ) : null}
+              <p className="text-xs text-muted-foreground">
+                Za SEF kupac treba PIB, matični broj i adresu sa mestom. Kupac bez PIB-a (npr. fizičko lice) može da se sačuva samo sa nazivom.
+              </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <Button type="button" variant="outline" className="min-h-11" onClick={closeForm}>
                   Otkaži

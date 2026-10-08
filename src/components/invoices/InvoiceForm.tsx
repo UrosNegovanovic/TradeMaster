@@ -25,6 +25,7 @@ import { documentLabels } from '@/lib/document-type'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
 import { DEFAULT_VAT_RATE, VAT_RATE_OPTIONS, summarizeVat } from '@/lib/invoice-vat'
 import { sr } from '@/lib/ui-copy'
+import { PIB_LENGTH, addressHasCity, digitsOnly, pibProblem } from '@/lib/company-fields'
 import {
   clampDiscountPercent,
   lineDiscountAmount,
@@ -500,11 +501,15 @@ export function InvoiceForm({
               <Input
                 id="clientPib"
                 value={clientPib}
-                onChange={(e) => setClientPib(e.target.value)}
+                onChange={(e) => setClientPib(digitsOnly(e.target.value))}
                 placeholder="9 cifara"
                 inputMode="numeric"
-                maxLength={9}
+                maxLength={PIB_LENGTH}
               />
+              {/* A warning only: an invoice without SEF may still be saved. */}
+              {clientPib.trim() && pibProblem(clientPib) ? (
+                <p className="text-sm text-amber-700">{pibProblem(clientPib)} SEF ga neće primiti.</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="clientAddress">Adresa kupca</Label>
@@ -514,6 +519,9 @@ export function InvoiceForm({
                 onChange={(e) => setClientAddress(e.target.value)}
                 placeholder={`${sr.address.placeholder} (opciono)`}
               />
+              {clientAddress.trim() && !addressHasCity(clientAddress) ? (
+                <p className="text-sm text-amber-700">Za SEF adresa treba mesto, npr. &quot;{sr.address.placeholder}&quot;.</p>
+              ) : null}
             </div>
         </CardContent>
       </Card>

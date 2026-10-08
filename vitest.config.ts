@@ -19,6 +19,7 @@ export default defineConfig({
       'src/lib/sef-ubl.test.ts',
       'src/lib/pib.test.ts',
       'src/lib/giro-account.test.ts',
+      'src/lib/company-fields.test.ts',
       'src/lib/landing-invoice-demo.test.ts',
       'src/lib/invoice-finance.test.ts',
       'src/lib/invoice-line.test.ts',

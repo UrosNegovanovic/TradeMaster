@@ -21,6 +21,7 @@ import type { Profile } from '@/types/profile'
 import { PRICING_OFFER } from '@/lib/landing-copy'
 import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 import { sr } from '@/lib/ui-copy'
+import { PIB_LENGTH, REGISTRATION_NUMBER_LENGTH, digitsOnly } from '@/lib/company-fields'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -68,6 +69,8 @@ export default function SettingsPage() {
     watch,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
+    // Show a field's error when the user leaves it, then update it while typing.
+    mode: 'onTouched',
     defaultValues: toProfileFormValues(profile),
     shouldUnregister: false,
   })
@@ -104,6 +107,18 @@ export default function SettingsPage() {
   const onSubmit = (data: ProfileFormData) => {
     mutation.mutate(profileSavePayload({ ...data, logoUrl: data.logoUrl ?? logoUrl }))
   }
+
+  const onInvalid = () => {
+    notify.error('Podaci nisu sačuvani', { description: 'Ispravite polja označena crvenom bojom.' })
+  }
+
+  const digitsField = (name: 'pib' | 'registrationNumber') =>
+    register(name, {
+      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+        const digits = digitsOnly(event.target.value)
+        if (digits !== event.target.value) setValue(name, digits, { shouldValidate: true })
+      },
+    })
 
   if (isLoading) {
     return (
@@ -152,10 +167,12 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6" noValidate>
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Naziv firme</Label>
+                <Label htmlFor="companyName">
+                  Naziv firme <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="companyName"
                   placeholder="Unesite naziv firme"
@@ -169,11 +186,16 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pib">PIB</Label>
+                <Label htmlFor="pib">
+                  PIB <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="pib"
-                  placeholder="Unesite PIB"
-                  {...register('pib')}
+                  inputMode="numeric"
+                  maxLength={PIB_LENGTH}
+                  placeholder="9 cifara"
+                  aria-invalid={Boolean(errors.pib)}
+                  {...digitsField('pib')}
                 />
                 {errors.pib && (
                   <p className="text-sm text-destructive">
@@ -183,19 +205,23 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="registrationNumber">Matični broj</Label>
+                <Label htmlFor="registrationNumber">
+                  Matični broj <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="registrationNumber"
                   inputMode="numeric"
+                  maxLength={REGISTRATION_NUMBER_LENGTH}
                   placeholder="8 cifara"
-                  {...register('registrationNumber')}
+                  aria-invalid={Boolean(errors.registrationNumber)}
+                  {...digitsField('registrationNumber')}
                 />
                 {errors.registrationNumber && (
                   <p className="text-sm text-destructive">
                     {errors.registrationNumber.message}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">Potreban za XML fakture za SEF.</p>
+                <p className="text-xs text-muted-foreground">8 cifara, sa rešenja APR-a. Potreban za XML fakture za SEF.</p>
               </div>
 
               <div className="space-y-2">
@@ -229,7 +255,9 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="giroAccount">Žiro-račun</Label>
+                <Label htmlFor="giroAccount">
+                  Žiro-račun <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="giroAccount"
                   placeholder="npr. 160-0000000123456-54"
@@ -267,7 +295,9 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Adresa</Label>
+                <Label htmlFor="address">
+                  Adresa <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="address"
                   placeholder={sr.address.placeholder}

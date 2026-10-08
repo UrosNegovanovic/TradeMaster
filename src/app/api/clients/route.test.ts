@@ -67,11 +67,11 @@ describe('/api/clients', () => {
   it('creates a client on the merchant profile and normalizes blanks', async () => {
     mocks.client.create.mockResolvedValue({ id: 'c1' })
     const response = await POST(
-      jsonRequest('POST', { name: '  Kupac DOO ', pib: ' 123456788 ', address: '  ' })
+      jsonRequest('POST', { name: '  Kupac DOO ', pib: ' 123456788 ', registrationNumber: ' 12345678 ', address: '  ' })
     )
     expect(response.status).toBe(201)
     expect(mocks.client.create).toHaveBeenCalledWith({
-      data: { name: 'Kupac DOO', pib: '123456788', address: null, registrationNumber: null, profileId: profile.id },
+      data: { name: 'Kupac DOO', pib: '123456788', address: null, registrationNumber: '12345678', profileId: profile.id },
     })
   })
 
@@ -96,11 +96,11 @@ describe('/api/clients', () => {
   it('updates and deletes an owned client', async () => {
     mocks.client.findFirst.mockResolvedValue({ id: 'c1', profileId: profile.id })
     mocks.client.update.mockResolvedValue({ id: 'c1' })
-    const put = await PUT(jsonRequest('PUT', { name: 'Novi naziv', pib: '', address: 'Adresa 1' }), ctx('c1'))
+    const put = await PUT(jsonRequest('PUT', { name: 'Novi naziv', pib: '', address: 'Adresa 1, Beograd' }), ctx('c1'))
     expect(put.status).toBe(200)
     expect(mocks.client.update).toHaveBeenCalledWith({
       where: { id: 'c1' },
-      data: { name: 'Novi naziv', pib: null, address: 'Adresa 1', registrationNumber: null },
+      data: { name: 'Novi naziv', pib: null, address: 'Adresa 1, Beograd', registrationNumber: null },
     })
     expect((await DELETE(jsonRequest('DELETE', {}), ctx('c1'))).status).toBe(200)
     expect(mocks.client.delete).toHaveBeenCalledWith({ where: { id: 'c1' } })

@@ -10,7 +10,7 @@ const base = {
   contactEmail: 'uros@example.com',
   contactPhone: '+381',
   address: 'Kralja Petra I',
-  pib: '123124121',
+  pib: '123124128',
   giroAccount: '',
 }
 

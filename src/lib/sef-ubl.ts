@@ -2,6 +2,7 @@ import { Decimal } from '@prisma/client/runtime/library'
 import { calculateVatBreakdown, isVatRate, roundMoneyHalfUp } from '@/lib/invoice-totals'
 import { normalizeGiroAccount } from '@/lib/ips-qr'
 import { formatLocalYmd } from '@/lib/local-date'
+import { isValidPib } from '@/lib/pib'
 
 /**
  * UBL 2.1 invoice in the Serbian SEF profile (EN 16931 + srbdt:2022), for the owner to upload on
@@ -93,7 +94,9 @@ export function splitSerbianAddress(address: string | null | undefined): {
 function partyProblems(party: SefParty, who: 'firme' | 'kupca'): string[] {
   const problems: string[] = []
   if (!text(party.name)) problems.push(`Naziv ${who} je obavezan.`)
-  if (!/^\d{9}$/.test(text(party.pib))) problems.push(`PIB ${who} mora imati 9 cifara.`)
+  const pib = text(party.pib)
+  if (!/^\d{9}$/.test(pib)) problems.push(`PIB ${who} mora imati 9 cifara.`)
+  else if (!isValidPib(pib)) problems.push(`PIB ${who} nije ispravan (kontrolna cifra ne odgovara).`)
   if (!/^\d{8}$/.test(text(party.registrationNumber))) problems.push(`Matični broj ${who} mora imati 8 cifara.`)
   if (!text(party.address)) problems.push(`Adresa ${who} je obavezna (ulica i mesto).`)
   return problems

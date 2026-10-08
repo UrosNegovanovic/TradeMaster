@@ -17,7 +17,7 @@ const input: SefInvoiceInput = {
   vatEnabled: true,
   seller: {
     name: 'Demo Trgovina d.o.o.',
-    pib: '123456789',
+    pib: '123456788',
     registrationNumber: '12345678',
     address: 'Bulevar oslobođenja 12, 21000 Novi Sad',
     email: 'demo@example.com',
@@ -25,7 +25,7 @@ const input: SefInvoiceInput = {
   },
   buyer: {
     name: 'Market & Sinovi d.o.o.',
-    pib: '987654321',
+    pib: '987654328',
     registrationNumber: '87654321',
     address: 'Kneza Miloša 1, Beograd',
   },
@@ -63,8 +63,8 @@ describe('buildSefInvoiceXml', () => {
     expect(tag(xml, 'cbc:ID')[0]).toBe('05/2026')
     expect(tag(xml, 'cbc:IssueDate')).toEqual(['2026-10-05'])
     expect(tag(xml, 'cbc:DueDate')).toEqual(['2026-10-20'])
-    expect(tag(xml, 'cbc:EndpointID')).toEqual(['123456789', '987654321'])
-    expect(xml).toContain('<cbc:CompanyID>RS123456789</cbc:CompanyID>')
+    expect(tag(xml, 'cbc:EndpointID')).toEqual(['123456788', '987654328'])
+    expect(xml).toContain('<cbc:CompanyID>RS123456788</cbc:CompanyID>')
     expect(xml).toContain('<cbc:CompanyID>87654321</cbc:CompanyID>')
     expect(xml).toContain(`<cbc:ID>${account}</cbc:ID>`)
 
@@ -117,6 +117,20 @@ describe('buildSefInvoiceXml', () => {
       'PIB kupca mora imati 9 cifara.',
       'Matični broj kupca mora imati 8 cifara.',
       'Žiro-račun firme nije ispravan.',
+    ])
+  })
+
+  it('refuses a PIB whose control digit is wrong, because SEF refuses it', () => {
+    const result = buildSefInvoiceXml({
+      ...input,
+      seller: { ...input.seller, pib: '123124129' },
+      buyer: { ...input.buyer, pib: '123456777' },
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.problems).toEqual([
+      'PIB firme nije ispravan (kontrolna cifra ne odgovara).',
+      'PIB kupca nije ispravan (kontrolna cifra ne odgovara).',
     ])
   })
 

@@ -185,6 +185,21 @@ describe('/api/invoices/:id/sef (mocked Prisma, Clerk and SEF)', () => {
     await expect(response.json()).resolves.toMatchObject({ state: { status: 'REJECTED', comment: 'Pogrešna cena' } })
   })
 
+  it('without a saved key the invoice works as before: SEF panel off, no SEF call, no data checks', async () => {
+    mocks.sefCredential.findUnique.mockResolvedValue(null)
+    // Data SEF would refuse (no žiro-račun, buyer without PIB) must not matter without a key.
+    mocks.profile.findUnique.mockResolvedValue({ ...profile, giroAccount: null })
+    mocks.invoice.findFirst.mockResolvedValue({ ...invoice, clientPib: null })
+    const body = await (await GET(get('?refresh=auto'), context)).json()
+    expect(body).toMatchObject({ enabled: false, precheck: null, state: { status: null } })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
+
+    const sent = await POST(post(), context)
+    expect(sent.status).toBe(409)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('GET reports SEF off when the server has no master key', async () => {
     vi.stubEnv('SEF_KEY_ENCRYPTION_KEY', '')
     const body = await (await GET(get(), context)).json()

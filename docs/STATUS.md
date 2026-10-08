@@ -35,7 +35,7 @@ _Last updated: 2026-10-08. Target release: 2026-11-01 (owner decision 2026-10-06
 ## In review
 
 - #93 ROADMAP A2.10 (DPA in /uslovi, privacy notice, sign-up consent line): draft, waits for the lawyer's review.
-- A3 (#95, merged): send to SEF with the company's API key. Migration `20261009090000_sef_sending.sql` and `SEF_KEY_ENCRYPTION_KEY` are in production; `SEF_API_BASE_URL` is not set, so sending goes to the SEF demo. First XML test (2026-10-08) found data checks SEF needs: A3.1 PIB control digit, A3.2 city in the address, A3.3 žiro-račun checked on save, A3.4 production switch and invoices without SEF.
+- A3 (#95, merged): send to SEF with the company's API key. Migration `20261009090000_sef_sending.sql` and `SEF_KEY_ENCRYPTION_KEY` are in production; `SEF_API_BASE_URL` is not set, so sending goes to the SEF demo. First XML test (2026-10-08) led to data checks, merged: PIB control digit on save (#99), city required in SEF addresses (#100), žiro-račun checked on save (#101), test that invoices work without a SEF key (#102). Switching to real SEF (`SEF_API_BASE_URL`, `SEF_ALLOW_PRODUCTION=on`) waits for a demo send with the real company PIB (ROADMAP A3.4).
 
 All roadmap code items that do not wait on the owner are done; the rest of phase A is owner work (A1) or the PRs above.
 

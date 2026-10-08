@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CATALOG_LAYOUTS, CATALOG_SORT_MODES, DEFAULT_CATALOG_DISPLAY } from './catalog-layout'
+import { INVALID_PIB_MESSAGE, isValidPib } from './pib'
 
 export const invoiceStatusSchema = z.enum(['DRAFT', 'PAID', 'UNPAID'])
 
@@ -334,7 +335,11 @@ export const profileSchema = z.object({
     .or(z.literal('')),
   contactPhone: z.string().max(50).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
-  pib: z.string().trim().regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara'),
+  pib: z
+    .string()
+    .trim()
+    .regex(/^\d{9}$/, 'PIB mora imati tačno 9 cifara')
+    .refine(isValidPib, INVALID_PIB_MESSAGE),
   registrationNumber: z
     .string()
     .trim()
@@ -363,9 +368,10 @@ export const profileSchema = z.object({
 export type ProfileFormData = z.infer<typeof profileSchema>
 
 // Saved buyers (Client). PIB and address are optional; blank strings become null.
+// A saved buyer's PIB must pass the control digit; the PIB typed on an invoice only needs 9 digits.
 export const clientWriteSchema = z.object({
   name: z.string().trim().min(1, 'Naziv kupca je obavezan').max(255),
-  pib: clientPibWriteSchema,
+  pib: clientPibWriteSchema.refine((value) => value === null || !/^\d{9}$/.test(value) || isValidPib(value), INVALID_PIB_MESSAGE),
   registrationNumber: z
     .union([z.string(), z.null(), z.undefined()])
     .transform((value) => normalizeClientPib(value) ?? null)

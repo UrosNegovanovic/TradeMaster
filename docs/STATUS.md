@@ -35,9 +35,9 @@ _Last updated: 2026-10-08. Target release: 2026-11-01 (owner decision 2026-10-06
 ## In review
 
 - #93 ROADMAP A2.10 (DPA in /uslovi, privacy notice, sign-up consent line): draft, waits for the lawyer's review.
-- #95 ROADMAP A3 (send to SEF with the company's API key): draft. **Do not merge before migration `20261009090000_sef_sending.sql` is applied** (every invoice query reads the new columns). Waits for A1.1 (manual XML upload on SEF demo), a SEF demo API key, the owner's go for the migration, and `SEF_KEY_ENCRYPTION_KEY` in Vercel. If the demo send is not verified by 20 October, A3 moves to B1.
+- A3 (#95, merged): send to SEF with the company's API key. Migration `20261009090000_sef_sending.sql` and `SEF_KEY_ENCRYPTION_KEY` are in production; `SEF_API_BASE_URL` is not set, so sending goes to the SEF demo. First XML test (2026-10-08) found data checks SEF needs: A3.1 PIB control digit, A3.2 city in the address, A3.3 žiro-račun checked on save, A3.4 production switch and invoices without SEF.
 
-All roadmap code items that do not wait on the owner are done; the rest of phase A is owner work (A1) or the two PRs above.
+All roadmap code items that do not wait on the owner are done; the rest of phase A is owner work (A1) or the PRs above.
 
 ## Blocked on the owner
 

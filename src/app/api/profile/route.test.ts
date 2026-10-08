@@ -64,7 +64,7 @@ describe('PUT /api/profile', () => {
     const response = await PUT(
       putRequest({
         companyName: 'T&G Nest',
-        pib: '123124121',
+        pib: '123124128',
         logoUrl,
       })
     )
@@ -84,7 +84,7 @@ describe('PUT /api/profile', () => {
     const response = await PUT(
       putRequest({
         companyName: 'T&G Nest',
-        pib: '123124121',
+        pib: '123124128',
       })
     )
 
@@ -100,7 +100,7 @@ describe('PUT /api/profile', () => {
     const response = await PUT(
       putRequest({
         companyName: 'T&G Nest',
-        pib: '123124121',
+        pib: '123124128',
         logoUrl: 'data:image/png;base64,aaa',
       })
     )
@@ -139,7 +139,7 @@ describe('access period (manual billing)', () => {
     mocks.profile.upsert.mockResolvedValue({ id: 'p1' })
 
     const response = await PUT(
-      putRequest({ companyName: 'Firma', pib: '123124121', accessExpiresAt: '2099-01-01T00:00:00.000Z' })
+      putRequest({ companyName: 'Firma', pib: '123124128', accessExpiresAt: '2099-01-01T00:00:00.000Z' })
     )
 
     expect(response.status).toBe(200)

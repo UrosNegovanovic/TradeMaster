@@ -28,7 +28,7 @@ function accountWithControl(bank: string, account13: string): string {
 const profile = {
   id: 'profile-a',
   companyName: 'Demo Trgovina d.o.o.',
-  pib: '123456789',
+  pib: '123456788',
   registrationNumber: '12345678',
   address: 'Bulevar 12, 21000 Novi Sad',
   contactEmail: null,
@@ -46,7 +46,7 @@ const invoice = {
   dueDate: new Date('2026-10-20T10:00:00.000Z'),
   vatEnabled: true,
   clientName: 'Market Primer d.o.o.',
-  clientPib: '987654321',
+  clientPib: '987654328',
   clientAddress: 'Kneza Miloša 1, Beograd',
   items: [{ productName: 'Kafa', quantity: 2, unitPrice: '100', discount: '0', vatRate: '20', total: '200' }],
 }
@@ -68,7 +68,7 @@ describe('GET /api/invoices/:id/sef-xml (mocked Prisma/Clerk)', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toContain('application/xml')
     expect(response.headers.get('content-disposition')).toBe('attachment; filename="05_2026_SEF.xml"')
-    expect(mocks.client.findFirst.mock.calls[0][0].where).toEqual({ profileId: 'profile-a', pib: '987654321' })
+    expect(mocks.client.findFirst.mock.calls[0][0].where).toEqual({ profileId: 'profile-a', pib: '987654328' })
     const xml = await response.text()
     expect(xml).toContain('<cbc:CompanyID>87654321</cbc:CompanyID>')
     expect(xml).toContain('<cbc:PayableAmount currencyID="RSD">240.00</cbc:PayableAmount>')

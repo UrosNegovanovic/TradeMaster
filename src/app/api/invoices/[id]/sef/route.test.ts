@@ -19,7 +19,7 @@ import { encryptSefApiKey } from '@/lib/sef-key-crypto'
 import { GET, POST } from './route'
 
 const master = randomBytes(32)
-const API_KEY = 'sef-demo-key-1234567890'
+const API_KEY = 'sef-demo-key-1234567880'
 
 function accountWithControl(bank: string, account13: string): string {
   const base = `${bank}${account13}`
@@ -31,7 +31,7 @@ function accountWithControl(bank: string, account13: string): string {
 const profile = {
   id: 'profile-a',
   companyName: 'Demo Trgovina d.o.o.',
-  pib: '123456789',
+  pib: '123456788',
   registrationNumber: '12345678',
   address: 'Bulevar 12, 21000 Novi Sad',
   contactEmail: null,
@@ -49,7 +49,7 @@ const invoice = {
   vatEnabled: true,
   totalAmount: '240.00',
   clientName: 'Market Primer d.o.o.',
-  clientPib: '987654321',
+  clientPib: '987654328',
   clientAddress: 'Kneza Miloša 1, Beograd',
   sefStatus: null,
   sefStatusComment: null,
@@ -172,7 +172,7 @@ describe('/api/invoices/:id/sef (mocked Prisma, Clerk and SEF)', () => {
     expect(body).toMatchObject({ enabled: true, precheck: { problems: [], buyerRegistered: false } })
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toContain('/api/publicApi/Company/CheckIfCompanyRegisteredOnEfaktura')
-    expect(JSON.parse(String(init.body))).toEqual({ vatNumber: '987654321', registrationNumber: '87654321' })
+    expect(JSON.parse(String(init.body))).toEqual({ vatNumber: '987654328', registrationNumber: '87654321' })
     expect(JSON.stringify(body)).not.toContain(API_KEY)
   })
 

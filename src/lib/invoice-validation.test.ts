@@ -31,7 +31,7 @@ describe('invoiceWriteSchema (unit)', () => {
     }
   })
 
-  it('accepts a 9-digit buyer PIB and rejects a short one', () => {
+  it('accepts a 9-digit buyer PIB even with a wrong control digit (only SEF needs it) and rejects a short one', () => {
     expect(
       invoiceWriteSchema.safeParse({
         ...validInvoice,

@@ -14,6 +14,7 @@ import {
 import type { Profile } from '@/types/profile'
 import { summarizeVat } from '@/lib/invoice-vat'
 import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
+import { deliveryAddressToPrint, type DeliveryNoteDetails } from '@/lib/delivery-note'
 import { buildIpsQrPayload, ipsQrMatrix } from '@/lib/ips-qr'
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { documentLabels } from '@/lib/document-type'
@@ -336,11 +337,13 @@ export type InvoicePdfVariant = 'document' | 'delivery'
 interface InvoicePDFProps {
   invoice: InvoicePdfData
   variant?: InvoicePdfVariant
+  /** Otpremnica only: details typed in before printing (not stored). */
+  delivery?: DeliveryNoteDetails
 }
 
-export function InvoicePDF({ invoice, variant = 'document' }: InvoicePDFProps) {
+export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoicePDFProps) {
   if (variant === 'delivery') {
-    return <DeliveryNotePDF invoice={invoice} />
+    return <DeliveryNotePDF invoice={invoice} delivery={delivery} />
   }
 
   const profile = invoice.profile
@@ -604,14 +607,17 @@ const deliveryStyles = StyleSheet.create({
   },
   signatureBox: {
     flex: 1,
-    borderTop: '1 solid #9ca3af',
-    paddingTop: 6,
+    gap: 14,
   },
+  signatureTitle: { fontSize: 10, fontWeight: 'bold', color: '#111827' },
+  signatureLine: { fontSize: 9, color: '#6b7280' },
 })
 
 /** Otpremnica: accompanies the goods of an issued invoice. Lines and quantities only, no prices. */
-function DeliveryNotePDF({ invoice }: { invoice: InvoicePdfData }) {
+function DeliveryNotePDF({ invoice, delivery }: { invoice: InvoicePdfData; delivery?: DeliveryNoteDetails }) {
   const profile = invoice.profile
+  const deliveryAddress = deliveryAddressToPrint(delivery, invoice.clientAddress)
+  const packages = delivery?.packages ?? null
   const totalQuantity = invoice.items.reduce((sum, item) => sum + item.quantity, 0)
   const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('sr-RS')
 
@@ -651,12 +657,26 @@ function DeliveryNotePDF({ invoice }: { invoice: InvoicePdfData }) {
                 {invoice.clientPib && <Text>PIB: {invoice.clientPib}</Text>}
               </View>
             </View>
+            {deliveryAddress ? (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.clientTitle}>Mesto isporuke:</Text>
+                <View style={styles.clientDetails}>
+                  <Text>{deliveryAddress}</Text>
+                </View>
+              </View>
+            ) : null}
           </View>
           <View style={styles.invoiceInfoRight}>
             <View>
               <Text style={styles.invoiceLabel}>Datum:</Text>
               <Text style={styles.invoiceValue}>{formatDate(invoice.createdAt)}</Text>
             </View>
+            {packages !== null ? (
+              <View style={{ marginTop: 10 }}>
+                <Text style={styles.invoiceLabel}>Broj paketa:</Text>
+                <Text style={styles.invoiceValue}>{packages}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -684,12 +704,14 @@ function DeliveryNotePDF({ invoice }: { invoice: InvoicePdfData }) {
         </View>
 
         <View style={deliveryStyles.signatures} wrap={false}>
-          <View style={deliveryStyles.signatureBox}>
-            <Text style={styles.signatureLabel}>Robu izdao</Text>
-          </View>
-          <View style={deliveryStyles.signatureBox}>
-            <Text style={styles.signatureLabel}>Robu primio</Text>
-          </View>
+          {['Robu izdao', 'Robu primio'].map((title) => (
+            <View key={title} style={deliveryStyles.signatureBox}>
+              <Text style={deliveryStyles.signatureTitle}>{title}</Text>
+              <Text style={deliveryStyles.signatureLine}>Ime i prezime: ______________________</Text>
+              <Text style={deliveryStyles.signatureLine}>Potpis: ____________________________</Text>
+              <Text style={deliveryStyles.signatureLine}>Datum: ____________________________</Text>
+            </View>
+          ))}
         </View>
       </Page>
     </Document>

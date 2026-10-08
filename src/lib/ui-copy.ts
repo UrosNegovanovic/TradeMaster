@@ -16,6 +16,10 @@ export const sr = {
     placeholder: 'Ulica i broj, 11000 Beograd',
     sefHint: 'Ulica i broj, zatim poštanski broj i mesto, odvojeno zarezom. SEF traži mesto.',
   },
+  sef: {
+    problemsHint:
+      'Podatke firme menjate u Podešavanjima, a kupca na fakturi (Izmeni). Izmena u Kupcima ne menja već napravljenu fakturu.',
+  },
   scan: {
     missingCostNote:
       'Brzi sken ne unosi nabavnu cenu. Dopunite je u asortimanu ili na Ulazu.',

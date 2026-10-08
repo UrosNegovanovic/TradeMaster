@@ -79,7 +79,7 @@ describe('GET /api/invoices/:id/sef-xml (mocked Prisma/Clerk)', () => {
     const response = await GET(request(), context)
     expect(response.status).toBe(422)
     const body = await response.json()
-    expect(body.problems).toEqual(['Matični broj kupca mora imati 8 cifara.'])
+    expect(body.problems).toEqual(['Matični broj kupca nije pronađen. U Kupcima upišite matični broj (8 cifara) kod kupca sa istim PIB-om kao na fakturi.'])
   })
 
   it('refuses a proforma and a draft', async () => {

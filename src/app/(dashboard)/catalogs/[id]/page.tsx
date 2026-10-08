@@ -157,7 +157,13 @@ export default function CatalogDetailsPage() {
         </div>
       </div>
 
-      <CatalogSharing catalogId={catalog.id} catalogName={catalog.name} companyName={catalog.profile?.companyName} />
+      <CatalogSharing
+        catalogId={catalog.id}
+        catalogName={catalog.name}
+        companyName={catalog.profile?.companyName}
+        viewCount={catalog.shareViewCount}
+        lastViewedAt={catalog.shareLastViewedAt}
+      />
 
       {/* Catalog Info */}
       <div className="grid gap-6 md:grid-cols-3 mb-6">

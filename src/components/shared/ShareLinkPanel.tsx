@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Mail, MessageCircle, Phone, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,9 +22,11 @@ type ShareLinkPanelProps = {
   shareSubject: string
   /** When set, sharing is unavailable and this explains why (e.g. a draft invoice). */
   unavailableReason?: string
+  /** Extra line at the bottom of the panel (e.g. how often a catalog link was opened). */
+  children?: ReactNode
 }
 
-export function ShareLinkPanel({ endpoint, queryKey, parsePath, label, description, shareText, shareSubject, unavailableReason }: ShareLinkPanelProps) {
+export function ShareLinkPanel({ endpoint, queryKey, parsePath, label, description, shareText, shareSubject, unavailableReason, children }: ShareLinkPanelProps) {
   const queryClient = useQueryClient()
   const request = useAuthorizedFetch()
   const [busy, setBusy] = useState(false)
@@ -108,6 +110,7 @@ export function ShareLinkPanel({ endpoint, queryKey, parsePath, label, descripti
         </div>
         <p role="status" className="mt-2 text-sm text-muted-foreground">{message || (error ? 'Deljenje trenutno nije dostupno.' : !isLoading && !url ? 'Deljenje je isključeno.' : '')}</p>
       </>}
+      {children}
     </section>
   )
 }

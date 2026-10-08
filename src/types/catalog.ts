@@ -23,6 +23,9 @@ export type Catalog = {
   updatedAt: Date
   profileId: string
   items?: CatalogItem[]
+  /** Opens of the public link (owner API only). */
+  shareViewCount?: number
+  shareLastViewedAt?: Date | string | null
 } & Partial<CatalogDisplaySettings>
 
 export type CatalogWithItems = Catalog & {

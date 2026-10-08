@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { consumeRateLimit, rateLimitKey, rateLimits, resetRateLimitStore } from '@/lib/rate-limit'
 
 const mocks = vi.hoisted(() => ({
-  catalog: { findUnique: vi.fn() },
+  catalog: { findUnique: vi.fn(), updateMany: vi.fn() },
 }))
 
 vi.mock('@/lib/prisma', () => ({
@@ -99,5 +99,19 @@ describe('GET /api/public/catalogs/[id]', () => {
     await expect(blocked.json()).resolves.toEqual({ error: 'Too many requests' })
     expect(blocked.headers.get('Retry-After')).toMatch(/^\d+$/)
     expect(mocks.catalog.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('counts an open only when sharing is enabled', async () => {
+    mocks.catalog.findUnique.mockResolvedValue(sharedCatalog)
+    expect((await GET(getRequest('cat-1'), { params: { id: 'cat-1' } })).status).toBe(200)
+    expect(mocks.catalog.updateMany).toHaveBeenCalledWith({
+      where: { id: 'cat-1', shareEnabled: true },
+      data: { shareViewCount: { increment: 1 }, shareLastViewedAt: expect.any(Date) },
+    })
+
+    mocks.catalog.updateMany.mockClear()
+    mocks.catalog.findUnique.mockResolvedValue({ ...sharedCatalog, shareEnabled: false })
+    expect((await GET(getRequest('cat-1'), { params: { id: 'cat-1' } })).status).toBe(410)
+    expect(mocks.catalog.updateMany).not.toHaveBeenCalled()
   })
 })

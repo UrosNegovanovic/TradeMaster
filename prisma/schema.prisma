@@ -139,6 +139,8 @@ model Catalog {
   updatedAt    DateTime @updatedAt
   shareToken   String?  @unique
   shareEnabled Boolean  @default(false)
+  shareViewCount    Int       @default(0) // Opens of the public link (API reads, not link previews)
+  shareLastViewedAt DateTime?
 
   // Display settings shared by the PDF, owner preview and public link (values: src/lib/catalog-layout.ts)
   layout            String  @default("GRID_4") // GRID_4 | GRID_12 | LIST

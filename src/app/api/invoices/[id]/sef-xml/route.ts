@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { buildSefInvoiceXml } from '@/lib/sef-ubl'
+import { buildInvoiceSefXml, sefDocumentRefusal } from '@/lib/sef-invoice-xml'
 import { sefXmlFileName } from '@/lib/document-type'
 
 export const dynamic = 'force-dynamic'
@@ -32,45 +32,12 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     if (!invoice) {
       return NextResponse.json({ error: 'Faktura nije pronađena.' }, { status: 404, headers })
     }
-    if (invoice.documentType !== 'INVOICE') {
-      return NextResponse.json(
-        { error: 'Predračun se ne šalje u SEF. Pretvorite ga u fakturu.' },
-        { status: 409, headers }
-      )
-    }
-    if (invoice.status === 'DRAFT') {
-      return NextResponse.json({ error: 'Nacrt se ne šalje u SEF. Prvo izdajte fakturu.' }, { status: 409, headers })
+    const refusal = sefDocumentRefusal(invoice)
+    if (refusal) {
+      return NextResponse.json({ error: refusal }, { status: 409, headers })
     }
 
-    const buyer = invoice.clientPib
-      ? await prisma.client.findFirst({
-          where: { profileId: profile.id, pib: invoice.clientPib },
-          orderBy: { updatedAt: 'desc' },
-          select: { registrationNumber: true },
-        })
-      : null
-
-    const result = buildSefInvoiceXml({
-      invoiceNumber: invoice.invoiceNumber,
-      issueDate: invoice.createdAt,
-      dueDate: invoice.dueDate,
-      vatEnabled: invoice.vatEnabled,
-      seller: {
-        name: profile.companyName,
-        pib: profile.pib,
-        registrationNumber: profile.registrationNumber,
-        address: profile.address,
-        email: profile.contactEmail,
-        giroAccount: profile.giroAccount,
-      },
-      buyer: {
-        name: invoice.clientName,
-        pib: invoice.clientPib,
-        registrationNumber: buyer?.registrationNumber ?? null,
-        address: invoice.clientAddress,
-      },
-      items: invoice.items,
-    })
+    const result = await buildInvoiceSefXml(prisma, profile, invoice)
 
     if (!result.ok) {
       return NextResponse.json(

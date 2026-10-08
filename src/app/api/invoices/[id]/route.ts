@@ -15,6 +15,7 @@ import { nextPaidAt } from '@/lib/invoice-finance'
 import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { accessExpiredResponse } from '@/lib/access-guard'
 import { PROFORMA_PAID_MESSAGE, stockStatusFor } from '@/lib/document-type'
+import { SEF_LOCKED_MESSAGE, isLockedBySef } from '@/lib/sef-status'
 
 export const dynamic = 'force-dynamic'
 
@@ -127,9 +128,10 @@ export async function PUT(
           vatEnabled: boolean
           documentType: string
           convertedInvoiceId: string | null
+          sefStatus?: string | null
         }>
       >`
-        SELECT id, status, "vatEnabled", "documentType"::text AS "documentType", "convertedInvoiceId"
+        SELECT id, status, "vatEnabled", "documentType"::text AS "documentType", "convertedInvoiceId", "sefStatus"
         FROM invoices WHERE id = ${id} AND "profileId" = ${profile.id} FOR UPDATE
       `
 
@@ -141,6 +143,9 @@ export async function PUT(
       }
 
       assertInvoiceContentEditable(locked[0].status)
+      if (isLockedBySef(locked[0].sefStatus)) {
+        throw new InvoiceClientError(SEF_LOCKED_MESSAGE, 409)
+      }
       if (locked[0].convertedInvoiceId) {
         throw new InvoiceClientError('Predračun je već pretvoren u fakturu i ne menja se.', 409)
       }
@@ -245,9 +250,9 @@ export async function PATCH(
 
     const updatedInvoice = await prisma.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<
-        Array<{ id: string; status: string; invoiceNumber: string; paidAt: Date | null; documentType: string }>
+        Array<{ id: string; status: string; invoiceNumber: string; paidAt: Date | null; documentType: string; sefStatus?: string | null }>
       >`
-        SELECT id, status, "invoiceNumber", "paidAt", "documentType"::text AS "documentType"
+        SELECT id, status, "invoiceNumber", "paidAt", "documentType"::text AS "documentType", "sefStatus"
         FROM invoices
         WHERE id = ${id} AND "profileId" = ${profile.id}
         FOR UPDATE
@@ -259,6 +264,11 @@ export async function PATCH(
 
       if (hasContentChange) {
         assertInvoiceContentEditable(locked[0].status)
+      }
+
+      // Sent to SEF: content and "back to draft" are locked; marking it paid stays allowed.
+      if (isLockedBySef(locked[0].sefStatus) && (hasContentChange || parsed.status === 'DRAFT')) {
+        throw new InvoiceClientError(SEF_LOCKED_MESSAGE, 409)
       }
 
       if (locked[0].documentType === 'PROFORMA' && parsed.status === 'PAID') {
@@ -374,6 +384,9 @@ export async function DELETE(
 
       if (!existingInvoice) {
         throw new InvoiceClientError('Invoice not found', 404)
+      }
+      if (isLockedBySef(existingInvoice.sefStatus)) {
+        throw new InvoiceClientError(SEF_LOCKED_MESSAGE, 409)
       }
 
       await syncInvoiceStock(tx, {

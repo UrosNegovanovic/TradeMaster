@@ -45,6 +45,9 @@ export type Invoice = {
   documentType?: 'INVOICE' | 'PROFORMA'
   /** Proforma only: the invoice it was turned into. */
   convertedInvoiceId?: string | null
+  /** SEF send state (ROADMAP A3); see src/lib/sef-status.ts. */
+  sefStatus?: string | null
+  sefStatusComment?: string | null
   profileId: string
   items?: InvoiceItem[]
   profile?: {

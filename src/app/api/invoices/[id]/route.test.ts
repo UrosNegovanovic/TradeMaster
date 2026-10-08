@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => {
   const prisma = {
     profile: { findUnique: vi.fn() },
     product: { findMany: vi.fn() },
-    invoice: { findFirst: vi.fn(), update: vi.fn() },
+    invoice: { findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() },
     invoiceItem: { deleteMany: vi.fn(), create: vi.fn() },
     $executeRaw: vi.fn(),
     $queryRaw: vi.fn(),
@@ -30,7 +30,7 @@ const stockMocks = vi.hoisted(() => ({
 vi.mock('@/lib/invoice-stock', () => stockMocks)
 
 import { auth } from '@clerk/nextjs/server'
-import { PATCH, PUT } from './route'
+import { DELETE, PATCH, PUT } from './route'
 
 const profile = { id: 'profile-a', clerkUserId: 'user-a' }
 const unpaidInvoice = {
@@ -300,5 +300,46 @@ describe('proforma (predračun) on /api/invoices/:id (mocked Prisma/Clerk)', () 
     const response = await PUT(request('PUT', validPutBody), context)
     expect(response.status).toBe(409)
     expect(mocks.invoice.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('invoice sent to SEF is locked (ROADMAP A3)', () => {
+  const sentRow = { id: unpaidInvoice.id, status: 'UNPAID', invoiceNumber: '01/2026', paidAt: null, vatEnabled: false, documentType: 'INVOICE', convertedInvoiceId: null, sefStatus: 'SENT' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
+    mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
+    vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
+    mocks.profile.findUnique.mockResolvedValue(profile)
+    mocks.$queryRaw.mockResolvedValue([sentRow])
+    mocks.invoice.update.mockResolvedValue({ ...unpaidInvoice, status: 'PAID', items: [] })
+  })
+
+  it('refuses PUT, content PATCH and going back to draft', async () => {
+    for (const response of [
+      await PUT(request('PUT', validPutBody), context),
+      await PATCH(request('PATCH', { clientName: 'Changed' }), context),
+      await PATCH(request('PATCH', { status: 'DRAFT' }), context),
+    ]) {
+      expect(response.status).toBe(409)
+      await expect(response.json()).resolves.toMatchObject({ error: expect.stringMatching(/poslata u SEF/) })
+    }
+    expect(mocks.invoice.update).not.toHaveBeenCalled()
+    expect(mocks.invoiceItem.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it('still lets the owner mark it paid', async () => {
+    const response = await PATCH(request('PATCH', { status: 'PAID' }), context)
+    expect(response.status).toBe(200)
+    expect(mocks.invoice.update.mock.calls[0][0].data.status).toBe('PAID')
+  })
+
+  it('refuses DELETE', async () => {
+    mocks.invoice.findFirst.mockResolvedValue({ ...unpaidInvoice, sefStatus: 'SENDING', items: [] })
+    const response = await DELETE(request('DELETE', {}), context)
+    expect(response.status).toBe(409)
+    expect(mocks.invoice.delete).not.toHaveBeenCalled()
+    expect(stockMocks.syncInvoiceStock).not.toHaveBeenCalled()
   })
 })

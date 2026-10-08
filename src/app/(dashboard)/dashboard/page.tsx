@@ -19,6 +19,7 @@ import { Decimal } from '@prisma/client/runtime/library'
 import { QuickScanButton } from '@/components/dashboard/QuickScanButton'
 import { PaymentReminderButtons } from '@/components/dashboard/PaymentReminderButtons'
 import { invoiceSharePath } from '@/lib/public-invoice'
+import { canRemindPayment } from '@/lib/sef-status'
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist'
 import { AnalyticsMilestones } from '@/components/analytics/AnalyticsMilestones'
 import { InstallAppCard } from '@/components/pwa/InstallAppCard'
@@ -138,6 +139,7 @@ async function getDashboardData(profileId: string) {
         dueDate: true,
         shareEnabled: true,
         shareToken: true,
+        sefStatus: true,
       },
       orderBy: { dueDate: 'asc' },
       take: DASHBOARD_OVERDUE_PREVIEW,
@@ -326,6 +328,8 @@ export default async function DashboardPage() {
                       {formatRsd(Number(invoice.totalAmount))}
                     </span>
                   </Link>
+                  {/* No payment reminder for an invoice the buyer rejected (or that was cancelled) in SEF. */}
+                  {canRemindPayment(invoice.sefStatus) ? (
                   <div className="mt-1.5">
                     <PaymentReminderButtons
                       invoiceId={invoice.id}
@@ -338,6 +342,9 @@ export default async function DashboardPage() {
                       }
                     />
                   </div>
+                  ) : (
+                    <p className="mt-1.5 text-xs text-destructive">Kupac je odbio fakturu u SEF-u. Ispravite je pre naplate.</p>
+                  )}
                 </li>
               ))}
             </ul>

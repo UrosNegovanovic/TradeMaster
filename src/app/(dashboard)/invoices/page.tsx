@@ -21,6 +21,8 @@ import { isProforma, onlyInvoices } from '@/lib/document-type'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
 import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
+import { SefStatusBadge } from '@/components/sef/SefStatusBadge'
+import { isLockedBySef } from '@/lib/sef-status'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -55,10 +57,11 @@ function getStatusBadge(invoice: Invoice) {
   return <Badge variant={INVOICE_TONE_BADGE_VARIANT[view.tone]}>{view.label}</Badge>
 }
 
-type InvoiceListView = 'open' | 'paid' | 'proforma'
+type InvoiceListView = 'open' | 'paid' | 'proforma' | 'sef-rejected'
 
 function parseInvoiceView(status: string | null, view: string | null): InvoiceListView {
   if (view === 'proforma') return 'proforma'
+  if (view === 'sef-rejected') return 'sef-rejected'
   return status === 'paid' ? 'paid' : 'open'
 }
 
@@ -69,6 +72,8 @@ interface InvoiceCardProps {
 }
 
 function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
+  // Sent to SEF: no edit or delete here (storno goes through SEF).
+  const sefLocked = isLockedBySef(invoice.sefStatus)
   return (
     <Card className={cn(invoice.status === InvoiceStatus.PAID && 'opacity-95')}>
       <CardHeader>
@@ -79,7 +84,10 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
               {invoice.clientName}
             </CardDescription>
           </div>
-          {getStatusBadge(invoice)}
+          <div className="flex flex-col items-end gap-1">
+            {getStatusBadge(invoice)}
+            <SefStatusBadge status={invoice.sefStatus} />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -112,7 +120,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
                 PDF
               </Link>
             </Button>
-            {!isPaidInvoiceStatus(invoice.status) && !(isProforma(invoice) && invoice.convertedInvoiceId) && (
+            {!sefLocked && !isPaidInvoiceStatus(invoice.status) && !(isProforma(invoice) && invoice.convertedInvoiceId) && (
               <Button variant="outline" size="sm" className="min-h-11" asChild>
                 <Link href={`/invoices/${invoice.id}/edit`}>
                   <Edit className="h-4 w-4" />
@@ -120,16 +128,18 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
                 </Link>
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="min-h-11"
-              onClick={() => onDelete(invoice.id)}
-              disabled={isDeleting}
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Obriši</span>
-            </Button>
+            {sefLocked ? null : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-11"
+                onClick={() => onDelete(invoice.id)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Obriši</span>
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
@@ -244,20 +254,25 @@ export default function InvoicesPage() {
     params.delete('view')
     if (nextView === 'paid') params.set('status', 'paid')
     if (nextView === 'proforma') params.set('view', 'proforma')
+    if (nextView === 'sef-rejected') params.set('view', 'sef-rejected')
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
-  const { openInvoices, paidInvoices, proformas, visibleInvoices } = useMemo(() => {
+  const { openInvoices, paidInvoices, proformas, sefRejected, visibleInvoices } = useMemo(() => {
     const realInvoices = onlyInvoices(invoices)
     const open = realInvoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status))
     const paid = realInvoices.filter((invoice) => isPaidInvoiceStatus(invoice.status))
     const proformaList = invoices.filter((invoice) => isProforma(invoice))
+    // ROADMAP A3: what the buyer rejected in SEF, so it is fixed first.
+    const rejected = realInvoices.filter((invoice) => invoice.sefStatus === 'REJECTED')
     return {
       openInvoices: open,
       paidInvoices: paid,
       proformas: proformaList,
-      visibleInvoices: view === 'paid' ? paid : view === 'proforma' ? proformaList : open,
+      sefRejected: rejected,
+      visibleInvoices:
+        view === 'paid' ? paid : view === 'proforma' ? proformaList : view === 'sef-rejected' ? rejected : open,
     }
   }, [invoices, view])
 
@@ -340,8 +355,19 @@ export default function InvoicesPage() {
             >
               Predračuni ({proformas.length})
             </Button>
+            {sefRejected.length > 0 || view === 'sef-rejected' ? (
+              <Button
+                type="button"
+                variant={view === 'sef-rejected' ? 'destructive' : 'outline'}
+                className="min-h-11 flex-1 sm:flex-none"
+                aria-pressed={view === 'sef-rejected'}
+                onClick={() => setView('sef-rejected')}
+              >
+                Odbijene u SEF-u ({sefRejected.length})
+              </Button>
+            ) : null}
           </div>
-          {view === 'proforma' ? null : (
+          {view === 'proforma' || view === 'sef-rejected' ? null : (
           <Card>
             <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
               {view === 'paid' ? (
@@ -391,6 +417,15 @@ export default function InvoicesPage() {
                 <Plus className="mr-2 h-4 w-4" />
                 Novi predračun
               </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : isEmptyView && view === 'sef-rejected' ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <h3 className="text-lg font-semibold mb-2">Nema odbijenih faktura u SEF-u</h3>
+            <Button variant="outline" onClick={() => setView('open')}>
+              Prikaži otvorene
             </Button>
           </CardContent>
         </Card>

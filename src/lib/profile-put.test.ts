@@ -9,9 +9,10 @@ const base = {
   companyName: 'T&G Nest',
   contactEmail: 'uros@example.com',
   contactPhone: '+381',
-  address: 'Kralja Petra I',
+  address: 'Kralja Petra I 10, 11000 Beograd',
   pib: '123124128',
-  giroAccount: '',
+  registrationNumber: '12345678',
+  giroAccount: '160-0000045454878-79',
 }
 
 describe('toProfileFormValues', () => {
@@ -28,7 +29,7 @@ describe('profilePutFields', () => {
     expect(validated.logoUrl).toBeUndefined()
     expect(profilePutFields(validated, base)).not.toHaveProperty('logoUrl')
     expect(profilePutFields(validated, base).companyName).toBe('T&G Nest')
-    expect(profilePutFields(validated, base).giroAccount).toBeNull()
+    expect(profilePutFields(validated, base).giroAccount).toBe('160-0000045454878-79')
   })
 
   it('writes a public upload URL and an explicit clear', () => {

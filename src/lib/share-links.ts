@@ -12,7 +12,11 @@ export function shareMessage(text: string, url: string): string {
 }
 
 export function buildShareTargets({ url, text, subject }: { url: string; text: string; subject: string }): ShareTargets {
-  const message = shareMessage(text, url)
+  return buildMessageTargets(shareMessage(text, url), subject)
+}
+
+/** Same targets for a message that is already complete (it may or may not contain a link). */
+export function buildMessageTargets(message: string, subject: string): ShareTargets {
   return {
     whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`,
     // Viber has no web fallback; the link opens the installed app (phone or desktop).

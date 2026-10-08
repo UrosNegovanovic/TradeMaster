@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
 import { operator } from '@/lib/operator'
+import { cookieStatement, currentProcessingFlags, subprocessors } from '@/lib/data-processing'
 
 export const metadata: Metadata = {
   title: 'Privatnost',
@@ -10,8 +12,10 @@ export const metadata: Metadata = {
 }
 
 export default function PrivatnostPage() {
+  const flags = currentProcessingFlags()
+  const processors = subprocessors(flags)
   return (
-    <LegalDocument title="Privatnost" updated="Ažurirano 29. septembra 2026.">
+    <LegalDocument title="Privatnost" updated="Ažurirano 8. oktobra 2026.">
       <LegalSection title="Šta je TradeMaster">
         <p>
           TradeMaster je veb aplikacija za trgovce i malu veleprodaju: skeniranje
@@ -72,9 +76,33 @@ export default function PrivatnostPage() {
       <LegalSection title="Šta ne radimo">
         <p>
           TradeMaster ne zamenjuje fiskalnu kasu i ne šalje fakture u SEF.
-          Koristite ga uz postojeću kasu i SEF, ne umesto njih. Na ovoj
-          marketing stranici ne koristimo poseban alat za merenje poseta ni
-          oglasne piksele.
+          Koristite ga uz postojeću kasu i SEF, ne umesto njih. Ne prodajemo
+          podatke i ne koristimo oglasne piksele.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Kolačići i merenje">
+        <p>{cookieStatement(flags)}</p>
+        {flags.sentry ? (
+          <p>
+            Tehničke greške prijavljujemo servisu Sentry bez podataka o
+            korisniku, kolačića i sadržaja zahteva, da bismo ih brže ispravili.
+          </p>
+        ) : null}
+      </LegalSection>
+
+      <LegalSection title="Ko obrađuje podatke za nas">
+        <ul className="list-disc space-y-1 pl-5">
+          {processors.map((processor) => (
+            <li key={processor.name}>
+              <strong>{processor.name}</strong>: {processor.purpose}. Lokacija: {processor.location}.
+            </li>
+          ))}
+        </ul>
+        <p>
+          Za podatke vaših kupaca koje unesete vaša firma je rukovalac, a mi
+          obrađivač; uslovi te obrade su u odeljku „Obrada podataka o ličnosti“
+          u <Link href="/uslovi" className="underline">Uslovima korišćenja</Link>.
         </p>
       </LegalSection>
 

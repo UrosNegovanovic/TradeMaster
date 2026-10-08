@@ -7,6 +7,7 @@ import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { sefXmlFileName } from '@/lib/document-type'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { sr } from '@/lib/ui-copy'
 
 type SefXmlDownloadButtonProps = {
   invoiceId: string
@@ -29,7 +30,7 @@ export function SefXmlDownloadButton({ invoiceId, invoiceNumber }: SefXmlDownloa
           : []
         notify.error(body.error || 'Za XML fakturu nedostaju podaci.', {
           description: problems.length
-            ? `${problems.join(' ')} Dopunite podatke u Podešavanjima i kod kupca.`
+            ? `${problems.join(' ')} ${sr.sef.problemsHint}`
             : undefined,
         })
         return

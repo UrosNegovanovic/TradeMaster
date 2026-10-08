@@ -11,6 +11,7 @@ import { notify } from '@/lib/notify'
 import { formatRsd } from '@/lib/invoice-finance'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SefStatus } from '@/lib/sef-status'
+import { sr } from '@/lib/ui-copy'
 
 type SefFix = { href: string; label: string } | null
 type SefPanelData = {
@@ -165,6 +166,7 @@ export function SefSendPanel({ invoiceId }: { invoiceId: string }) {
                   <li key={problem}>{problem}</li>
                 ))}
               </ul>
+              <p className="mt-2 text-muted-foreground">{sr.sef.problemsHint}</p>
             </div>
           ) : buyerNotOnSef ? (
             <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

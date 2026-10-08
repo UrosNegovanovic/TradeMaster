@@ -91,13 +91,17 @@ export function splitSerbianAddress(address: string | null | undefined): {
   return { street, city, postalZone: postal ? postal[1] : null }
 }
 
-function partyProblems(party: SefParty, who: 'firme' | 'kupca'): string[] {
+/**
+ * Seller data comes from Podešavanja. Buyer name, PIB and address are the invoice's own snapshot
+ * (editing the saved buyer does not change it); only the buyer's matični broj is read from Kupci.
+ */
+function partyProblems(party: SefParty, who: 'firme' | 'kupca na fakturi', missingRegistration: string): string[] {
   const problems: string[] = []
   if (!text(party.name)) problems.push(`Naziv ${who} je obavezan.`)
   const pib = text(party.pib)
   if (!/^\d{9}$/.test(pib)) problems.push(`PIB ${who} mora imati 9 cifara.`)
   else if (!isValidPib(pib)) problems.push(`PIB ${who} nije ispravan (kontrolna cifra ne odgovara).`)
-  if (!/^\d{8}$/.test(text(party.registrationNumber))) problems.push(`Matični broj ${who} mora imati 8 cifara.`)
+  if (!/^\d{8}$/.test(text(party.registrationNumber))) problems.push(missingRegistration)
   if (!text(party.address)) problems.push(`Adresa ${who} je obavezna (ulica i mesto).`)
   else if (!text(party.address).includes(','))
     problems.push(`Adresi ${who} nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".`)
@@ -105,7 +109,14 @@ function partyProblems(party: SefParty, who: 'firme' | 'kupca'): string[] {
 }
 
 export function sefInvoiceProblems(input: SefInvoiceInput): string[] {
-  const problems = [...partyProblems(input.seller, 'firme'), ...partyProblems(input.buyer, 'kupca')]
+  const problems = [
+    ...partyProblems(input.seller, 'firme', 'Matični broj firme mora imati 8 cifara.'),
+    ...partyProblems(
+      input.buyer,
+      'kupca na fakturi',
+      'Matični broj kupca nije pronađen. U Kupcima upišite matični broj (8 cifara) kod kupca sa istim PIB-om kao na fakturi.'
+    ),
+  ]
   if (!normalizeGiroAccount(input.seller.giroAccount)) {
     problems.push('Žiro-račun firme nije ispravan.')
   }

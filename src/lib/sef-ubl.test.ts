@@ -114,8 +114,8 @@ describe('buildSefInvoiceXml', () => {
     if (result.ok) return
     expect(result.problems).toEqual([
       'Matični broj firme mora imati 8 cifara.',
-      'PIB kupca mora imati 9 cifara.',
-      'Matični broj kupca mora imati 8 cifara.',
+      'PIB kupca na fakturi mora imati 9 cifara.',
+      'Matični broj kupca nije pronađen. U Kupcima upišite matični broj (8 cifara) kod kupca sa istim PIB-om kao na fakturi.',
       'Žiro-račun firme nije ispravan.',
     ])
   })
@@ -130,7 +130,7 @@ describe('buildSefInvoiceXml', () => {
     if (result.ok) return
     expect(result.problems).toEqual([
       'PIB firme nije ispravan (kontrolna cifra ne odgovara).',
-      'PIB kupca nije ispravan (kontrolna cifra ne odgovara).',
+      'PIB kupca na fakturi nije ispravan (kontrolna cifra ne odgovara).',
     ])
   })
 
@@ -144,7 +144,7 @@ describe('buildSefInvoiceXml', () => {
     if (result.ok) return
     expect(result.problems).toEqual([
       'Adresi firme nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".',
-      'Adresi kupca nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".',
+      'Adresi kupca na fakturi nedostaje mesto. Unesite je kao "Ulica i broj, 11000 Beograd".',
     ])
   })
 

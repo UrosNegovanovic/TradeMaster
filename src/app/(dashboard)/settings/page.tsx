@@ -14,6 +14,7 @@ import React from 'react'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { notify } from '@/lib/notify'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { SefSettingsCard } from '@/components/sef/SefSettingsCard'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
@@ -325,6 +326,8 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      <SefSettingsCard />
     </div>
   )
 }

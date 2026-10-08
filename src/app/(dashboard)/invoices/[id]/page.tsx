@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { ProformaConvertButton } from '@/components/invoices/ProformaConvertButton'
 import { SefXmlDownloadButton } from '@/components/invoices/SefXmlDownloadButton'
 import { DeliveryNoteButton } from '@/components/invoices/DeliveryNoteButton'
+import { SefSendPanel } from '@/components/sef/SefSendPanel'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 import { invoiceCopyHref } from '@/lib/invoice-copy'
 
@@ -144,6 +145,8 @@ export default function InvoiceDetailPage() {
           ) : null}
         </div>
       </div>
+
+      <SefSendPanel invoiceId={invoice.id} />
 
       <InvoiceSharing
         invoiceId={invoice.id}

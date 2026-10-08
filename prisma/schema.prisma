@@ -35,8 +35,22 @@ model Profile {
   productIntakes ProductIntake[]
   categories     Category[]
   clients        Client[]
+  sefCredential  SefCredential?
 
   @@map("profiles")
+}
+
+/// One SEF API key per company (ROADMAP A3), AES-256-GCM encrypted (src/lib/sef-key-crypto.ts).
+/// Separate table so no profile include can return it; read only by the SEF routes.
+model SefCredential {
+  profileId        String   @id
+  apiKeyCiphertext String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("sef_credentials")
 }
 
 // Durable receipts for retries; written atomically with the stock change.
@@ -209,6 +223,16 @@ model Invoice {
   documentType  DocumentType  @default(INVOICE) // PROFORMA = predračun: own number series, no stock, no revenue
   convertedInvoiceId String?  @unique // Proforma only: the invoice it was turned into
 
+  // SEF sending (ROADMAP A3, src/lib/sef-send.ts). Set once the invoice is claimed for sending;
+  // a sent invoice is never edited or deleted here (storno goes through SEF).
+  sefRequestId       String?   @unique // Stable requestId sent to SEF: retries never create a second SEF invoice
+  sefInvoiceId       String? // SEF salesInvoiceId (int64 kept as text: JSON-safe, no precision loss)
+  sefStatus          String? // SENDING | SENT | APPROVED | REJECTED | CANCELLED | STORNO | MISTAKE | UNKNOWN
+  sefStatusComment   String? // Buyer's rejection reason, cancel or storno comment from SEF
+  sefSentAt          DateTime?
+  sefStatusCheckedAt DateTime?
+  sefLastError       String? // Last send error shown to the user (Serbian sentence)
+
   // Foreign keys
   profileId String
 
@@ -225,6 +249,7 @@ model Invoice {
   @@index([profileId, status])
   @@index([profileId, paidAt])
   @@index([profileId, documentType])
+  @@index([profileId, sefStatus])
   @@map("invoices")
 }
 

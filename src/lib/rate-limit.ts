@@ -25,6 +25,10 @@ export const rateLimits = {
   sharedCatalog: { name: 'shared-catalog', limit: 60, windowMs: 60_000 },
   sharedInvoice: { name: 'shared-invoice', limit: 60, windowMs: 60_000 },
   barcodeLookup: { name: 'barcode-lookup', limit: 40, windowMs: 60_000 },
+  // SEF (ROADMAP A3): each call reaches the state's server with the company's own key.
+  sefSend: { name: 'sef-send', limit: 20, windowMs: 60_000 },
+  sefRead: { name: 'sef-read', limit: 60, windowMs: 60_000 },
+  sefKey: { name: 'sef-key', limit: 10, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitSpec>
 
 export function getClientIp(request: Request): string {

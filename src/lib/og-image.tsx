@@ -2,19 +2,22 @@ import { ImageResponse } from 'next/og'
 
 /**
  * Link-preview image (1200×630) for WhatsApp, Viber, Facebook and search (ROADMAP A2.11).
- * Liberation Sans from public/fonts, the same font as the PDFs, so č, ć, đ, š, ž render.
  * Edge runtime (the image routes export runtime = 'edge'); assets load through import.meta.url,
  * the pattern Next.js documents for ImageResponse.
+ * Fonts: small subsets of Liberation Sans in src/assets/og (see its README). The full fonts made the
+ * edge function larger than Vercel's Edge Function size limit, so every OG text must use only
+ * OG_FONT_CHARS from og-image-text.ts (tested there).
  */
 export const OG_SIZE = { width: 1200, height: 630 }
+
 export const OG_CONTENT_TYPE = 'image/png'
 
 const BRAND = '#1a6e5c'
 
 export async function renderOgImage({ eyebrow, headline, footer }: { eyebrow: string; headline: string[]; footer: string }) {
   const [regular, bold, mark] = await Promise.all([
-    fetch(new URL('../../public/fonts/LiberationSans-Regular.ttf', import.meta.url)).then((r) => r.arrayBuffer()),
-    fetch(new URL('../../public/fonts/LiberationSans-Bold.ttf', import.meta.url)).then((r) => r.arrayBuffer()),
+    fetch(new URL('../assets/og/TMOGSans-Regular.ttf', import.meta.url)).then((r) => r.arrayBuffer()),
+    fetch(new URL('../assets/og/TMOGSans-Bold.ttf', import.meta.url)).then((r) => r.arrayBuffer()),
     fetch(new URL('../../public/mark.svg', import.meta.url)).then((r) => r.text()),
   ])
   const markSrc = `data:image/svg+xml;base64,${btoa(mark)}`
@@ -31,7 +34,7 @@ export async function renderOgImage({ eyebrow, headline, footer }: { eyebrow: st
           padding: '72px 80px',
           background: '#f8fafb',
           borderLeft: `18px solid ${BRAND}`,
-          fontFamily: 'Liberation Sans',
+          fontFamily: 'TMOG Sans',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -55,8 +58,8 @@ export async function renderOgImage({ eyebrow, headline, footer }: { eyebrow: st
     {
       ...OG_SIZE,
       fonts: [
-        { name: 'Liberation Sans', data: regular, weight: 400, style: 'normal' },
-        { name: 'Liberation Sans', data: bold, weight: 700, style: 'normal' },
+        { name: 'TMOG Sans', data: regular, weight: 400, style: 'normal' },
+        { name: 'TMOG Sans', data: bold, weight: 700, style: 'normal' },
       ],
     }
   )

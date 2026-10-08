@@ -57,6 +57,7 @@ export default defineConfig({
       'src/lib/site-url.test.ts',
       'src/lib/trade-pages.test.ts',
       'src/lib/seo.test.ts',
+      'src/lib/og-image-text.test.ts',
       'src/lib/payment-reminder.test.ts',
       'src/lib/delivery-note.test.ts',
       'src/lib/catalog-views.test.ts',

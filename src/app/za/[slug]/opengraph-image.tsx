@@ -1,5 +1,6 @@
 import { OG_CONTENT_TYPE, OG_SIZE, renderOgImage } from '@/lib/og-image'
-import { tradePageBySlug, tradePages } from '@/lib/trade-pages'
+import { tradePages } from '@/lib/trade-pages'
+import { tradeOgText } from '@/lib/og-image-text'
 
 export const alt = 'TradeMaster po delatnosti'
 export const size = OG_SIZE
@@ -11,10 +12,5 @@ export function generateStaticParams() {
 }
 
 export default function TradeOpengraphImage({ params }: { params: { slug: string } }) {
-  const page = tradePageBySlug(params.slug)
-  return renderOgImage({
-    eyebrow: page?.label ?? 'TradeMaster',
-    headline: [page?.h1 ?? 'TradeMaster'],
-    footer: 'Lager, katalog, predračun i faktura iz telefona',
-  })
+  return renderOgImage(tradeOgText(params.slug))
 }

@@ -1,4 +1,4 @@
--- SEF sending (ROADMAP A3). NOT applied anywhere yet: the owner decides when.
+-- SEF sending (ROADMAP A3). Applied in production 2026-10-08 with the owner's approval (Supabase migration "sef_sending").
 -- 1) sef_credentials: one encrypted SEF API key per company, in its own table so no
 --    profile include can ever return it. AES-256-GCM ciphertext only; the master key
 --    lives in the SEF_KEY_ENCRYPTION_KEY env var, never in the database.

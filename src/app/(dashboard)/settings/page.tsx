@@ -232,7 +232,7 @@ export default function SettingsPage() {
                 <Label htmlFor="giroAccount">Žiro-račun</Label>
                 <Input
                   id="giroAccount"
-                  placeholder="npr. 160-0000000000000-00"
+                  placeholder="npr. 160-0000000123456-54"
                   {...register('giroAccount')}
                 />
                 {errors.giroAccount && (

@@ -1,6 +1,6 @@
 import { Decimal } from '@prisma/client/runtime/library'
 import { calculateVatBreakdown, isVatRate, roundMoneyHalfUp } from '@/lib/invoice-totals'
-import { normalizeGiroAccount } from '@/lib/ips-qr'
+import { normalizeGiroAccount } from '@/lib/giro-account'
 import { formatLocalYmd } from '@/lib/local-date'
 import { isValidPib } from '@/lib/pib'
 

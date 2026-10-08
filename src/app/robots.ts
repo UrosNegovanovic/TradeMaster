@@ -1,15 +1,29 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
+import { absoluteUrl, siteUrl } from '@/lib/site-url'
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_APP_URL || 'https://trade-master-seven.vercel.app'
+/**
+ * Single robots source (ROADMAP A2.11; public/robots.txt is gone). Shared catalog and invoice
+ * links belong to customers: they are never crawled (and carry noindex as well).
+ */
+const PRIVATE_PATHS = [
+  '/api/',
+  '/shared/',
+  '/sign-in',
+  '/sign-up',
+  '/dashboard',
+  '/inventory',
+  '/warehouse',
+  '/catalogs',
+  '/invoices',
+  '/clients',
+  '/finance',
+  '/settings',
+]
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: '*',
-      allow: ['/', '/privatnost', '/uslovi', '/shared/catalog/'],
-      disallow: ['/dashboard', '/inventory', '/warehouse', '/catalogs', '/invoices', '/finance', '/settings', '/api/'],
-    },
-    sitemap: `${baseUrl}/sitemap.xml`,
+    rules: { userAgent: '*', allow: '/', disallow: PRIVATE_PATHS },
+    sitemap: absoluteUrl('/sitemap.xml'),
+    host: siteUrl(),
   }
 }

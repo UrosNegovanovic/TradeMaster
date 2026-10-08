@@ -7,6 +7,9 @@ export const isPublicRoute = createRouteMatcher([
   '/',
   '/privatnost',
   '/uslovi',
+  '/za/(.*)', // Pages per trade (ROADMAP A2.11)
+  '/opengraph-image(.*)', // Link-preview image read by WhatsApp, Viber, search engines
+  '/twitter-image(.*)',
   '/privacy',
   '/terms',
   '/shared/catalog/(.*)', // Public catalog preview

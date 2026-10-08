@@ -24,6 +24,7 @@ import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
 import { documentLabels } from '@/lib/document-type'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
 import { DEFAULT_VAT_RATE, VAT_RATE_OPTIONS, summarizeVat } from '@/lib/invoice-vat'
+import { sr } from '@/lib/ui-copy'
 import {
   clampDiscountPercent,
   lineDiscountAmount,
@@ -511,7 +512,7 @@ export function InvoiceForm({
                 id="clientAddress"
                 value={clientAddress}
                 onChange={(e) => setClientAddress(e.target.value)}
-                placeholder="Unesite adresu kupca (opciono)"
+                placeholder={`${sr.address.placeholder} (opciono)`}
               />
             </div>
         </CardContent>

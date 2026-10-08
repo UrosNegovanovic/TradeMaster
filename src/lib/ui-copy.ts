@@ -12,6 +12,10 @@ export const sr = {
     download: 'Preuzmi PDF',
     generating: 'Priprema PDF-a…',
   },
+  address: {
+    placeholder: 'Ulica i broj, 11000 Beograd',
+    sefHint: 'Ulica i broj, zatim poštanski broj i mesto, odvojeno zarezom. SEF traži mesto.',
+  },
   scan: {
     missingCostNote:
       'Brzi sken ne unosi nabavnu cenu. Dopunite je u asortimanu ili na Ulazu.',

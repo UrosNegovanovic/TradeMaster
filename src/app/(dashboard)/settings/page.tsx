@@ -20,6 +20,7 @@ import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
 import { PRICING_OFFER } from '@/lib/landing-copy'
 import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
+import { sr } from '@/lib/ui-copy'
 
 async function fetchProfile() {
   const response = await fetch('/api/profile')
@@ -269,7 +270,7 @@ export default function SettingsPage() {
                 <Label htmlFor="address">Adresa</Label>
                 <Input
                   id="address"
-                  placeholder="Unesite adresu firme"
+                  placeholder={sr.address.placeholder}
                   {...register('address')}
                 />
                 {errors.address && (
@@ -277,6 +278,7 @@ export default function SettingsPage() {
                     {errors.address.message}
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground">{sr.address.sefHint}</p>
               </div>
 
               <div className="space-y-2 md:col-span-2">

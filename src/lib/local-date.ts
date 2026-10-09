@@ -151,3 +151,20 @@ export function belgradeMonthIndex(date: Date): number {
 export function belgradeYear(date: Date): number {
   return zonedParts(date).year
 }
+
+/**
+ * Default "rok" for a new document: `days` Belgrade calendar days after today, as YYYY-MM-DD for a date
+ * input. A UTC date would land a day early between 00:00 and 02:00 Belgrade time (ROADMAP A9.3).
+ */
+export function defaultDueDateYmd(days = 30, now = new Date()): string {
+  return formatLocalYmd(addLocalDays(now, days))
+}
+
+/** Whole Belgrade calendar days from `from` to `to` ("Rok plaćanja: 30 dana"), never negative. */
+export function localDaysBetween(from: Date | string, to: Date | string): number {
+  const toUtcDay = (value: Date | string) => {
+    const [year, month, day] = formatLocalYmd(new Date(value)).split('-').map(Number)
+    return Date.UTC(year, month - 1, day)
+  }
+  return Math.max(0, Math.round((toUtcDay(to) - toUtcDay(from)) / 86_400_000))
+}

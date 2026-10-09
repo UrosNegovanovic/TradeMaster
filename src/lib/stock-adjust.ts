@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { lockIntakeSku } from '@/lib/product-intake'
 
 export const BULK_ADJUST_REASON = 'Korekcija stanja (CSV uvoz)'
-export const SKU_MISSING_ERROR = 'SKU ne postoji'
+export const SKU_MISSING_ERROR = 'Šifra ne postoji'
 
 export type StockAdjustSuccess = {
   ok: true

@@ -28,6 +28,7 @@ import {
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { CatalogSharing } from '@/components/catalogs/CatalogSharing'
+import { formatPercent } from '@/lib/sr-format'
 
 const CatalogPdfDownload = dynamic(() => import('@/components/catalogs/CatalogPdfDownload'), {
   ssr: false,
@@ -64,7 +65,7 @@ export default function CatalogDetailsPage() {
       : typeof discount === 'number'
       ? discount
       : Number(discount.toString())
-    return `${numDiscount.toFixed(2)}%`
+    return formatPercent(numDiscount)
   }
 
   // Preview uses the same layout, order and grouping as the PDF and the public link

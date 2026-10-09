@@ -16,6 +16,7 @@ import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { sr } from '@/lib/ui-copy'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
+import { formatPercent } from '@/lib/sr-format'
 
 async function fetchCatalogs() {
   const response = await fetch('/api/catalogs')
@@ -83,7 +84,7 @@ export default function CatalogsPage() {
       : typeof discount === 'number'
       ? discount
       : Number(discount.toString())
-    return `${numDiscount.toFixed(2)}%`
+    return formatPercent(numDiscount)
   }
 
   if (isLoading) {

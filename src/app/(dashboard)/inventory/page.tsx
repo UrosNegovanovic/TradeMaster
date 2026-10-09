@@ -376,7 +376,7 @@ export default function InventoryPage() {
       />
 
       <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <p>Za agregiranu količinu svih dnevnih unosa istog SKU-a otvorite Magacin.</p>
+        <p>Ukupno stanje po šifri i kretanje robe su u Magacinu.</p>
         <Button asChild variant="outline" size="sm" className="shrink-0">
           <Link href="/warehouse">Otvori Magacin</Link>
         </Button>
@@ -387,7 +387,7 @@ export default function InventoryPage() {
         <div className="relative w-full lg:max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Pretraga po nazivu ili SKU..."
+            placeholder="Pretraga po nazivu ili šifri…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-11 pl-10"

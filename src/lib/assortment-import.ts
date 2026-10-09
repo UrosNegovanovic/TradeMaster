@@ -173,7 +173,7 @@ export function parseAssortmentGrid(rows: unknown[][]): GridParseError | { rows:
     const issues: PreviewIssue[] = []
 
     if (!naziv) issues.push({ field: 'naziv', message: 'Naziv je obavezan' })
-    if (!sku) issues.push({ field: 'sku', message: 'SKU je obavezan' })
+    if (!sku) issues.push({ field: 'sku', message: 'Šifra je obavezna' })
 
     const quantity = parseNumber(row[2])
     if (kolicinaText === '' || quantity == null) {
@@ -250,7 +250,7 @@ export function parseStockAdjustGrid(rows: unknown[][]): GridParseError | { rows
     const kolicinaText = cellText(row[1])
     const issues: PreviewIssue[] = []
 
-    if (!sku) issues.push({ field: 'sku', message: 'SKU je obavezan' })
+    if (!sku) issues.push({ field: 'sku', message: 'Šifra je obavezna' })
 
     const quantity = parseNumber(row[1])
     if (kolicinaText === '' || quantity == null) {

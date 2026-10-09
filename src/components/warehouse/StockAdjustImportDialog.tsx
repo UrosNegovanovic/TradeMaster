@@ -178,7 +178,7 @@ export function StockAdjustImportDialog({
               <Download className="mr-2 h-4 w-4" />
               Preuzmi template
             </Button>
-            <p className="text-xs text-muted-foreground">Kolone: sku, kolicina. Proizvod se ne kreira ako SKU ne postoji.</p>
+            <p className="text-xs text-muted-foreground">Kolone: sku (šifra), kolicina. Proizvod se ne kreira ako šifra ne postoji.</p>
           </div>
 
           <div className="grid gap-2">
@@ -212,7 +212,7 @@ export function StockAdjustImportDialog({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Red</TableHead>
-                      <TableHead>SKU</TableHead>
+                      <TableHead>Šifra</TableHead>
                       <TableHead>Novo stanje</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>

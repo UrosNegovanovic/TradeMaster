@@ -28,6 +28,7 @@ import { CatalogItemsView } from '@/components/catalogs/CatalogItemsView'
 import { cn } from '@/lib/utils'
 import { sr } from '@/lib/ui-copy'
 import { HttpStatusError, retryUnlessClientError } from '@/lib/api-error'
+import { formatPercent } from '@/lib/sr-format'
 
 type PublicItem = PublicCatalog['items'][number]
 const categoryOf = (item: PublicItem) => item.product?.categoryName
@@ -225,7 +226,7 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
           {Number(catalog.discount) > 0 && (
             <div className="mt-4">
               <span className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-semibold">
-                {Number(catalog.discount).toFixed(0)}% popusta
+                {formatPercent(catalog.discount)} popusta
               </span>
             </div>
           )}

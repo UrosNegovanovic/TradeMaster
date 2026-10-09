@@ -290,7 +290,7 @@ export default function WarehousePage() {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                        <p className="text-xs text-muted-foreground">Šifra: {product.sku}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold">

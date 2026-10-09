@@ -349,7 +349,7 @@ export function ProductForm({
 
             <div className="grid gap-2">
               <Label htmlFor="sku">
-                SKU <span className="text-destructive">*</span>
+                Šifra / barkod <span className="text-destructive">*</span>
               </Label>
               <div className="flex gap-2">
                 <Input

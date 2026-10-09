@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table'
 import { isSameLocalDay } from '@/lib/local-date'
 import { buildStockList } from '@/lib/stock-list'
+import { formatLongDateSr } from '@/lib/sr-format'
 
 type StockRow = Product & { totalQuantity: number }
 
@@ -113,7 +114,7 @@ function StockFilters({
           <div className="relative w-full max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Pretraga po nazivu ili SKU..."
+              placeholder="Pretraga po nazivu ili šifri…"
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.target.value)}
               className="pl-10"
@@ -130,7 +131,7 @@ function StockFilters({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, 'PPP') : <span>Filter po datumu</span>}
+                  {selectedDate ? formatLongDateSr(selectedDate) : <span>Filter po datumu</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="z-[70] w-auto p-0" align="start">
@@ -168,7 +169,7 @@ function StockFilters({
             ) : null}
             {missingPriceCount ? (
               <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                Bez {missingPriceCount} {missingPriceCount === 1 ? 'artikla kome' : 'artikala kojima'} nedostaje cena
+                Bez prodajne cene: {missingPriceCount}
               </p>
             ) : null}
           </div>

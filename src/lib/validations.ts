@@ -253,7 +253,7 @@ export function normalizePurchasePrice<T extends PurchasePriceFields>(data: T): 
 }
 
 export const bulkAdjustItemSchema = z.object({
-  sku: z.string().trim().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
+  sku: z.string().trim().min(1, 'Šifra je obavezna').max(100, 'Šifra je predugačka'),
   quantity: z.number({ invalid_type_error: 'Količina mora biti broj' }).int().min(0, 'Količina ne može biti negativna'),
 })
 
@@ -262,7 +262,7 @@ export type BulkAdjustItem = z.infer<typeof bulkAdjustItemSchema>
 // Product validations
 const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
-  sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
+  sku: z.string().min(1, 'Šifra je obavezna').max(100, 'Šifra je predugačka'),
   quantity: z.number().int('Količina mora biti ceo broj').min(1, 'Količina mora biti najmanje 1').default(1), // ✅ For warehouse mode scanning
   // "Nizak lager" shows when stock is at or below this (ROADMAP A9.13). Omitted = keep the stored value.
   // An emptied number input arrives as NaN: treat it as "not sent".

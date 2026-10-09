@@ -79,7 +79,7 @@ export function ProductActionToast({
             <p className="mt-1 truncate text-sm font-semibold tracking-tight text-foreground">
               {product.name}
             </p>
-            <p className="font-mono text-[11px] text-muted-foreground">SKU: {product.sku}</p>
+            <p className="font-mono text-[11px] text-muted-foreground">Šifra: {product.sku}</p>
           </div>
 
           {onDismiss ? (

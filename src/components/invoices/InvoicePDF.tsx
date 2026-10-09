@@ -20,6 +20,7 @@ import { isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { invoicePdfFacts } from '@/lib/invoice-pdf-facts'
 import { localDaysBetween } from '@/lib/local-date'
 import { documentLabels } from '@/lib/document-type'
+import { formatPercent } from '@/lib/sr-format'
 
 registerPdfFonts()
 
@@ -515,7 +516,7 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
           {/* Table Rows */}
           {invoice.items.map((item) => {
             const discount = Number(item.discount || 0)
-            const discountText = discount > 0 ? `${discount.toFixed(2)}%` : '-'
+            const discountText = discount > 0 ? formatPercent(discount) : '-'
             
             return (
               <View key={item.id} style={styles.tableRow}>

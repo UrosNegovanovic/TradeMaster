@@ -1,11 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ArrowLeft, Copy, Edit } from 'lucide-react'
+import { Loader2, Copy, Edit, ChevronDown } from 'lucide-react'
+import { BackLink } from '@/components/layout/BackLink'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
@@ -44,6 +48,7 @@ async function fetchInvoice(id: string): Promise<InvoiceWithItems & { profile: P
 export default function InvoiceDetailPage() {
   const params = useParams()
   const invoiceId = params.id as string
+  const [moreOpen, setMoreOpen] = useState(false)
 
   // Fetch invoice
   const { data: invoice, isLoading } = useQuery<InvoiceWithItems & { profile: Profile }>({
@@ -95,65 +100,80 @@ export default function InvoiceDetailPage() {
   const statusView = documentStatusView(invoice)
   const backHref = isProformaDoc ? '/invoices?view=proforma' : invoicesListHref(invoice.status)
   const editHref = invoiceEditHref(invoice)
+  const paidOn = isPaidInvoiceStatus(invoice.status) && invoice.paidAt ? invoice.paidAt : null
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <Button variant="outline" size="sm" className="min-h-11 shrink-0" asChild>
-            <Link href={backHref}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Nazad
-            </Link>
-          </Button>
+      {/* ROADMAP A9.8: on a phone, the two main actions stay in view; the rest is one tap away under "Više radnji". */}
+      <div className="mb-6 space-y-3">
+        <BackLink href={backHref}>{isProformaDoc ? 'Nazad na predračune' : 'Nazad na fakture'}</BackLink>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-bold lg:text-3xl">{invoice.invoiceNumber}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{labels.name}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {labels.name}
+              {paidOn ? ` · Plaćeno ${formatDate(paidOn)}` : ''}
+            </p>
           </div>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-          {isProformaDoc ? (
-            invoice.convertedInvoiceId ? (
-              <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
-                <Link href={`/invoices/${invoice.convertedInvoiceId}`}>Otvori fakturu</Link>
-              </Button>
-            ) : (
-              <ProformaConvertButton
-                proformaId={invoice.id}
-                proformaNumber={invoice.invoiceNumber}
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end [&>*]:min-w-0">
+            {isProformaDoc ? (
+              invoice.convertedInvoiceId ? (
+                <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+                  <Link href={`/invoices/${invoice.convertedInvoiceId}`}>Otvori fakturu</Link>
+                </Button>
+              ) : (
+                <ProformaConvertButton
+                  proformaId={invoice.id}
+                  proformaNumber={invoice.invoiceNumber}
+                  className="min-h-11 w-full sm:w-auto"
+                />
+              )
+            ) : isPaidInvoiceStatus(invoice.status) ? null : (
+              <InvoiceStatusActions
+                invoiceId={invoice.id}
+                status={invoice.status}
+                size="default"
                 className="min-h-11 w-full sm:w-auto"
               />
-            )
-          ) : isPaidInvoiceStatus(invoice.status) ? null : (
-            <InvoiceStatusActions
-              invoiceId={invoice.id}
-              status={invoice.status}
-              size="default"
-              className="min-h-11 w-full sm:w-auto"
-            />
-          )}
-          {editHref ? (
+            )}
+            <InvoicePdfDownload invoice={invoice} />
+          </div>
+        </div>
+
+        <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="min-h-11 w-full justify-between sm:hidden" aria-expanded={moreOpen}>
+              Više radnji
+              <ChevronDown className={cn('h-4 w-4 transition-transform', moreOpen && 'rotate-180')} />
+            </Button>
+          </CollapsibleTrigger>
+          {/* Always shown from sm up; on a phone only when "Više radnji" is open. */}
+          <CollapsibleContent
+            forceMount
+            className="grid grid-cols-2 gap-2 data-[state=closed]:hidden sm:flex sm:flex-wrap sm:justify-end sm:data-[state=closed]:flex [&>*]:min-w-0"
+          >
+            {editHref ? (
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+                <Link href={editHref}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Izmeni
+                </Link>
+              </Button>
+            ) : null}
             <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
-              <Link href={editHref}>
-                <Edit className="mr-2 h-4 w-4" />
-                Izmeni
+              <Link href={invoiceCopyHref(invoice)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Kopiraj
               </Link>
             </Button>
-          ) : null}
-          <InvoicePdfDownload invoice={invoice} />
-          <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
-            <Link href={invoiceCopyHref(invoice)}>
-              <Copy className="mr-2 h-4 w-4" />
-              Kopiraj
-            </Link>
-          </Button>
-          {canPrintDeliveryNote(invoice) ? (
-            <>
-              <DeliveryNoteButton invoice={invoice} />
-              <SefXmlDownloadButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} editHref={editHref} />
-            </>
-          ) : null}
-        </div>
+            {canPrintDeliveryNote(invoice) ? (
+              <>
+                <DeliveryNoteButton invoice={invoice} />
+                <SefXmlDownloadButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} editHref={editHref} />
+              </>
+            ) : null}
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       <SefSendPanel invoiceId={invoice.id} editHref={editHref} />
@@ -190,13 +210,19 @@ export default function InvoiceDetailPage() {
                 ) : null}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Datum</p>
+                <p className="text-sm text-muted-foreground">Datum izdavanja</p>
                 <p className="text-base">{formatDate(invoice.createdAt)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{labels.dueLabel}</p>
                 <p className="text-base">{formatDate(invoice.dueDate)}</p>
               </div>
+              {paidOn ? (
+                <div>
+                  <p className="text-sm text-muted-foreground">Plaćeno</p>
+                  <p className="text-base">{formatDate(paidOn)}</p>
+                </div>
+              ) : null}
             </div>
 
             <div className="pt-4 border-t">

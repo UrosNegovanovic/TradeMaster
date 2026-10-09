@@ -113,7 +113,6 @@ export default defineConfig({
       'src/lib/openfoodfacts.test.ts',
       'src/lib/utils.test.ts',
       'src/lib/validations.test.ts',
-      'src/lib/invoice-service.test.ts',
       'src/test/vitest-include.test.ts',
     ],
     exclude: [

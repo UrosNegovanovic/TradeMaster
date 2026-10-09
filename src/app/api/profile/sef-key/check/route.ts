@@ -6,6 +6,7 @@ import { loadSefApiKey } from '@/lib/sef-server'
 import { getEfakturaVersion, sefConfig } from '@/lib/sef-client'
 import { sefErrorView } from '@/lib/sef-errors'
 import { operator } from '@/lib/operator'
+import { sefSendingAllowed } from '@/lib/sef-access'
 
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'private, no-store' }
@@ -20,8 +21,8 @@ export async function POST(request: NextRequest) {
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404, headers })
 
   const config = sefConfig()
-  const key = await loadSefApiKey(prisma, profile.id)
-  if (!config || !key.ok) {
+  const key = sefSendingAllowed(profile.id) ? await loadSefApiKey(prisma, profile.id) : null
+  if (!config || !key?.ok) {
     return NextResponse.json({ ok: false, message: 'API ključ nije unet ili slanje u SEF nije dostupno.' }, { status: 409, headers })
   }
   const result = await getEfakturaVersion(config, key.apiKey)

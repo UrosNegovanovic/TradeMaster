@@ -6,6 +6,7 @@ import { accessExpiredResponse } from '@/lib/access-guard'
 import { enforceRateLimit, rateLimits } from '@/lib/rate-limit'
 import { deleteSefApiKey, hasSefApiKey, saveSefApiKey, sefEncryptionAvailable } from '@/lib/sef-server'
 import { sefConfig, isSefDemo } from '@/lib/sef-client'
+import { sefSendingAllowed } from '@/lib/sef-access'
 
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'private, no-store' }
@@ -28,10 +29,10 @@ async function loadProfile() {
   return { profile }
 }
 
-function stateBody(configured: boolean) {
+function stateBody(profileId: string, configured: boolean) {
   const config = sefConfig()
   return {
-    available: sefEncryptionAvailable() && config !== null,
+    available: sefEncryptionAvailable() && config !== null && sefSendingAllowed(profileId),
     configured,
     environment: config ? (isSefDemo(config) ? 'demo' : 'production') : null,
   }
@@ -40,7 +41,7 @@ function stateBody(configured: boolean) {
 export async function GET() {
   const loaded = await loadProfile()
   if (loaded.error) return loaded.error
-  return NextResponse.json(stateBody(await hasSefApiKey(prisma, loaded.profile.id)), { headers })
+  return NextResponse.json(stateBody(loaded.profile.id, await hasSefApiKey(prisma, loaded.profile.id)), { headers })
 }
 
 export async function PUT(request: NextRequest) {
@@ -55,11 +56,11 @@ export async function PUT(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Neispravan API ključ.' }, { status: 400, headers })
   }
-  if (!stateBody(false).available) {
+  if (!stateBody(loaded.profile.id, false).available) {
     return NextResponse.json({ error: 'Slanje u SEF trenutno nije dostupno.' }, { status: 503, headers })
   }
   await saveSefApiKey(prisma, loaded.profile.id, parsed.data.apiKey)
-  return NextResponse.json(stateBody(true), { headers })
+  return NextResponse.json(stateBody(loaded.profile.id, true), { headers })
 }
 
 /** Removing the key is allowed even after access expires, like revoking a share link. */
@@ -69,5 +70,5 @@ export async function DELETE(request: NextRequest) {
   const loaded = await loadProfile()
   if (loaded.error) return loaded.error
   await deleteSefApiKey(prisma, loaded.profile.id)
-  return NextResponse.json(stateBody(false), { headers })
+  return NextResponse.json(stateBody(loaded.profile.id, false), { headers })
 }

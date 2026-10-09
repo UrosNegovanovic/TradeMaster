@@ -26,6 +26,7 @@ describe('/api/profile/sef-key', () => {
     vi.clearAllMocks()
     resetRateLimitStore()
     vi.stubEnv('SEF_KEY_ENCRYPTION_KEY', master.toString('base64'))
+    vi.stubEnv('SEF_SENDING', 'on')
     vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
     mocks.profile.findUnique.mockResolvedValue(profile)
   })
@@ -57,5 +58,16 @@ describe('/api/profile/sef-key', () => {
     expect(mocks.sefCredential.upsert).not.toHaveBeenCalled()
     expect((await DELETE(new NextRequest('http://localhost/api/profile/sef-key', { method: 'DELETE' }))).status).toBe(200)
     expect(mocks.sefCredential.deleteMany).toHaveBeenCalledWith({ where: { profileId: 'profile-a' } })
+  })
+
+  it('hides the SEF card and refuses a key for a company SEF sending is not switched on for (A3.6)', async () => {
+    vi.stubEnv('SEF_SENDING', '')
+    vi.stubEnv('SEF_SENDING_PROFILES', 'profile-test')
+    expect(await (await GET()).json()).toMatchObject({ available: false })
+    expect((await PUT(put({ apiKey: API_KEY }))).status).toBe(503)
+    expect(mocks.sefCredential.upsert).not.toHaveBeenCalled()
+
+    vi.stubEnv('SEF_SENDING_PROFILES', 'profile-test, profile-a')
+    expect(await (await GET()).json()).toMatchObject({ available: true })
   })
 })

@@ -16,6 +16,7 @@ import {
   sendSalesInvoiceUbl,
 } from '@/lib/sef-client'
 import { sefErrorView } from '@/lib/sef-errors'
+import { sefSendingAllowed } from '@/lib/sef-access'
 import { sendInvoiceToSef } from '@/lib/sef-send'
 import { fromSefSalesStatus, isSefStatus, isSefStatusOpen } from '@/lib/sef-status'
 
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest, context: Context) {
 
   const config = sefConfig()
   const keySaved = await hasSefApiKey(prisma, profile.id)
-  const enabled = Boolean(config && sefEncryptionAvailable() && keySaved)
+  const enabled = Boolean(config && sefEncryptionAvailable() && keySaved && sefSendingAllowed(profile.id))
   const refusal = sefDocumentRefusal(invoice)
   const base = {
     enabled,
@@ -155,6 +156,9 @@ export async function POST(request: NextRequest, context: Context) {
   if (refusal) return NextResponse.json({ error: refusal }, { status: 409, headers })
 
   const config = sefConfig()
+  if (!sefSendingAllowed(profile.id)) {
+    return NextResponse.json({ error: 'Slanje u SEF trenutno nije dostupno. Koristite XML za SEF.' }, { status: 409, headers })
+  }
   const key = await loadSefApiKey(prisma, profile.id)
   if (!config || !key.ok) {
     return NextResponse.json({ error: 'Unesite SEF API ključ u Podešavanjima.', fix: { href: '/settings', label: 'Otvori Podešavanja' } }, { status: 409, headers })

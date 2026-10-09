@@ -77,6 +77,7 @@ describe('/api/invoices/:id/sef (mocked Prisma, Clerk and SEF)', () => {
     vi.clearAllMocks()
     resetRateLimitStore()
     vi.stubEnv('SEF_KEY_ENCRYPTION_KEY', master.toString('base64'))
+    vi.stubEnv('SEF_SENDING', 'on')
     vi.stubEnv('SEF_API_BASE_URL', '')
     vi.stubGlobal('fetch', fetchMock)
     vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
@@ -205,5 +206,15 @@ describe('/api/invoices/:id/sef (mocked Prisma, Clerk and SEF)', () => {
     const body = await (await GET(get(), context)).json()
     expect(body.enabled).toBe(false)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps SEF off for a company sending is not switched on for, even with a saved key (A3.6)', async () => {
+    vi.stubEnv('SEF_SENDING', '')
+    vi.stubEnv('SEF_SENDING_PROFILES', 'someone-else')
+    const body = await (await GET(get(), context)).json()
+    expect(body.enabled).toBe(false)
+    expect((await POST(post(), context)).status).toBe(409)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(mocks.invoice.updateMany).not.toHaveBeenCalled()
   })
 })

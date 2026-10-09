@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { isSameLocalDay } from '@/lib/local-date'
+import { buildStockList } from '@/lib/stock-list'
 
 type StockRow = Product & { totalQuantity: number }
 
@@ -86,6 +87,8 @@ function StockFilters({
   sourceCount,
   totalValue,
   missingPriceCount,
+  costValue,
+  missingCostCount,
 }: {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
@@ -99,6 +102,9 @@ function StockFilters({
   sourceCount: number
   totalValue?: number
   missingPriceCount?: number
+  /** ROADMAP A9.19: stock at purchase price; SKUs with stock but no purchase price are left out and counted. */
+  costValue?: number
+  missingCostCount?: number
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -148,8 +154,18 @@ function StockFilters({
         </div>
         {totalValue !== undefined && (
           <div className="text-sm text-muted-foreground sm:text-right">
-            <span className="font-semibold text-foreground">Ukupna vrednost:</span>{' '}
+            <span className="font-semibold text-foreground">Prodajna vrednost:</span>{' '}
             {formatPrice(totalValue)}
+            {costValue !== undefined ? (
+              <p className="mt-1">
+                <span className="font-semibold text-foreground">Nabavna vrednost:</span> {formatPrice(costValue)}
+              </p>
+            ) : null}
+            {missingCostCount ? (
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                Bez nabavne cene: {missingCostCount} (nisu u nabavnoj vrednosti)
+              </p>
+            ) : null}
             {missingPriceCount ? (
               <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                 Bez {missingPriceCount} {missingPriceCount === 1 ? 'artikla kome' : 'artikala kojima'} nedostaje cena
@@ -343,6 +359,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
   const totalValue = useMemo(() => {
     return products.reduce((sum, product) => sum + Number(product.price) * product.quantity, 0)
   }, [products])
+  const stockTotals = useMemo(() => buildStockList(products).totals, [products])
   const missingPriceCount = useMemo(
     () => aggregatedProducts.filter((product) => Number(product.price) <= 0).length,
     [aggregatedProducts]
@@ -363,7 +380,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
 
   return (
     <div className="space-y-4">
-      <StockFilters {...filterProps} totalValue={totalValue} missingPriceCount={missingPriceCount} />
+      <StockFilters {...filterProps} totalValue={totalValue} missingPriceCount={missingPriceCount} costValue={stockTotals.costValue} missingCostCount={stockTotals.missingCostCount} />
 
       {filteredProducts.length === 0 ? (
         <StockEmptyState
@@ -392,7 +409,7 @@ export function CurrentStockTable({ products }: CurrentStockTableProps) {
             <DialogDescription>Pregled proizvoda i količina ({showAllCount})</DialogDescription>
           </DialogHeader>
           <div className="shrink-0 px-6 pb-3">
-            <StockFilters {...filterProps} totalValue={totalValue} missingPriceCount={missingPriceCount} />
+            <StockFilters {...filterProps} totalValue={totalValue} missingPriceCount={missingPriceCount} costValue={stockTotals.costValue} missingCostCount={stockTotals.missingCostCount} />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
             {filteredProducts.length === 0 ? (

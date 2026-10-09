@@ -20,6 +20,7 @@ import { StockOutForm } from '@/components/warehouse/StockOutForm'
 import { AssortmentImportDialog } from '@/components/warehouse/AssortmentImportDialog'
 import { StockAdjustImportDialog } from '@/components/warehouse/StockAdjustImportDialog'
 import { CurrentStockTable } from '@/components/warehouse/CurrentStockTable'
+import { StockListExportButton } from '@/components/warehouse/StockListExportButton'
 import { StockMovementHistory } from '@/components/warehouse/StockMovementHistory'
 import { MovementType } from '@prisma/client'
 import { notify } from '@/lib/notify'
@@ -167,6 +168,7 @@ export default function WarehousePage() {
         <FileSpreadsheet className="mr-2 h-4 w-4" />
         Ažuriraj stanje
       </Button>
+      <StockListExportButton />
     </>
   )
 

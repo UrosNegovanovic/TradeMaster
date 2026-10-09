@@ -42,7 +42,7 @@ async function deleteInvoice(id: string, request: SessionFetch) {
   })
 
   if (!response.ok) {
-    throw new Error(await readApiErrorMessage(response, 'Failed to delete invoice'))
+    throw new Error(await readApiErrorMessage(response, 'Faktura nije obrisana.'))
   }
 
   return response.json()
@@ -203,7 +203,7 @@ export default function InvoicesPage() {
     },
     onError: (error: Error) => {
       notify.error('Brisanje nije uspelo', {
-        description: error.message || 'An unexpected error occurred',
+        description: error.message || 'Pokušajte ponovo.',
         duration: 5000,
       })
     },

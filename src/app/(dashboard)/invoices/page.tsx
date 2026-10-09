@@ -238,7 +238,8 @@ export default function InvoicesPage() {
   }
 
   // ROADMAP A9.10: search by number, buyer or PIB; tab counts follow the search.
-  const [search, setSearch] = useState('')
+  // ?q= comes from "Ko mi duguje" on Finansije (ROADMAP A9.18).
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const searching = search.trim().length > 0
 
   const { openInvoices, paidInvoices, proformas, sefRejected, visibleInvoices } = useMemo(() => {

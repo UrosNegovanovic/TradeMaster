@@ -26,6 +26,9 @@ import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
 import { sr } from '@/lib/ui-copy'
 
+/** Same as the column default (prisma/schema.prisma): alert when 2 or fewer are left. */
+const DEFAULT_MIN_STOCK = 2
+
 interface ProductFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -69,6 +72,7 @@ export function ProductForm({
           : undefined),
       costPriceZeroReason: initialData?.costPriceZeroReason ?? product?.costPriceZeroReason ?? '',
       quantity: initialData?.quantity ?? product?.quantity ?? 1,
+      minStock: initialData?.minStock ?? product?.minStock ?? DEFAULT_MIN_STOCK,
       description: initialData?.description ?? product?.description ?? '',
       imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
       categoryId: product?.categoryId ?? null,
@@ -105,6 +109,7 @@ export function ProductForm({
             : undefined),
         costPriceZeroReason: initialData?.costPriceZeroReason ?? product?.costPriceZeroReason ?? '',
         quantity: initialData?.quantity ?? product?.quantity ?? 1,
+        minStock: initialData?.minStock ?? product?.minStock ?? DEFAULT_MIN_STOCK,
         description: initialData?.description ?? product?.description ?? '',
         imageUrl: initialData?.imageUrl ?? product?.imageUrl ?? '',
         categoryId: product?.categoryId ?? null,
@@ -391,6 +396,21 @@ export function ProductForm({
               <p className="text-xs text-muted-foreground">
                 💡 {sr.product.quantityTip}
               </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="minStock">{sr.product.minStock}</Label>
+              <Input
+                id="minStock"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                placeholder={String(DEFAULT_MIN_STOCK)}
+                {...register('minStock', { valueAsNumber: true })}
+              />
+              {errors.minStock && <p className="text-sm text-destructive">{errors.minStock.message}</p>}
+              <p className="text-xs text-muted-foreground">{sr.product.minStockHint}</p>
             </div>
 
             <div className="grid gap-2">

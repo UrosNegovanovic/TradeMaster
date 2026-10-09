@@ -262,6 +262,17 @@ const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
   quantity: z.number().int('Količina mora biti ceo broj').min(1, 'Količina mora biti najmanje 1').default(1), // ✅ For warehouse mode scanning
+  // "Nizak lager" shows when stock is at or below this (ROADMAP A9.13). Omitted = keep the stored value.
+  // An emptied number input arrives as NaN: treat it as "not sent".
+  minStock: z.preprocess(
+    (value) => (typeof value === 'number' && Number.isNaN(value) ? undefined : value),
+    z
+      .number({ invalid_type_error: 'Minimalna zaliha mora biti broj' })
+      .int('Minimalna zaliha mora biti ceo broj')
+      .min(0, 'Minimalna zaliha ne može biti negativna')
+      .max(1_000_000, 'Minimalna zaliha je prevelika')
+      .optional()
+  ),
   imageUrl: z
     .union([
       z.string().url('Adresa slike nije ispravna'),

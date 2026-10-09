@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   addLocalDays,
   addLocalMonths,
+  defaultDueDateYmd,
+  localDaysBetween,
   formatLocalYm,
   formatLocalYmd,
   isSameLocalDay,
@@ -64,5 +66,26 @@ describe('addLocalDays', () => {
 
   it('rolls over month and year ends', () => {
     expect(addLocalDays(new Date('2026-12-31T10:00:00.000Z'), 1).toISOString()).toBe('2026-12-31T23:00:00.000Z')
+  })
+})
+
+describe('defaultDueDateYmd (ROADMAP A9.3)', () => {
+  it('counts from the Belgrade day, also just after midnight', () => {
+    // 00:30 on 10 Oct in Belgrade is still 9 Oct in UTC.
+    expect(defaultDueDateYmd(30, new Date('2026-10-09T22:30:00.000Z'))).toBe('2026-11-09')
+    expect(defaultDueDateYmd(30, new Date('2026-10-09T10:00:00.000Z'))).toBe('2026-11-08')
+  })
+})
+
+describe('localDaysBetween', () => {
+  it('gives 30 for an invoice made just after midnight with a 30-day term', () => {
+    // created 00:30 Belgrade on 10 Oct, due date stored as UTC midnight of 9 Nov
+    expect(localDaysBetween('2026-10-09T22:30:00.000Z', '2026-11-09T00:00:00.000Z')).toBe(30)
+    expect(localDaysBetween('2026-10-09T10:00:00.000Z', '2026-11-08T00:00:00.000Z')).toBe(30)
+  })
+
+  it('counts calendar days across the DST change and never goes below zero', () => {
+    expect(localDaysBetween('2026-10-20T10:00:00.000Z', '2026-11-19T00:00:00.000Z')).toBe(30)
+    expect(localDaysBetween('2026-10-20T10:00:00.000Z', '2026-10-01T00:00:00.000Z')).toBe(0)
   })
 })

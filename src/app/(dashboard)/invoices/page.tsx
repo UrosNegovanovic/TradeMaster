@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -188,32 +188,6 @@ export default function InvoicesPage() {
     queryKey: ['invoices'],
     queryFn: fetchInvoices,
   })
-
-  const didNormalizeDrafts = useRef(false)
-
-  useEffect(() => {
-    if (didNormalizeDrafts.current || invoices.length === 0) {
-      return
-    }
-
-    const drafts = invoices.filter((invoice) => invoice.status === InvoiceStatus.DRAFT)
-    didNormalizeDrafts.current = true
-    if (drafts.length === 0) {
-      return
-    }
-
-    Promise.all(
-      drafts.map((invoice) =>
-        request(`/api/invoices/${invoice.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: InvoiceStatus.UNPAID }),
-        })
-      )
-    ).then(() => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-    })
-  }, [invoices, queryClient, request])
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteInvoice(id, request),

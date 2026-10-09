@@ -122,7 +122,7 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.1 | **Lista faktura sama izdaje nacrte** | Visoka | S | `src/app/(dashboard)/invoices/page.tsx` pri otvaranju šalje PATCH `UNPAID` za svaki nacrt (i predračun u nacrtu): roba izlazi sa lagera bez korisnika, tiho pada sa 402 na isteklom nalogu. Ukloniti; nacrt se izdaje samo dugmetom. |
+| A9.1 | 🟡 (PR otvoren) **Lista faktura sama izdaje nacrte** | Visoka | S | `src/app/(dashboard)/invoices/page.tsx` pri otvaranju šalje PATCH `UNPAID` za svaki nacrt (i predračun u nacrtu): roba izlazi sa lagera bez korisnika, tiho pada sa 402 na isteklom nalogu. Ukloniti; nacrt se izdaje samo dugmetom. |
 | A9.2 | **Plaćena faktura može da se obriše** | Visoka | S | Brisanje briše knjižen prihod, vraća robu i pravi rupu u brojevima. Server i lista odbijaju brisanje PAID; prvo "Vrati među otvorene". |
 | A9.3 | Datumi oko ponoći | Srednja | S | Podrazumevani rok se računa iz UTC datuma (između 00 i 02 h ispadne dan ranije); "Rok plaćanja: N dana" na PDF-u može biti 31. Beogradski kalendarski dani (`src/lib/local-date.ts`). |
 

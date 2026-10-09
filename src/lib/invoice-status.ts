@@ -20,3 +20,14 @@ export const PAID_DELETE_MESSAGE =
 export function canDeleteInvoice(invoice: { status: string; sefStatus?: string | null }): boolean {
   return !isPaidInvoiceStatus(invoice.status) && !invoice.sefStatus
 }
+
+export type InvoiceStatusAction = 'issue' | 'pay' | 'reopen'
+
+/**
+ * The one status step offered on an invoice. A draft is issued only when the user asks (stock goes out then,
+ * ROADMAP A9.1); an open invoice is marked paid; a paid one can go back to open.
+ */
+export function invoiceStatusAction(status: string | null | undefined): InvoiceStatusAction {
+  if (status === 'DRAFT') return 'issue'
+  return isPaidInvoiceStatus(status) ? 'reopen' : 'pay'
+}

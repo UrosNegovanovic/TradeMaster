@@ -2,13 +2,13 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter } from 'next/navigation'
-import { Check, RotateCcw, Loader2 } from 'lucide-react'
+import { Check, RotateCcw, Loader2, FileCheck2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InvoiceStatus } from '@/types/invoice'
 import { notify } from '@/lib/notify'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
-import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { invoiceStatusAction, invoicesListHref } from '@/lib/invoice-status'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 
@@ -45,7 +45,7 @@ export function InvoiceStatusActions({
   const router = useRouter()
   const pathname = usePathname()
   const request = useAuthorizedFetch()
-  const isPaid = isPaidInvoiceStatus(status)
+  const action = invoiceStatusAction(status)
 
   const mutation = useMutation({
     mutationFn: (nextStatus: InvoiceStatus) => patchInvoiceStatus(invoiceId, nextStatus, request),
@@ -72,7 +72,9 @@ export function InvoiceStatusActions({
         router.refresh()
       }
 
-      if (nextStatus === InvoiceStatus.PAID) {
+      if (action === 'issue') {
+        notify.success('Faktura je izdata', { description: 'Roba je skinuta sa lagera.' })
+      } else if (nextStatus === InvoiceStatus.PAID) {
         notify.success('Faktura je plaćena', {
           description: 'Pomerena je u arhivu plaćenih i više se ne prikazuje na početnoj.',
         })
@@ -89,7 +91,30 @@ export function InvoiceStatusActions({
     },
   })
 
-  if (isPaid) {
+  if (action === 'issue') {
+    return (
+      <Button
+        type="button"
+        size={size}
+        className={className}
+        disabled={mutation.isPending}
+        onClick={async () => {
+          const confirmed = await confirmDialog({
+            title: 'Izdati fakturu?',
+            description: 'Nacrt postaje otvorena faktura i roba se skida sa lagera.',
+            confirmLabel: 'Izdaj',
+            cancelLabel: 'Otkaži',
+          })
+          if (confirmed) mutation.mutate(InvoiceStatus.UNPAID)
+        }}
+      >
+        {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCheck2 className="mr-2 h-4 w-4" />}
+        Izdaj fakturu
+      </Button>
+    )
+  }
+
+  if (action === 'reopen') {
     return (
       <Button
         type="button"

@@ -25,6 +25,7 @@ import { documentLabels } from '@/lib/document-type'
 import { InvoiceProductPicker } from '@/components/invoices/InvoiceProductPicker'
 import { DEFAULT_VAT_RATE, VAT_RATE_OPTIONS, summarizeVat } from '@/lib/invoice-vat'
 import { sr } from '@/lib/ui-copy'
+import { defaultDueDateYmd } from '@/lib/local-date'
 import { PIB_LENGTH, addressHasCity, digitsOnly, pibProblem } from '@/lib/company-fields'
 import {
   clampDiscountPercent,
@@ -95,12 +96,8 @@ export function InvoiceForm({
   const defaultVatRate = vatEnabled ? DEFAULT_VAT_RATE : 0
   const itemTracks = vatEnabled ? INVOICE_ITEM_TRACKS_VAT : INVOICE_ITEM_TRACKS
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [dueDate, setDueDate] = useState(() => {
-    // Default to 30 days from now
-    const date = new Date()
-    date.setDate(date.getDate() + 30)
-    return date.toISOString().split('T')[0]
-  })
+  // 30 Belgrade calendar days from today.
+  const [dueDate, setDueDate] = useState(() => defaultDueDateYmd(30))
   const [clientName, setClientName] = useState(prefill?.clientName ?? '')
   const [clientAddress, setClientAddress] = useState(prefill?.clientAddress ?? '')
   const [clientPib, setClientPib] = useState(prefill?.clientPib ?? '')

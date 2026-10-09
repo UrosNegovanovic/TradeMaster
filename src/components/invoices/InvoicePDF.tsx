@@ -17,6 +17,7 @@ import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
 import { deliveryAddressToPrint, type DeliveryNoteDetails } from '@/lib/delivery-note'
 import { buildIpsQrPayload, ipsQrMatrix } from '@/lib/ips-qr'
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { localDaysBetween } from '@/lib/local-date'
 import { documentLabels } from '@/lib/document-type'
 
 registerPdfFonts()
@@ -579,7 +580,7 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
               </Text>
             ) : (
               <Text style={styles.footerText}>
-                Rok plaćanja: {Math.ceil((new Date(invoice.dueDate).getTime() - new Date(invoice.createdAt).getTime()) / (1000 * 60 * 60 * 24))} dana
+                Rok plaćanja: {localDaysBetween(invoice.createdAt, invoice.dueDate)} dana
               </Text>
             )}
           </View>

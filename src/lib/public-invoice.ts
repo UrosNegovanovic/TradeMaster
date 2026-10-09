@@ -46,6 +46,9 @@ export const publicInvoiceSelect = {
       pib: true,
       giroAccount: true,
       logoUrl: true,
+      // Printed on the buyer's PDF (ROADMAP A9.9): seller's matični broj and the non-PDV note.
+      registrationNumber: true,
+      inVatSystem: true,
     },
   },
   items: {
@@ -83,6 +86,8 @@ export type PublicInvoice = {
     pib: string | null
     giroAccount: string | null
     logoUrl: string | null
+    registrationNumber: string | null
+    inVatSystem: boolean
   }
   items: Array<{
     id: string

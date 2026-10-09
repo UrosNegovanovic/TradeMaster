@@ -17,6 +17,7 @@ import { accessExpiredResponse } from '@/lib/access-guard'
 import { PROFORMA_PAID_MESSAGE, stockStatusFor } from '@/lib/document-type'
 import { SEF_LOCKED_MESSAGE, isLockedBySef } from '@/lib/sef-status'
 import { PAID_DELETE_MESSAGE, isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { buyerRegistrationNumber } from '@/lib/sef-invoice-xml'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,7 +82,9 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(invoice)
+    // Printed on the owner's PDF (ROADMAP A9.9); same Kupci lookup as the SEF XML.
+    const buyerMb = await buyerRegistrationNumber(prisma, profile.id, invoice.clientPib)
+    return NextResponse.json({ ...invoice, buyerRegistrationNumber: buyerMb })
   } catch (error) {
     console.error('Error fetching invoice:', error)
     return NextResponse.json(

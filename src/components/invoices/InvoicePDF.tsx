@@ -17,6 +17,7 @@ import { PDF_FONT_FAMILY, registerPdfFonts } from '@/lib/pdf-fonts'
 import { deliveryAddressToPrint, type DeliveryNoteDetails } from '@/lib/delivery-note'
 import { buildIpsQrPayload, ipsQrMatrix } from '@/lib/ips-qr'
 import { isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { invoicePdfFacts } from '@/lib/invoice-pdf-facts'
 import { localDaysBetween } from '@/lib/local-date'
 import { documentLabels } from '@/lib/document-type'
 
@@ -329,7 +330,10 @@ export type InvoicePdfData = {
     vatRate?: Amount | null
     total: Amount
   }>
-  profile: Pick<Profile, 'companyName' | 'contactEmail' | 'contactPhone' | 'address' | 'pib' | 'giroAccount' | 'logoUrl'>
+  profile: Pick<Profile, 'companyName' | 'contactEmail' | 'contactPhone' | 'address' | 'pib' | 'giroAccount' | 'logoUrl'> &
+    Partial<Pick<Profile, 'registrationNumber' | 'inVatSystem'>>
+  /** Owner's PDF only: buyer's matični broj from Kupci (same lookup as the SEF XML). */
+  buyerRegistrationNumber?: string | null
 }
 
 /** `delivery` prints the otpremnica of an issued invoice: same lines and quantities, no prices. */
@@ -374,6 +378,13 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
         invoiceNumber: invoice.invoiceNumber,
       })
   const ipsQr = ipsPayload ? ipsQrMatrix(ipsPayload) : null
+  const facts = invoicePdfFacts({
+    createdAt: invoice.createdAt,
+    documentType: invoice.documentType,
+    vatEnabled,
+    sellerAddress: profile.address,
+    sellerInVatSystem: profile.inVatSystem,
+  })
 
   // Check if URL is valid
   const isValidImageUrl = (url: string | null | undefined): boolean => {
@@ -409,11 +420,7 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
           <View style={styles.headerLeft}>
             {isValidImageUrl(profile.logoUrl) ? (
               <Image src={profile.logoUrl!} style={styles.logo} />
-            ) : (
-              <View style={styles.logoContainer}>
-                <Text style={{ fontSize: 8, color: '#9ca3af' }}>LOGO</Text>
-              </View>
-            )}
+            ) : null}
             <View style={styles.companyInfo}>
               <Text style={styles.companyName}>
                 {profile.companyName || 'Naziv firme'}
@@ -424,6 +431,9 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
               {profile.pib && (
                 <Text style={styles.companyDetails}>PIB: {profile.pib}</Text>
               )}
+              {profile.registrationNumber ? (
+                <Text style={styles.companyDetails}>MB: {profile.registrationNumber}</Text>
+              ) : null}
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -456,22 +466,27 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
                 <Text>{invoice.clientName}</Text>
                 {invoice.clientAddress && <Text>{invoice.clientAddress}</Text>}
                 {invoice.clientPib && <Text>PIB: {invoice.clientPib}</Text>}
+                {invoice.buyerRegistrationNumber ? <Text>MB: {invoice.buyerRegistrationNumber}</Text> : null}
               </View>
             </View>
           </View>
           <View style={styles.invoiceInfoRight}>
-            {isProformaDoc ? null : (
-              <View style={{ marginBottom: 15 }}>
-                <Text style={styles.invoiceLabel}>Status:</Text>
-                <Text style={styles.invoiceValue}>
-                  {invoice.status === 'PAID' ? 'Plaćeno' : invoice.status === 'DRAFT' ? 'Nacrt' : 'Otvoreno'}
-                </Text>
+            {facts.issuePlace ? (
+              <View>
+                <Text style={styles.invoiceLabel}>Mesto izdavanja:</Text>
+                <Text style={styles.invoiceValue}>{facts.issuePlace}</Text>
               </View>
-            )}
+            ) : null}
             <View>
-              <Text style={styles.invoiceLabel}>Datum:</Text>
-              <Text style={styles.invoiceValue}>{formatDate(invoice.createdAt)}</Text>
+              <Text style={styles.invoiceLabel}>Datum izdavanja:</Text>
+              <Text style={styles.invoiceValue}>{formatDate(facts.issueDate)}</Text>
             </View>
+            {facts.supplyDate ? (
+              <View>
+                <Text style={styles.invoiceLabel}>Datum prometa:</Text>
+                <Text style={styles.invoiceValue}>{formatDate(facts.supplyDate)}</Text>
+              </View>
+            ) : null}
             <View>
               <Text style={styles.invoiceLabel}>{labels.dueLabel}:</Text>
               <Text style={styles.invoiceValue}>{formatDate(invoice.dueDate)}</Text>
@@ -571,6 +586,7 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
             {profile.giroAccount ? (
               <Text style={styles.footerText}>{profile.giroAccount}</Text>
             ) : null}
+            {facts.nonVatNote ? <Text style={styles.footerText}>{facts.nonVatNote}</Text> : null}
             <Text style={styles.footerText}>
               Molimo navedite broj {isProformaDoc ? 'predračuna' : 'fakture'} pri uplati.
             </Text>

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { LoadErrorState } from '@/components/layout/LoadErrorState'
+import { failedBeforeFirstLoad } from '@/lib/query-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -87,7 +89,7 @@ export default function WarehousePage() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [lowStockOpen, setLowStockOpen] = useState(false)
 
-  const { data: products = [], isLoading: isLoadingProducts } = useQuery({
+  const { data: products = [], isLoading: isLoadingProducts, isError: loadFailed, dataUpdatedAt: loadedAt, refetch: reload, isFetching: reloading } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
   })
@@ -189,6 +191,10 @@ export default function WarehousePage() {
         <p className="text-muted-foreground">Učitavanje magacina…</p>
       </div>
     )
+  }
+
+  if (failedBeforeFirstLoad({ isError: loadFailed, dataUpdatedAt: loadedAt })) {
+    return <LoadErrorState title="Magacin" onRetry={() => reload()} retrying={reloading} />
   }
 
   if (products.length === 0) {

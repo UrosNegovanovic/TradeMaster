@@ -24,6 +24,10 @@ export const sr = {
     missingCostNote:
       'Brzi sken ne unosi nabavnu cenu. Dopunite je u asortimanu ili na Ulazu.',
   },
+  loadError: {
+    title: 'Podaci nisu učitani',
+    description: 'Vaši podaci su sačuvani; samo nisu stigli do telefona. Proverite internet vezu i pokušajte ponovo.',
+  },
   route: {
     errorTitle: 'Nešto nije u redu',
     errorDescription: 'Stranica nije učitana. Pokušajte ponovo.',

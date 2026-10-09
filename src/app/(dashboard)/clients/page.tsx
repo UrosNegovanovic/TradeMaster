@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { LoadErrorState } from '@/components/layout/LoadErrorState'
+import { failedBeforeFirstLoad } from '@/lib/query-state'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -58,7 +60,7 @@ export default function ClientsPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitted, setSubmitted] = useState(false)
 
-  const { data: clients = [], isLoading } = useQuery({
+  const { data: clients = [], isLoading, isError: loadFailed, dataUpdatedAt: loadedAt, refetch: reload, isFetching: reloading } = useQuery({
     queryKey: ['clients'],
     queryFn: fetchClients,
   })
@@ -252,6 +254,8 @@ export default function ClientsPage() {
         <div className="flex min-h-[200px] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
+      ) : failedBeforeFirstLoad({ isError: loadFailed, dataUpdatedAt: loadedAt }) ? (
+        <LoadErrorState onRetry={() => reload()} retrying={reloading} />
       ) : clients.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">

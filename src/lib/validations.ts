@@ -374,7 +374,7 @@ export const profileSchema = z.object({
   inVatSystem: z.boolean().optional(),
   logoUrl: z
     .union([
-      z.string().url('Invalid URL'),
+      z.string().url('Adresa logotipa nije ispravna.'),
       z.literal(''),
       z.null(),
     ])

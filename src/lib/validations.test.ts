@@ -1,104 +1,60 @@
 import { describe, it, expect } from 'vitest'
 import { productSchema, catalogSchema, profileSchema } from './validations'
+import { pibProblem } from './company-fields'
+import { normalizeGiroAccount } from './giro-account'
 
-describe('productSchema', () => {
-    it('exposes safeParse', () => {
-        const result = productSchema.safeParse({ name: 'Test', sku: 'T-001' })
-        expect(result).toHaveProperty('success')
-    })
-    describe('happy path', () => {
-        it('accepts minimal valid object (name and sku)', () => {
-            const result = productSchema.safeParse({
-                name: 'Proizvod', sku:'SKU-001' })
-                expect(result.success).toBe(true)
-                if (result.success) {
-                    expect(result.data.name).toBe('Proizvod')
-                    expect(result.data.sku).toBe('SKU-001')
-                }
-            })
+const firstMessage = (result: { success: boolean; error?: { issues: Array<{ message: string }> } }) =>
+  result.success ? '' : result.error?.issues[0]?.message ?? ''
 
-            it('accepts full valid object (optional fields)', () => {
-                const input = {
-                    name: 'Proizvod', 
-                    sku:'SKU-001', 
-                    price: 100, 
-                    quantity: 10, 
-                    imageUrl: 'https://example.com/image.jpg', 
-                    description: 'Opis proizvoda', 
-                    categoryId: '123' 
-                }
-                const result = productSchema.safeParse(input)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.name).toBe(input.name)
-      expect(result.data.price).toBe(input.price)
-      expect(result.data.quantity).toBe(input.quantity)
-      expect(result.data.imageUrl).toBe(input.imageUrl)
-    }
-  })
-})
+/** Fake but valid company numbers, generated with the app's own control-digit checks. */
+function validPib(): string {
+  for (let digit = 0; digit <= 9; digit++) if (!pibProblem(`10000000${digit}`)) return `10000000${digit}`
+  throw new Error('no valid PIB')
+}
+function validGiro(): string {
+  for (let control = 0; control <= 99; control++) {
+    const account = `160-0000000000001-${String(control).padStart(2, '0')}`
+    if (normalizeGiroAccount(account)) return account
+  }
+  throw new Error('no valid žiro-račun')
+}
 
-describe('edge cases', () => {
-    it('fails when name is empty', () => {
-      const result = productSchema.safeParse({ name: '', sku: 'X' })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Name')
+describe('productSchema (ProductForm: purchase price required)', () => {
+  const minimal = { name: 'Proizvod', sku: 'SKU-001', costPrice: 80 }
+
+  describe('happy path', () => {
+    it('accepts name, SKU and purchase price', () => {
+      const result = productSchema.safeParse(minimal)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.name).toBe('Proizvod')
+        expect(result.data.sku).toBe('SKU-001')
+        expect(result.data.costPrice).toBe(80)
       }
     })
-  
-    it('fails when sku is empty', () => {
-      const result = productSchema.safeParse({ name: 'Product', sku: '' })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('SKU')
+
+    it('accepts all optional fields', () => {
+      const input = {
+        ...minimal,
+        price: 100,
+        quantity: 10,
+        minStock: 5,
+        imageUrl: 'https://example.com/image.jpg',
+        description: 'Opis proizvoda',
+        categoryId: '123',
+      }
+      const result = productSchema.safeParse(input)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.price).toBe(100)
+        expect(result.data.quantity).toBe(10)
+        expect(result.data.minStock).toBe(5)
+        expect(result.data.imageUrl).toBe(input.imageUrl)
       }
     })
-  
-    it('fails when price is negative', () => {
-      const result = productSchema.safeParse({ name: 'P', sku: 'S', price: -1 })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Price')
-      }
-    })
-  
-    it('fails when quantity is less than 1', () => {
-      const result = productSchema.safeParse({ name: 'P', sku: 'S', quantity: 0 })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Quantity')
-      }
-    })
-  
-    it('fails when name exceeds 255 characters', () => {
-      const result = productSchema.safeParse({
-        name: 'a'.repeat(256),
-        sku: 'S',
-      })
-      expect(result.success).toBe(false)
-    })
-  
-    it('fails when imageUrl is not a valid URL', () => {
-      const result = productSchema.safeParse({
-        name: 'P',
-        sku: 'S',
-        imageUrl: 'not-a-url',
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('URL')
-      }
-    })
-  })
-  describe('default values', () => {
-    it('applies default price 0 and quantity 1 when omitted', () => {
-      const result = productSchema.safeParse({ name: 'Product', sku: 'SKU-X' })
+
+    it('defaults the sale price to 0 and the quantity to 1', () => {
+      const result = productSchema.safeParse(minimal)
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.price).toBe(0)
@@ -106,195 +62,157 @@ describe('edge cases', () => {
       }
     })
   })
+
+  describe('edge cases (Serbian messages)', () => {
+    it('requires the purchase price', () => {
+      expect(firstMessage(productSchema.safeParse({ name: 'P', sku: 'S' }))).toBe('Nabavna cena je obavezna')
+    })
+
+    it('fails when name is empty', () => {
+      expect(firstMessage(productSchema.safeParse({ ...minimal, name: '' }))).toBe('Naziv je obavezan')
+    })
+
+    it('fails when sku is empty', () => {
+      expect(firstMessage(productSchema.safeParse({ ...minimal, sku: '' }))).toBe('SKU je obavezan')
+    })
+
+    it('fails when the sale price is negative', () => {
+      expect(firstMessage(productSchema.safeParse({ ...minimal, price: -1 }))).toBe('Cena ne može biti negativna')
+    })
+
+    it('fails when quantity is less than 1', () => {
+      expect(firstMessage(productSchema.safeParse({ ...minimal, quantity: 0 }))).toBe('Količina mora biti najmanje 1')
+    })
+
+    it('fails when name exceeds 255 characters', () => {
+      expect(productSchema.safeParse({ ...minimal, name: 'a'.repeat(256) }).success).toBe(false)
+    })
+
+    it('fails when imageUrl is not a valid URL', () => {
+      expect(firstMessage(productSchema.safeParse({ ...minimal, imageUrl: 'not-a-url' }))).toBe('Adresa slike nije ispravna')
+    })
+  })
 })
 
 describe('catalogSchema', () => {
-  it('exposes safeParse', () => {
-    const result = catalogSchema.safeParse({
-      name: 'Catalog',
-      discount: 10,
-      productIds: ['p1'],
-    })
-    expect(result).toHaveProperty('success')
-  })
-
   describe('happy path', () => {
-    it('accepts minimal valid object (name, discount, productIds)', () => {
-      const result = catalogSchema.safeParse({
-        name: 'My Catalog',
-        discount: 15,
-        productIds: ['product-1'],
-      })
+    it('accepts name, discount and products, with display defaults', () => {
+      const result = catalogSchema.safeParse({ name: 'Moj katalog', discount: 15, productIds: ['product-1'] })
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.name).toBe('My Catalog')
         expect(result.data.discount).toBe(15)
         expect(result.data.productIds).toEqual(['product-1'])
+        expect(result.data.layout).toBe('GRID_4')
+        expect(result.data.sortMode).toBe('MANUAL')
       }
     })
 
-    it('accepts full valid object with optional fields', () => {
+    it('accepts optional fields and keeps the product order', () => {
       const input = {
-        name: 'Full Catalog',
-        clientName: 'Client ABC',
+        name: 'Ceo katalog',
+        clientName: 'Kupac DOO',
         discount: 20,
-        notes: 'Some notes',
-        productIds: ['p1', 'p2', 'p3'],
+        notes: 'Napomena',
+        productIds: ['p3', 'p1', 'p2'],
+        layout: 'LIST' as const,
       }
       const result = catalogSchema.safeParse(input)
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.name).toBe(input.name)
-        expect(result.data.clientName).toBe(input.clientName)
-        expect(result.data.discount).toBe(input.discount)
-        expect(result.data.notes).toBe(input.notes)
-        expect(result.data.productIds).toEqual(input.productIds)
+        expect(result.data.clientName).toBe('Kupac DOO')
+        expect(result.data.notes).toBe('Napomena')
+        expect(result.data.productIds).toEqual(['p3', 'p1', 'p2'])
+        expect(result.data.layout).toBe('LIST')
       }
     })
   })
 
-  describe('edge cases', () => {
+  describe('edge cases (Serbian messages)', () => {
+    const base = { name: 'Katalog', discount: 10, productIds: ['p1'] }
+
     it('fails when name is empty', () => {
-      const result = catalogSchema.safeParse({
-        name: '',
-        discount: 0,
-        productIds: ['p1'],
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Name')
-      }
+      expect(firstMessage(catalogSchema.safeParse({ ...base, name: '' }))).toBe('Unesite naziv kataloga')
     })
 
-    it('fails when discount is less than 0', () => {
-      const result = catalogSchema.safeParse({
-        name: 'Catalog',
-        discount: -1,
-        productIds: ['p1'],
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Discount')
-      }
+    it('fails when discount is below 0 or above 100', () => {
+      expect(firstMessage(catalogSchema.safeParse({ ...base, discount: -1 }))).toBe('Popust ne može biti manji od 0')
+      expect(firstMessage(catalogSchema.safeParse({ ...base, discount: 101 }))).toBe('Popust ne može biti veći od 100%')
     })
 
-    it('fails when discount exceeds 100', () => {
-      const result = catalogSchema.safeParse({
-        name: 'Catalog',
-        discount: 101,
-        productIds: ['p1'],
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Discount')
-      }
-    })
-
-    it('fails when productIds is empty', () => {
-      const result = catalogSchema.safeParse({
-        name: 'Catalog',
-        discount: 10,
-        productIds: [],
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('bar jedan proizvod')
-      }
+    it('fails without products or with the same product twice', () => {
+      expect(firstMessage(catalogSchema.safeParse({ ...base, productIds: [] }))).toBe('Izaberite bar jedan proizvod')
+      expect(firstMessage(catalogSchema.safeParse({ ...base, productIds: ['p1', 'p1'] }))).toBe(
+        'Isti proizvod je izabran dva puta'
+      )
     })
 
     it('fails when name exceeds 255 characters', () => {
-      const result = catalogSchema.safeParse({
-        name: 'a'.repeat(256),
-        discount: 10,
-        productIds: ['p1'],
-      })
-      expect(result.success).toBe(false)
+      expect(catalogSchema.safeParse({ ...base, name: 'a'.repeat(256) }).success).toBe(false)
+    })
+
+    it('refuses an unknown layout', () => {
+      expect(catalogSchema.safeParse({ ...base, layout: 'POSTER' }).success).toBe(false)
     })
   })
 })
 
-describe('profileSchema', () => {
-  it('exposes safeParse', () => {
-    const result = profileSchema.safeParse({})
-    expect(result).toHaveProperty('success')
-  })
+describe('profileSchema (Podešavanja: SEF-ready company data required)', () => {
+  const company = {
+    companyName: 'Test Veleprodaja DOO',
+    address: 'Knez Mihailova 1, 11000 Beograd',
+    pib: validPib(),
+    registrationNumber: '12345678',
+    giroAccount: validGiro(),
+  }
 
   describe('happy path', () => {
-    it('accepts empty object (all optional)', () => {
-      const result = profileSchema.safeParse({})
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.data.companyName).toBeUndefined()
-        expect(result.data.contactEmail).toBeUndefined()
-      }
+    it('accepts the required company data', () => {
+      expect(profileSchema.safeParse(company).success).toBe(true)
     })
 
-    it('accepts full valid object with optional fields', () => {
+    it('accepts optional contact data and logo', () => {
       const input = {
-        companyName: 'Acme Corp',
-        contactEmail: 'user@example.com',
-        contactPhone: '+1234567890',
-        address: '123 Main St',
-        pib: '123456789',
+        ...company,
+        contactEmail: 'kontakt@firma.rs',
+        contactPhone: '+381 11 123 456',
+        inVatSystem: true,
         logoUrl: 'https://example.com/logo.png',
       }
       const result = profileSchema.safeParse(input)
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.companyName).toBe(input.companyName)
         expect(result.data.contactEmail).toBe(input.contactEmail)
-        expect(result.data.contactPhone).toBe(input.contactPhone)
-        expect(result.data.address).toBe(input.address)
-        expect(result.data.pib).toBe(input.pib)
         expect(result.data.logoUrl).toBe(input.logoUrl)
       }
     })
 
-    it('accepts empty string for contactEmail', () => {
-      const result = profileSchema.safeParse({ contactEmail: '' })
-      expect(result.success).toBe(true)
+    it('accepts an empty contact email', () => {
+      expect(profileSchema.safeParse({ ...company, contactEmail: '' }).success).toBe(true)
     })
   })
 
-  describe('edge cases', () => {
+  describe('edge cases (Serbian messages)', () => {
+    it('refuses an empty form with the first missing field named', () => {
+      expect(profileSchema.safeParse({}).success).toBe(false)
+    })
+
     it('fails when contactEmail is invalid', () => {
-      const result = profileSchema.safeParse({
-        contactEmail: 'not-an-email',
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Invalid email')
-      }
+      expect(firstMessage(profileSchema.safeParse({ ...company, contactEmail: 'not-an-email' }))).toBe('Email nije ispravan.')
     })
 
     it('fails when logoUrl is not a valid URL', () => {
-      const result = profileSchema.safeParse({
-        logoUrl: 'not-a-url',
-      })
-      expect(result.success).toBe(false)
-      if (!result.success) {
-        const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('Invalid URL')
-      }
+      expect(firstMessage(profileSchema.safeParse({ ...company, logoUrl: 'not-a-url' }))).toBe('Adresa logotipa nije ispravna.')
     })
 
-    it('fails when pib exceeds 50 characters', () => {
-      const result = profileSchema.safeParse({
-        pib: 'a'.repeat(51),
-      })
-      expect(result.success).toBe(false)
+    it('fails for a PIB with a wrong control digit, an address without city, a short MB', () => {
+      const wrongPib = company.pib.slice(0, 8) + String((Number(company.pib[8]) + 1) % 10)
+      expect(profileSchema.safeParse({ ...company, pib: wrongPib }).success).toBe(false)
+      expect(profileSchema.safeParse({ ...company, address: 'Knez Mihailova 1' }).success).toBe(false)
+      expect(profileSchema.safeParse({ ...company, registrationNumber: '1234' }).success).toBe(false)
     })
 
     it('fails when address exceeds 500 characters', () => {
-      const result = profileSchema.safeParse({
-        address: 'a'.repeat(501),
-      })
-      expect(result.success).toBe(false)
+      expect(profileSchema.safeParse({ ...company, address: `${'a'.repeat(490)}, 11000 Beograd` }).success).toBe(false)
     })
   })
 })

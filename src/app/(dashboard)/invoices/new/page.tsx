@@ -7,6 +7,7 @@ import { BackLink } from '@/components/layout/BackLink'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
 import { invoicePrefillFromClient } from '@/lib/client-fill'
+import { proformaFromCatalogPrefill, type CatalogProformaSource } from '@/lib/catalog-proforma'
 import { InvoiceCreateInput, InvoiceWithItems } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
@@ -58,6 +59,8 @@ export default function NewInvoicePage() {
   const copyFromId = searchParams.get('copyFrom')
   // "Faktura" / "Predračun" on a buyer in Kupci opens this page with ?clientId=<id> (ROADMAP A9.12).
   const clientId = searchParams.get('clientId')
+  // "Napravi predračun" on a catalog opens this page with ?type=proforma&fromCatalog=<id> (ROADMAP A9.15).
+  const fromCatalogId = searchParams.get('fromCatalog')
   const isProformaDoc = documentType === 'PROFORMA'
   const labels = documentLabels(documentType)
   const listHref = isProformaDoc ? '/invoices?view=proforma' : '/invoices'
@@ -97,6 +100,18 @@ export default function NewInvoicePage() {
     retry: false,
   })
 
+  // A failed or foreign catalog just opens an empty form.
+  const { data: sourceCatalog, isLoading: isLoadingCatalog } = useQuery<CatalogProformaSource>({
+    queryKey: ['catalog', fromCatalogId],
+    queryFn: async () => {
+      const response = await fetch(`/api/catalogs/${fromCatalogId}`)
+      if (!response.ok) throw new Error('Failed to fetch catalog')
+      return response.json()
+    },
+    enabled: Boolean(fromCatalogId),
+    retry: false,
+  })
+
   // Create invoice mutation
   const createMutation = useMutation({
     mutationFn: (data: InvoiceCreateInput) => createInvoice(data, request),
@@ -125,7 +140,7 @@ export default function NewInvoicePage() {
     await createMutation.mutateAsync(data)
   }
 
-  if (isLoadingProducts || isLoadingProfile || (copyFromId && isLoadingCopySource) || (clientId && isLoadingClients)) {
+  if (isLoadingProducts || isLoadingProfile || (copyFromId && isLoadingCopySource) || (clientId && isLoadingClients) || (fromCatalogId && (isLoadingCatalog || isLoadingClients))) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -137,9 +152,11 @@ export default function NewInvoicePage() {
   const startClient = clientId ? clients.find((client) => client.id === clientId) : undefined
   const prefill = copySource
     ? invoiceCopyPrefill({ ...copySource, items: copySource.items ?? [] }, products, inVatSystem)
-    : startClient
-      ? invoicePrefillFromClient(startClient)
-      : undefined
+    : sourceCatalog
+      ? proformaFromCatalogPrefill(sourceCatalog, products, clients, inVatSystem)
+      : startClient
+        ? invoicePrefillFromClient(startClient)
+        : undefined
 
   return (
     <div className="max-w-7xl mx-auto">

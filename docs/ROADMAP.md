@@ -47,6 +47,7 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A3.1-3 | PIB sa kontrolnom cifrom, adresa sa mestom za SEF, žiro-račun proveren pri čuvanju | #99, #100, #101 |
 | A3.4 | Test: faktura radi bez SEF ključa (kod); prelazak na pravi SEF čeka A1.14 | #102 |
 | A3.x | Poruke za XML kažu gde se ispravlja (Podešavanja / faktura / Kupci); Podešavanja i Kupci imaju ista pravila kao SEF, sa greškom ispod polja (PIB 9 cifara + kontrolna, MB 8 cifara, adresa sa mestom, žiro-račun); faktura samo upozorava | #104, #105 |
+| A3.5 | "Preuzmi podatke iz Kupaca" na izmeni fakture; dugme "Izmeni" na fakturi; link "Izmeni fakturu" uz grešku XML-a i u SEF panelu | #107 |
 | A2.11 | Stranice `/za/veleprodaju`, `/za/preduzetnike`, `/za/proizvodjace`; jedan izvor adrese (`src/lib/site-url.ts`); sitemap i robots očišćeni (`/shared/` se ne indeksira); OG slike iz koda; JSON-LD | #97 |
 
 Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 2026-10-05 (provereno u listi migracija Supabase projekta 2026-10-06). Baza je u `eu-west-1`, Vercel funkcije u `dub1` (EU).
@@ -69,7 +70,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A1.10 | **Domen** (kupiti najkasnije 28. okt, da ostanu 3 dana za DNS i Clerk), povezati na Vercel, `NEXT_PUBLIC_APP_URL` | 28. okt | Odluka: prodaja 1. novembra |
 | A1.11 | **Clerk Production** (`pk_live_`) na domenu; registracija i prijava sa 2FA do kraja | 29. okt | Danas `pk_test_`; korisnici sa 2FA mogu da zapnu |
 | A1.12 | U Vercelu: `NEXT_PUBLIC_ANALYTICS=on`, `NEXT_PUBLIC_SENTRY_DSN`, Upstash ključevi, Web Analytics | 29. okt | Bez toga ne znamo gde ljudi odustaju |
-| A1.14 | **SEF na produkciju pred marketing** (odluka vlasnika 2026-10-09: do tada SEF ostaje na demo radi testiranja). Demo slanje sa pravim PIB-om firme i kupcem na SEF-u, pa u Vercelu `SEF_API_BASE_URL=https://efaktura.mfin.gov.rs` i `SEF_ALLOW_PRODUCTION=on`, redeploy. Ako se ne stigne, A3.6. | 28. okt | Prvi kupci ne smeju da "šalju" u demo misleći da je pravi SEF |
+| A1.14 | **SEF na produkciju uz PRD release** (odluka vlasnika 2026-10-09: do PRD release-a, kupovine domena i Clerk Production, SEF slanje ostaje uključeno na **demo** za sve, da bismo slali i testirali fakture). Na PRD: demo slanje sa pravim PIB-om firme i kupcem na SEF-u prošlo, pa u Vercelu `SEF_API_BASE_URL=https://efaktura.mfin.gov.rs` i `SEF_ALLOW_PRODUCTION=on`, redeploy. Ako pravi SEF tada nije spreman: spojiti A3.6 (#108) da kupci ne vide demo slanje. | 28-31. okt (PRD) | Prvi kupci ne smeju da "šalju" u demo misleći da je pravi SEF |
 | A1.13 | Smoke test na produkcijskom domenu: Playwright `TradeMasterPW` smoke prema novom URL-u + jedna ručna faktura od registracije do PDF-a | 30. okt | Smoke prijavljenog korisnika na produkciji nikad nije prošao |
 
 ### A2. Kod pre lansiranja (mali draft PR-ovi, po redu)
@@ -96,8 +97,8 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A3.2 | ✅ (#100) **Adresa sa mestom za SEF** | Visoka | S | Adresa bez zareza ("Kralja Petra I") ide u XML i kao ulica i kao grad. Za XML/slanje adresa mora imati mesto ("Kralja Petra I 10, 11000 Beograd"); polja adrese u Podešavanjima, Kupcima i fakturi dobijaju taj primer. Čuvanje adrese i obična faktura se ne blokiraju. |
 | A3.3 | ✅ (#101) **Žiro-račun proveren pri čuvanju** | Srednja | S | Danas se proverava tek na XML-u i IPS QR-u ("1600045454878" je prošao čuvanje). Podešavanja odbijaju račun koji nije 18 cifara sa ispravnim kontrolnim brojem (`normalizeGiroAccount`), sa primerom "160-0000000123456-54". Od #105 je račun u Podešavanjima obavezan. |
 | A3.4 | 🟡 (#102, kod gotov; prelazak = A1.14) **SEF u produkciji, fakture i bez SEF-a** | Visoka | S | Kod: test da faktura (izdavanje, PDF, plaćanje) ne zavisi od SEF ključa ni od `SEF_KEY_ENCRYPTION_KEY`, i da se bez ključa SEF panel ne prikazuje niti zove SEF. Vlasnik: demo slanje sa pravim PIB-om firme i kupcem koji je na SEF-u (A1.1), pa tek onda u Vercelu `SEF_API_BASE_URL=https://efaktura.mfin.gov.rs` i `SEF_ALLOW_PRODUCTION=on`. Na produkciji je od 2026-10-08 postavljen samo `SEF_KEY_ENCRYPTION_KEY`, pa slanje ide na demo. |
-| A3.5 | 🟡 (PR otvoren) **"Preuzmi podatke iz Kupaca" na fakturi** | Visoka | S | Nađeno 2026-10-09: faktura čuva svoj snimak kupca, pa ispravka u Kupcima ne popravlja staru fakturu i XML i dalje pada (10/2026, 11/2026). Na izmeni fakture dugme koje upiše naziv, PIB i adresu sačuvanog kupca; uz grešku za XML i u SEF panelu link "Izmeni fakturu". Samo za Nacrt i Otvoreno, nikad posle slanja u SEF. |
-| A3.6 | **SEF kartica samo kad je SEF stvarno uključen** | Visoka | S | Danas se "SEF API ključ" u Podešavanjima prikazuje svakoj firmi čim postoji `SEF_KEY_ENCRYPTION_KEY`, sa napomenom "SEF demo". Ako A1.14 ne stigne do lansiranja: env prekidač koji karticu i SEF panel prikazuje samo test nalozima, ostali vide samo "XML za SEF". |
+| A3.5 | ✅ (#107) **"Preuzmi podatke iz Kupaca" na fakturi** | Visoka | S | Nađeno 2026-10-09: faktura čuva svoj snimak kupca, pa ispravka u Kupcima ne popravlja staru fakturu i XML i dalje pada (10/2026, 11/2026). Na izmeni fakture dugme koje upiše naziv, PIB i adresu sačuvanog kupca; uz grešku za XML i u SEF panelu link "Izmeni fakturu". Samo za Nacrt i Otvoreno, nikad posle slanja u SEF. |
+| A3.6 | ⏸ (#108, draft, **ne spajati do PRD-a**) **SEF kartica samo kad je SEF stvarno uključen** | Visoka | S | Danas se "SEF API ključ" u Podešavanjima prikazuje svakoj firmi čim postoji `SEF_KEY_ENCRYPTION_KEY`, sa napomenom "SEF demo". Kod je u #108: `SEF_SENDING=on` za sve, inače samo profili iz `SEF_SENDING_PROFILES`; ništa postavljeno = isključeno. Odluka vlasnika 2026-10-09: do PRD-a stanje ostaje kakvo jeste (SEF demo vidljiv, slanje se testira); #108 se spaja na PRD samo ako A1.14 ne stigne, uz `SEF_SENDING_PROFILES` za test nalog. |
 | A4 | ✅ (#85) **Skeniranje u fakturu i predračun** | Visoka | M | Dugme "Skeniraj" u formi dodaje stavku po barkodu (ili povećava količinu postojeće). Komercijalista u magacinu kuca fakturu kamerom. Postojeći skener, bez izmene `BarcodeScanner.tsx`. |
 | A5 | ✅ (#87) **Kopiraj dokument** | Srednja | S | "Kopiraj" na fakturi i predračunu pravi novi nacrt sa istim kupcem i stavkama, današnjim cenama i troškovima. Stalni kupci često naručuju isto. |
 | A6 | ✅ (#89) **Otpremnica za teren** | Srednja | S | Na PDF otpremnice: adresa isporuke (ako se razlikuje), polja "Robu izdao" / "Robu primio" sa potpisom i datumom, broj paketa. Bez nove šeme ako adresa isporuke ide u napomenu; inače mala migracija. |
@@ -113,6 +114,68 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A2.12 | Landing i `/za/*` FAQ o SEF-u posle A1.14 | Srednja | S | Danas tačno piše "Ne šalje fakture u SEF" (`landing-copy.ts`, `trade-pages.ts`). Kad slanje radi na pravom SEF-u: "Šalje fakturu u SEF jednim dodirom, sa vašim API ključem". Do tada se može dodati samo "XML za ručno učitavanje na SEF" kad A1.1 prođe. |
 | A2.11 | 🟡 (#97) Stranice po delatnosti (veleprodaja, paušalci koji prodaju robu, proizvođači), sitemap, kanonski URL, OG slika | Srednja | M | Posle A1.10; ako domen stiže 28. okt, ovo ide prvih dana novembra. Kod je gotov; posle domena (A1.10) vlasnik podešava `NEXT_PUBLIC_APP_URL` i prijavljuje sitemap u Google Search Console. |
 
+### A9. Usavršavanje pre lansiranja (10-27. okt)
+
+Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, da aplikacija na marketingu bude vrhunska za ovaj posao. Stavke su iz pregleda koda 2026-10-09 (svaka proverena u kodu). Bez novih modula, sve na postojećem toku. Migracije samo gde piše, uz odobrenje vlasnika.
+
+**Prvo greške (P0, odmah)**
+
+| # | Šta | Vrednost | Trud | Detalj |
+|---|---|---|---|---|
+| A9.1 | **Lista faktura sama izdaje nacrte** | Visoka | S | `src/app/(dashboard)/invoices/page.tsx` pri otvaranju šalje PATCH `UNPAID` za svaki nacrt (i predračun u nacrtu): roba izlazi sa lagera bez korisnika, tiho pada sa 402 na isteklom nalogu. Ukloniti; nacrt se izdaje samo dugmetom. |
+| A9.2 | **Plaćena faktura može da se obriše** | Visoka | S | Brisanje briše knjižen prihod, vraća robu i pravi rupu u brojevima. Server i lista odbijaju brisanje PAID; prvo "Vrati među otvorene". |
+| A9.3 | Datumi oko ponoći | Srednja | S | Podrazumevani rok se računa iz UTC datuma (između 00 i 02 h ispadne dan ranije); "Rok plaćanja: N dana" na PDF-u može biti 31. Beogradski kalendarski dani (`src/lib/local-date.ts`). |
+
+**Izgled i doslednost**
+
+| # | Šta | Vrednost | Trud | Detalj |
+|---|---|---|---|---|
+| A9.4 | **Engleski tekst do korisnika** | Visoka | S | Dijalog brisanja proizvoda ("Delete Product"), bedževi "Scanned/Created/Deleted", Zod poruke na fakturi ("quantity must be an integer"), API greške ("Invoice not found", "Internal server error"), "Loading movements...", IN/OUT u istoriji; Brzi sken snima "Unknown Product" u bazu. Srpski tekst + mapa opštih API grešaka u `readApiErrorMessage`. |
+| A9.5 | **Greška učitavanja izgleda kao prazan nalog** | Visoka | S | Neuspeo `useQuery` daje `[]`, pa Fakture, Asortiman, Kupci i Katalozi na slabom signalu pokazuju "napravite prvu…". Jedna kartica "Nije učitano. Pokušaj ponovo". |
+| A9.6 | Datumi, procenti i množina po srpski | Srednja | S | Kalendar na engleskom sa nedeljom kao prvim danom, `format(…, 'PPP')` na engleskom, procenti sa tačkom, "1 otvorenih faktura". `sr-Latn` locale, `formatPercent`, pomoćna funkcija za množinu. |
+| A9.7 | Stari interni izrazi | Srednja | S | "agregiranu količinu svih dnevnih unosa", "SKU" u Asortimanu i izboru proizvoda (katalog već kaže "Šifra"). Svuda "Šifra / barkod". |
+| A9.8 | Zaglavlje fakture na telefonu | Srednja | S | Do 7 dugmadi jedno ispod drugog; ručno "Nazad" umesto `BackLink`; datum plaćanja se ne vidi. Glavne akcije (Označi plaćeno, PDF) + meni "Više" (Izmeni, Kopiraj, Otpremnica, XML); "Plaćeno: datum". |
+
+**Funkcije u glavnom toku**
+
+| # | Šta | Vrednost | Trud | Detalj |
+|---|---|---|---|---|
+| A9.9 | **Faktura sa svim podacima koje kupac i knjigovođa očekuju** | Visoka | S | PDF nema matični broj prodavca i kupca, datum prometa, mesto izdavanja ni napomenu "Obveznik nije u sistemu PDV-a"; štampa "Status: Otvoreno" i sivo polje "LOGO". Tekst da potvrdi knjigovođa. |
+| A9.10 | **Pretraga i filteri faktura** | Visoka | S-M | Pretraga po broju i kupcu, filter kupca i perioda, otvorene poređane po roku. |
+| A9.11 | **Stavka bez proizvoda** (prevoz, usluga, ambalaža) | Visoka | S-M | Server već prima `productId: null`, a forma briše naziv i cenu. Bez kretanja lagera; nova faktura ne traži pun asortiman. |
+| A9.12 | **Kupac iz fakture i faktura iz kupca** | Visoka | S | "Sačuvaj kupca" na fakturi (kao u katalogu; XML traži MB iz Kupaca) i "Nova faktura / predračun" na kupcu. |
+| A9.13 | **Minimalna zaliha po proizvodu** | Visoka | S | `minStock` postoji (podrazumevano 2), ali se ne može menjati, pa je "Nizak lager" besmislen za robu u kutijama. Polje u ProductForm, bez migracije. |
+| A9.14 | Asortiman: "šta treba dopuniti" | Srednja | S | Filteri "Bez nabavne cene", "Bez prodajne cene", "Nizak lager" i sortiranje (naziv, stanje, cena). Brzi sken namerno ostavlja nabavnu praznu. |
+| A9.15 | Predračun iz kataloga | Srednja | S | Katalog ima kupca, popust i proizvode; dugme "Napravi predračun" kroz postojeći prefill (`copyFrom`). Zatvara korak katalog → faktura. |
+| A9.16 | Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
+| A9.17 | Brze akcije na Početnoj | Srednja | S | "Nova faktura", "Novi predračun", "Ulaz robe" pored Brzog skena; "Naplaćeno ovog meseca". |
+
+**Izveštaji**
+
+| # | Šta | Vrednost | Trud | Detalj |
+|---|---|---|---|---|
+| A9.18 | **Ko mi duguje** (potraživanja po kupcu) | Visoka | S-M | Kupac, otvoreno, najstariji rok, link na njegove fakture. |
+| A9.19 | **Vrednost lagera po nabavnoj ceni i "Lager lista" XLSX** | Visoka | S | Danas samo po prodajnoj; izvoz: šifra, naziv, stanje, nabavna, prodajna, vrednost (knjigovođa, popis). |
+| A9.20 | Najprodavaniji proizvodi i najbolji kupci po periodu | Srednja | S-M | Iz snimaka stavki, samo fakture. |
+
+**Sa migracijom (uz odobrenje vlasnika, posle ostalih)**
+
+| # | Šta | Vrednost | Trud | Detalj |
+|---|---|---|---|---|
+| A9.21 | Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
+| A9.22 | Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
+
+Redosled: A9.1-A9.3 odmah; pa A9.4, A9.5, A9.9, A9.13, A9.10 (vide se u demo videu A1.8); pa A9.11, A9.12, A9.15, A9.18, A9.19; ostalo ako ostane vremena. Jedan mali PR po stavci.
+
+### A10. Kvalitet: automatski testovi u pregledaču
+
+| # | Šta | Stanje |
+|---|---|---|
+| A10.1 | Playwright u glavnom repou: javni smoke (desktop + telefon) na svaki Vercel deploy, prijava bez lozinke (Clerk tiket), `@writes` samo nad test bazom (`e2e/README.md`) | 🟡 #109 (javni deo 46/46 lokalno i na produkciji) |
+| A10.2 | Test baza za E2E: Supabase projekat iz A1.9 (vraćen backup) + test korisnik u Clerk Development; pokrenuti `npm run e2e:app` | Vlasnik + ja, do 20. okt |
+| A10.3 | E2E za svaku A9 stavku koja menja tok (faktura, predračun, katalog, lager) | Uz svaki PR |
+| A10.4 | A1.13 smoke na domenu: `E2E_BASE_URL=<domen> npm run e2e:public` + ručna faktura od registracije do PDF-a | 30. okt |
+
 **Zamrzavanje koda: 28. oktobar.** Posle toga samo popravke grešaka nađenih u A1.13.
 
 ### Uslovi za lansiranje 1. novembra (sve mora biti tačno)
@@ -122,7 +185,9 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 - [x] A2.1-A2.3 spojeni (stanje robe i izolacija firmi)
 - [ ] Smoke test na produkcijskom domenu prolazi (A1.13)
 - [ ] Landing ima kontakt, primere i nijednu tvrdnju koja ne radi (kontakt i tvrdnje ✅ #94; primeri čekaju A1.7)
-- [ ] SEF: pravi SEF uključen (A1.14) ili SEF kartica sakrivena (A3.6); landing usklađen (A2.12)
+- [ ] SEF: na PRD-u pravi SEF uključen (A1.14) ili #108 spojen i demo slanje sakriveno (A3.6); landing usklađen (A2.12)
+- [ ] A9.1-A9.3 spojeni (greške u fakturama)
+- [ ] Javni E2E smoke prolazi na domenu (A10.4)
 - [ ] Analitika i Sentry uključeni
 - [ ] Backup vraćen bar jednom
 

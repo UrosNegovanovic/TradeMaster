@@ -343,3 +343,30 @@ describe('invoice sent to SEF is locked (ROADMAP A3)', () => {
     expect(stockMocks.syncInvoiceStock).not.toHaveBeenCalled()
   })
 })
+
+describe('DELETE /api/invoices/:id keeps paid invoices (ROADMAP A9.2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    stockMocks.syncInvoiceStock.mockResolvedValue(undefined)
+    mocks.$transaction.mockImplementation(async (fn: (tx: typeof mocks) => unknown) => fn(mocks))
+    vi.mocked(auth).mockResolvedValue({ userId: 'user-a' } as never)
+    mocks.profile.findUnique.mockResolvedValue(profile)
+  })
+
+  it('refuses to delete a paid invoice: booked revenue and stock stay as they are', async () => {
+    mocks.invoice.findFirst.mockResolvedValue({ ...paidInvoice, sefStatus: null, items: [] })
+    const response = await DELETE(request('DELETE', {}), context)
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toMatchObject({ error: expect.stringMatching(/Plaćena faktura/) })
+    expect(mocks.invoice.delete).not.toHaveBeenCalled()
+    expect(stockMocks.syncInvoiceStock).not.toHaveBeenCalled()
+  })
+
+  it('still deletes an open invoice and returns its stock', async () => {
+    mocks.invoice.findFirst.mockResolvedValue({ ...unpaidInvoice, sefStatus: null, items: [] })
+    const response = await DELETE(request('DELETE', {}), context)
+    expect(response.status).toBe(200)
+    expect(stockMocks.syncInvoiceStock).toHaveBeenCalledWith(mocks, expect.objectContaining({ status: 'DRAFT' }))
+    expect(mocks.invoice.delete).toHaveBeenCalled()
+  })
+})

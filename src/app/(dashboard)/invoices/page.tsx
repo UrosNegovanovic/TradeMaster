@@ -15,14 +15,13 @@ import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { InvoiceExport } from '@/components/invoices/InvoiceExport'
 import { cn } from '@/lib/utils'
-import { isPaidInvoiceStatus } from '@/lib/invoice-status'
+import { canDeleteInvoice, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { INVOICE_TONE_BADGE_VARIANT, documentStatusView } from '@/lib/invoice-status-view'
 import { isProforma, onlyInvoices } from '@/lib/document-type'
 import { buildFinanceSnapshot, formatRsd } from '@/lib/invoice-finance'
 import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
 import { SefStatusBadge } from '@/components/sef/SefStatusBadge'
-import { isLockedBySef } from '@/lib/sef-status'
 import { invoiceEditHref } from '@/lib/invoice-edit'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
@@ -73,8 +72,7 @@ interface InvoiceCardProps {
 }
 
 function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
-  // Sent to SEF: no edit or delete here (storno goes through SEF).
-  const sefLocked = isLockedBySef(invoice.sefStatus)
+  // Paid or sent to SEF: no edit or delete here (reopen first; storno goes through SEF).
   const editHref = invoiceEditHref(invoice)
   return (
     <Card className={cn(invoice.status === InvoiceStatus.PAID && 'opacity-95')}>
@@ -130,7 +128,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
                 </Link>
               </Button>
             )}
-            {sefLocked ? null : (
+            {canDeleteInvoice(invoice) ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -141,7 +139,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
                 <Trash2 className="h-4 w-4" />
                 <span className="sr-only">Obriši</span>
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </CardContent>

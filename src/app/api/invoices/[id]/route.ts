@@ -16,6 +16,7 @@ import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { accessExpiredResponse } from '@/lib/access-guard'
 import { PROFORMA_PAID_MESSAGE, stockStatusFor } from '@/lib/document-type'
 import { SEF_LOCKED_MESSAGE, isLockedBySef } from '@/lib/sef-status'
+import { PAID_DELETE_MESSAGE, isPaidInvoiceStatus } from '@/lib/invoice-status'
 
 export const dynamic = 'force-dynamic'
 
@@ -387,6 +388,9 @@ export async function DELETE(
       }
       if (isLockedBySef(existingInvoice.sefStatus)) {
         throw new InvoiceClientError(SEF_LOCKED_MESSAGE, 409)
+      }
+      if (isPaidInvoiceStatus(existingInvoice.status)) {
+        throw new InvoiceClientError(PAID_DELETE_MESSAGE, 409)
       }
 
       await syncInvoiceStock(tx, {

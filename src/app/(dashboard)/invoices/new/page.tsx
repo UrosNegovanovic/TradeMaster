@@ -6,6 +6,7 @@ import { InvoiceForm } from '@/components/invoices/InvoiceForm'
 import { BackLink } from '@/components/layout/BackLink'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
+import { invoicePrefillFromClient } from '@/lib/client-fill'
 import { InvoiceCreateInput, InvoiceWithItems } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
@@ -55,6 +56,8 @@ export default function NewInvoicePage() {
   const documentType = parseDocumentType(searchParams.get('type') === 'proforma' ? 'PROFORMA' : null)
   // "Kopiraj" on a document opens this page with ?copyFrom=<id> (ROADMAP A5).
   const copyFromId = searchParams.get('copyFrom')
+  // "Faktura" / "Predračun" on a buyer in Kupci opens this page with ?clientId=<id> (ROADMAP A9.12).
+  const clientId = searchParams.get('clientId')
   const isProformaDoc = documentType === 'PROFORMA'
   const labels = documentLabels(documentType)
   const listHref = isProformaDoc ? '/invoices?view=proforma' : '/invoices'
@@ -67,7 +70,7 @@ export default function NewInvoicePage() {
   })
 
   // Saved buyers are optional: a failed fetch just hides the picker.
-  const { data: clients = [] } = useQuery<Client[]>({
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: ['clients'],
     queryFn: async () => {
       const response = await fetch('/api/clients')
@@ -122,7 +125,7 @@ export default function NewInvoicePage() {
     await createMutation.mutateAsync(data)
   }
 
-  if (isLoadingProducts || isLoadingProfile || (copyFromId && isLoadingCopySource)) {
+  if (isLoadingProducts || isLoadingProfile || (copyFromId && isLoadingCopySource) || (clientId && isLoadingClients)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -131,9 +134,12 @@ export default function NewInvoicePage() {
   }
 
   const inVatSystem = profile?.inVatSystem === true
+  const startClient = clientId ? clients.find((client) => client.id === clientId) : undefined
   const prefill = copySource
     ? invoiceCopyPrefill({ ...copySource, items: copySource.items ?? [] }, products, inVatSystem)
-    : undefined
+    : startClient
+      ? invoicePrefillFromClient(startClient)
+      : undefined
 
   return (
     <div className="max-w-7xl mx-auto">

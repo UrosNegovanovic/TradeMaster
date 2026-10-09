@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import Link from 'next/link'
+import { FilePlus2, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { LoadErrorState } from '@/components/layout/LoadErrorState'
 import { failedBeforeFirstLoad } from '@/lib/query-state'
 import { Button } from '@/components/ui/button'
@@ -285,7 +286,21 @@ export default function ClientsPage() {
                     </p>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                  <Button variant="outline" size="sm" className="h-11 sm:h-9" asChild>
+                    <Link href={`/invoices/new?clientId=${client.id}`} aria-label={`Nova faktura za ${client.name}`}>
+                      <FilePlus2 className="mr-1.5 h-4 w-4" />
+                      Faktura
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-11 sm:h-9" asChild>
+                    <Link
+                      href={`/invoices/new?type=proforma&clientId=${client.id}`}
+                      aria-label={`Novi predračun za ${client.name}`}
+                    >
+                      Predračun
+                    </Link>
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

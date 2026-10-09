@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { clientToInvoiceFields, findClientByName, findSavedClientForInvoice, savedClientDiffers } from './client-fill'
+import {
+  clientToInvoiceFields,
+  findClientByName,
+  findSavedClientForInvoice,
+  invoicePrefillFromClient,
+  newClientFromInvoice,
+  savedClientDiffers,
+} from './client-fill'
 
 describe('clientToInvoiceFields', () => {
   it('copies name, PIB and address', () => {
@@ -78,5 +85,35 @@ describe('savedClientDiffers', () => {
     expect(
       savedClientDiffers(client, { clientName: 'Kupac DOO', clientPib: client.pib, clientAddress: 'Knez Mihailova 1' })
     ).toBe(true)
+  })
+})
+
+describe('newClientFromInvoice (ROADMAP A9.12)', () => {
+  const buyer = { clientName: 'Kupac DOO', clientPib: '', clientAddress: '', registrationNumber: '' }
+
+  it('saves a buyer with only a name', () => {
+    const result = newClientFromInvoice(buyer)
+    expect(result).toEqual({ ok: true, data: { name: 'Kupac DOO', pib: null, registrationNumber: null, address: null } })
+  })
+
+  it('asks for the matični broj when the buyer has a PIB', () => {
+    const result = newClientFromInvoice({ ...buyer, clientPib: '101134702' })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.message).toMatch(/matični broj/)
+  })
+
+  it('refuses an address without city, like Kupci does', () => {
+    expect(newClientFromInvoice({ ...buyer, clientAddress: 'Knez Mihailova 1' }).ok).toBe(false)
+  })
+})
+
+describe('invoicePrefillFromClient', () => {
+  it('fills the buyer and leaves the lines to the form', () => {
+    expect(invoicePrefillFromClient({ name: 'Kupac', pib: null, address: 'Ulica 1, 11000 Beograd' })).toEqual({
+      clientName: 'Kupac',
+      clientPib: '',
+      clientAddress: 'Ulica 1, 11000 Beograd',
+      items: [],
+    })
   })
 })

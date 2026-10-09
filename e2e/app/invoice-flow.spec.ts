@@ -84,4 +84,33 @@ test.describe('invoice flow @writes', () => {
     expect(invoice?.items).toEqual([expect.objectContaining({ productId: null, productName: 'Prevoz robe', unitCost: '0' })])
     await json(api, 'DELETE', `/api/invoices/${invoice!.id}`)
   })
+
+  test('a buyer saved from the invoice opens the next invoice from Kupci (A9.12)', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'one run is enough')
+    await page.goto('/dashboard')
+    const api = page.request
+    await json(api, 'PUT', '/api/profile', testCompany())
+    const buyer = `E2E Kupac ${Date.now()}`
+
+    await page.goto('/invoices/new')
+    await page.getByLabel('Naziv kupca').fill(buyer)
+    await page.getByLabel('Sačuvaj kupca u Kupce').check()
+    await page.getByRole('button', { name: 'Slobodna stavka (usluga, prevoz)' }).first().click()
+    await page.getByLabel('Naziv slobodne stavke').first().fill('Usluga')
+    await page.getByLabel('Jedinična cena').first().fill('100')
+    await page.getByRole('button', { name: 'Sačuvaj fakturu' }).click()
+    await expect(page.getByText('Faktura je sačuvana')).toBeVisible()
+
+    const clients: Array<{ id: string; name: string }> = await json(api, 'GET', '/api/clients')
+    const saved = clients.find((client) => client.name === buyer)
+    expect(saved, 'buyer saved in Kupci').toBeTruthy()
+
+    await page.goto('/clients')
+    await page.getByRole('link', { name: `Novi predračun za ${buyer}` }).click()
+    await expect(page.getByLabel('Naziv kupca')).toHaveValue(buyer)
+
+    const invoices: Array<{ id: string; clientName: string }> = await json(api, 'GET', '/api/invoices')
+    for (const row of invoices.filter((invoice) => invoice.clientName === buyer)) await api.delete(`/api/invoices/${row.id}`)
+    await api.delete(`/api/clients/${saved!.id}`)
+  })
 })

@@ -18,7 +18,11 @@ import { findProductByScan, scanTarget } from '@/lib/invoice-scan'
 import type { InvoiceCopyPrefill } from '@/lib/invoice-copy'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
-import { clientToInvoiceFields, findSavedClientForInvoice, savedClientDiffers } from '@/lib/client-fill'
+import { clientToInvoiceFields, findSavedClientForInvoice, newClientFromInvoice, savedClientDiffers } from '@/lib/client-fill'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useQueryClient } from '@tanstack/react-query'
+import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
+import { REGISTRATION_NUMBER_LENGTH } from '@/lib/company-fields'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
 import { documentLabels } from '@/lib/document-type'
@@ -127,6 +131,11 @@ export function InvoiceForm({
         ]
   )
   const [formError, setFormError] = useState<string | null>(null)
+  // ROADMAP A9.12: remember a new buyer in Kupci while making the document.
+  const [saveNewClient, setSaveNewClient] = useState(false)
+  const [newClientMb, setNewClientMb] = useState('')
+  const request = useAuthorizedFetch()
+  const queryClient = useQueryClient()
   const [scannerOpen, setScannerOpen] = useState(false)
   const scanGateRef = useRef(createScanGate())
   // Latest rows for scan reads that arrive faster than React re-renders.
@@ -177,6 +186,10 @@ export function InvoiceForm({
     savedClientMatch && savedClientDiffers(savedClientMatch, { clientName, clientPib, clientAddress })
       ? savedClientMatch
       : undefined
+
+  // Offer "Sačuvaj kupca" only for a buyer that is not in Kupci yet (same PIB or same name).
+  const canSaveClient =
+    clientName.trim().length > 0 && !findSavedClientForInvoice(clients, { clientName, clientPib })
 
   // Unsaved-changes guard: compare what the user can edit with what the form started from.
   const draftSnapshot = invoiceDraftSnapshot({ invoiceNumber, dueDate, clientName, clientAddress, clientPib, items })
@@ -415,6 +428,15 @@ export function InvoiceForm({
       })),
     }
 
+    let clientToSave: ReturnType<typeof newClientFromInvoice> | null = null
+    if (canSaveClient && saveNewClient) {
+      clientToSave = newClientFromInvoice({ clientName, clientPib, clientAddress, registrationNumber: newClientMb })
+      if (!clientToSave.ok) {
+        setFormError(`Kupac ne može da se sačuva: ${clientToSave.message} Ispravite ili isključite „Sačuvaj kupca”.`)
+        return
+      }
+    }
+
     if (items.some((item) => !item.free && !item.productId)) {
       setFormError('Izaberite proizvod u svakoj stavci ili je pretvorite u slobodnu stavku (usluga, prevoz).')
       return
@@ -458,6 +480,21 @@ export function InvoiceForm({
       })),
     }
 
+    if (clientToSave?.ok) {
+      // Best effort: the document is saved even when remembering the buyer fails.
+      try {
+        const response = await request('/api/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(clientToSave.data),
+        })
+        if (!response.ok) throw new Error('client not saved')
+        await queryClient.invalidateQueries({ queryKey: ['clients'] })
+        notify.success('Kupac je sačuvan u Kupcima')
+      } catch {
+        notify.error('Kupac nije sačuvan', { description: 'Dokument se čuva; kupca dodajte na stranici Kupci.' })
+      }
+    }
     await onSubmit(formData)
   }
 
@@ -565,6 +602,38 @@ export function InvoiceForm({
                 <p className="text-sm text-amber-700">Za SEF adresa treba mesto, npr. &quot;{sr.address.placeholder}&quot;.</p>
               ) : null}
             </div>
+            {canSaveClient ? (
+              <div className="space-y-3 rounded-md border p-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="saveNewClient"
+                    checked={saveNewClient}
+                    onCheckedChange={(checked) => setSaveNewClient(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="saveNewClient" className="font-normal">
+                    Sačuvaj kupca u Kupce
+                    <span className="block text-xs text-muted-foreground">
+                      Sledeći put ga birate iz liste, bez kucanja naziva, PIB-a i adrese.
+                    </span>
+                  </Label>
+                </div>
+                {saveNewClient && clientPib.trim() ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="newClientMb">Matični broj kupca</Label>
+                    <Input
+                      id="newClientMb"
+                      value={newClientMb}
+                      onChange={(e) => setNewClientMb(digitsOnly(e.target.value))}
+                      placeholder="8 cifara"
+                      inputMode="numeric"
+                      maxLength={REGISTRATION_NUMBER_LENGTH}
+                    />
+                    <p className="text-xs text-muted-foreground">Čuva se u Kupcima; SEF ga traži uz PIB.</p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
         </CardContent>
       </Card>
 

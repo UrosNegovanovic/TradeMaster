@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Edit, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Edit, ArrowLeft, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
+import { catalogProformaHref } from '@/lib/catalog-proforma'
 import { CatalogItemsView } from '@/components/catalogs/CatalogItemsView'
 import {
   arrangeCatalogItems,
@@ -108,14 +109,12 @@ export default function CatalogDetailsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <Card>
           <CardContent className="py-12 text-center">
-            <h2 className="text-xl font-bold mb-2">Catalog Not Found</h2>
-            <p className="text-muted-foreground mb-4">
-              The catalog you&apos;re looking for doesn&apos;t exist or has been removed.
-            </p>
+            <h2 className="text-xl font-bold mb-2">Katalog nije pronađen</h2>
+            <p className="text-muted-foreground mb-4">Katalog ne postoji ili je obrisan.</p>
             <Link href="/catalogs">
               <Button variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Catalogs
+                Nazad na kataloge
               </Button>
             </Link>
           </CardContent>
@@ -154,6 +153,14 @@ export default function CatalogDetailsPage() {
             </Link>
           </Button>
           <CatalogPdfDownload catalog={catalog} />
+          {catalog.items && catalog.items.length > 0 ? (
+            <Button className="min-h-11 w-full sm:w-auto" asChild>
+              <Link href={catalogProformaHref(catalog.id)}>
+                <FileText className="mr-2 h-4 w-4" />
+                Napravi predračun
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -169,7 +176,7 @@ export default function CatalogDetailsPage() {
       <div className="grid gap-6 md:grid-cols-3 mb-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Discount</CardTitle>
+            <CardTitle className="text-lg">Popust</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-primary">
@@ -180,7 +187,7 @@ export default function CatalogDetailsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Products</CardTitle>
+            <CardTitle className="text-lg">Proizvodi</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
@@ -195,7 +202,7 @@ export default function CatalogDetailsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {new Date(catalog.createdAt).toLocaleDateString()}
+              {new Date(catalog.createdAt).toLocaleDateString('sr-RS')}
             </p>
           </CardContent>
         </Card>
@@ -205,7 +212,7 @@ export default function CatalogDetailsPage() {
       {catalog.notes && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>Napomena</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground whitespace-pre-wrap">
@@ -220,13 +227,11 @@ export default function CatalogDetailsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Products</CardTitle>
-              <CardDescription>
-                {catalog.items?.length || 0} product(s) in this catalog
-              </CardDescription>
+              <CardTitle>Proizvodi</CardTitle>
+              <CardDescription>U katalogu: {catalog.items?.length || 0}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Items per page:</span>
+              <span className="text-sm text-muted-foreground">Po strani:</span>
               <Select
                 value={itemsPerPage === 'all' ? 'all' : itemsPerPage.toString()}
                 onValueChange={handleItemsPerPageChange}
@@ -235,10 +240,10 @@ export default function CatalogDetailsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="12">12 per page</SelectItem>
-                  <SelectItem value="24">24 per page</SelectItem>
-                  <SelectItem value="48">48 per page</SelectItem>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="12">12 po strani</SelectItem>
+                  <SelectItem value="24">24 po strani</SelectItem>
+                  <SelectItem value="48">48 po strani</SelectItem>
+                  <SelectItem value="all">Svi</SelectItem>
                 </SelectContent>
               </Select>
             </div>

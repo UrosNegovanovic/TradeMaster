@@ -437,6 +437,13 @@ export function InvoiceForm({
       }
     }
 
+    // The server refuses a price of 0 (e.g. "Cena na upit" from a catalog); say which lines need one.
+    const unpriced = items.filter((item) => !(Number(item.unitPrice) > 0)).map((item) => item.productName.trim() || 'stavka bez naziva')
+    if (unpriced.length > 0) {
+      setFormError(`Unesite cenu veću od 0 za: ${unpriced.join(', ')}.`)
+      return
+    }
+
     if (items.some((item) => !item.free && !item.productId)) {
       setFormError('Izaberite proizvod u svakoj stavci ili je pretvorite u slobodnu stavku (usluga, prevoz).')
       return

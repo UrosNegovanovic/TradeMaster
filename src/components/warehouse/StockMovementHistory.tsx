@@ -198,12 +198,12 @@ function MovementList({ movements }: { movements: StockMovement[] }) {
                   {movement.type === MovementType.IN ? (
                     <Badge variant="success">
                       <ArrowUp className="mr-1 h-3 w-3" />
-                      IN
+                      UL
                     </Badge>
                   ) : (
                     <Badge variant="destructive">
                       <ArrowDown className="mr-1 h-3 w-3" />
-                      OUT
+                      IZ
                     </Badge>
                   )}
                 </TableCell>
@@ -335,7 +335,7 @@ export function StockMovementHistory({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
             {isLoadingAll && !allMovements ? (
-              <p className="py-8 text-center text-muted-foreground">Loading movements...</p>
+              <p className="py-8 text-center text-muted-foreground">Učitavanje kretanja…</p>
             ) : overlayFiltered.length === 0 ? (
               <div className="rounded-md border py-12 text-center">
                 <Package className="mx-auto mb-3 h-12 w-12 opacity-50 text-muted-foreground" />

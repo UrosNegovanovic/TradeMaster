@@ -42,7 +42,7 @@ async function updateCatalog(id: string, data: CatalogFormData, request: Session
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.error || 'Failed to update catalog')
+    throw new Error(error.error || 'Katalog nije sačuvan')
   }
 
   return response.json()
@@ -77,8 +77,8 @@ export default function EditCatalogPage({ params }: { params: { id: string } }) 
       })
     },
     onError: (error: Error) => {
-      notify.error('Failed to update catalog', {
-        description: error.message || 'Please try again.',
+      notify.error('Katalog nije sačuvan', {
+        description: error.message || 'Pokušajte ponovo.',
       })
     },
   })

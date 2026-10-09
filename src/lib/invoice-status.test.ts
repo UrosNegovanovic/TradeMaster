@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canDeleteInvoice,
   invoiceStatusAction,
   invoiceStatusLabel,
   invoicesListHref,
@@ -27,5 +28,14 @@ describe('invoice-status', () => {
     expect(invoiceStatusAction('DRAFT')).toBe('issue')
     expect(invoiceStatusAction('UNPAID')).toBe('pay')
     expect(invoiceStatusAction('PAID')).toBe('reopen')
+  })
+})
+
+describe('canDeleteInvoice', () => {
+  it('allows deleting drafts and open invoices only', () => {
+    expect(canDeleteInvoice({ status: 'DRAFT' })).toBe(true)
+    expect(canDeleteInvoice({ status: 'UNPAID', sefStatus: null })).toBe(true)
+    expect(canDeleteInvoice({ status: 'PAID' })).toBe(false)
+    expect(canDeleteInvoice({ status: 'UNPAID', sefStatus: 'SENT' })).toBe(false)
   })
 })

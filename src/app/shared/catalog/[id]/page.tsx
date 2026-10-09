@@ -27,6 +27,7 @@ import {
 import { CatalogItemsView } from '@/components/catalogs/CatalogItemsView'
 import { cn } from '@/lib/utils'
 import { sr } from '@/lib/ui-copy'
+import { HttpStatusError, retryUnlessClientError } from '@/lib/api-error'
 
 type PublicItem = PublicCatalog['items'][number]
 const categoryOf = (item: PublicItem) => item.product?.categoryName
@@ -38,7 +39,7 @@ async function fetchCatalog(id: string): Promise<PublicCatalog> {
     : `/api/public/catalogs/${id}`
   const response = await fetch(endpoint, { cache: 'no-store' })
   if (!response.ok) {
-    throw new Error('Failed to fetch catalog')
+    throw new HttpStatusError(response.status, 'Failed to fetch catalog')
   }
   return response.json()
 }
@@ -53,6 +54,8 @@ export default function PublicCatalogPage({ params }: { params: { id: string } }
     // Each fetch counts as an open of the link (ROADMAP A8); refocusing the tab is not a new open.
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    // An unknown or revoked link shows "Katalog nije pronađen" at once instead of after three retries.
+    retry: retryUnlessClientError,
   })
 
   const [query, setQuery] = useState('')

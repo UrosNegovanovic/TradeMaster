@@ -55,6 +55,8 @@ interface InvoiceFormProps {
 
 interface InvoiceItemRow {
   id: string
+  /** Free line (ROADMAP A9.11): typed name, no product, no stock movement. */
+  free?: boolean
   productId: string | null
   productName: string
   quantity: number
@@ -106,11 +108,14 @@ export function InvoiceForm({
       ? prefill.items.map((item, index) => ({
           ...item,
           id: `copy-${index}`,
+          free: !item.productId,
           total: lineTotal(item.quantity, item.unitPrice, clampDiscountPercent(item.discount)),
         }))
       : [
           {
             id: '1',
+            // Without products in Asortiman the first line is a free line, so a service invoice still works.
+            free: products.length === 0,
             productId: null,
             productName: '',
             quantity: 1,
@@ -141,6 +146,7 @@ export function InvoiceForm({
         setItems(
           initialData.items.map((item: any, index: number) => ({
             id: item.id || `${Date.now()}-${index}`,
+            free: !item.productId,
             productId: item.productId,
             productName: item.productName,
             quantity: item.quantity,
@@ -287,6 +293,7 @@ export function InvoiceForm({
         const updated = { ...item, [field]: value }
 
         if (field === 'productId') {
+          updated.free = false
           const selectedProduct = products.find((p) => p.id === value)
           if (selectedProduct) {
             updated.productName = selectedProduct.name
@@ -307,6 +314,17 @@ export function InvoiceForm({
 
         return updated
       })
+    )
+  }
+
+  // Switch a line between "product from Asortiman" and a free line with a typed name.
+  const setLineFree = (id: string, free: boolean) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, free, productId: null, productName: '', unitPrice: free ? item.unitPrice : 0, total: free ? item.total : 0 }
+          : item
+      )
     )
   }
 
@@ -388,12 +406,18 @@ export function InvoiceForm({
       clientPib: clientPib.trim() || undefined,
       items: items.map((item) => ({
         productId: item.productId || null,
+        ...(item.free && !item.productId ? { free: true } : {}),
         productName: item.productName.trim(),
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         discount: item.discount,
         ...(vatEnabled ? { vatRate: item.vatRate } : {}),
       })),
+    }
+
+    if (items.some((item) => !item.free && !item.productId)) {
+      setFormError('Izaberite proizvod u svakoj stavci ili je pretvorite u slobodnu stavku (usluga, prevoz).')
+      return
     }
 
     if (hasShortage) {
@@ -593,13 +617,48 @@ export function InvoiceForm({
                 key={item.id}
                 className={`grid grid-cols-1 gap-3 border-b pb-4 md:items-start md:border-0 md:pb-0 ${itemTracks}`}
               >
-                <div className="min-w-0">
-                  <Label className={mobileFieldLabelClass}>Proizvod</Label>
-                  <InvoiceProductPicker
-                    products={products}
-                    value={item.productId}
-                    onChange={(productId) => updateItem(item.id, 'productId', productId)}
-                  />
+                <div className="min-w-0 space-y-1.5">
+                  {item.free ? (
+                    <>
+                      <Label htmlFor={`line-name-${item.id}`} className={mobileFieldLabelClass}>
+                        Slobodna stavka
+                      </Label>
+                      <Input
+                        id={`line-name-${item.id}`}
+                        value={item.productName}
+                        onChange={(e) => updateItem(item.id, 'productName', e.target.value)}
+                        placeholder="npr. Prevoz robe, usluga montaže"
+                        aria-label="Naziv slobodne stavke"
+                        maxLength={255}
+                        className="h-11"
+                      />
+                      {products.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setLineFree(item.id, false)}
+                          className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          Izaberi proizvod iz asortimana
+                        </button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <Label className={mobileFieldLabelClass}>Proizvod</Label>
+                      <InvoiceProductPicker
+                        products={products}
+                        value={item.productId}
+                        onChange={(productId) => updateItem(item.id, 'productId', productId)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setLineFree(item.id, true)}
+                        className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                      >
+                        Slobodna stavka (usluga, prevoz)
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Quantity and Unit Price - Row on mobile */}

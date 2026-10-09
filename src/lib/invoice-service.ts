@@ -104,6 +104,7 @@ export function assertInvoiceContentEditable(status: string) {
 
 export type ComputedInvoiceItem = {
   productId: string | null
+  free?: boolean
   productName: string
   quantity: number
   unitPrice: Decimal
@@ -161,6 +162,7 @@ export function computeInvoiceAmounts(
 
     return {
       productId: item.productId ?? null,
+      free: !item.productId && item.free === true,
       productName: item.productName,
       quantity: item.quantity,
       unitPrice,
@@ -187,6 +189,31 @@ export function computeInvoiceAmounts(
     vatAmount: breakdown.vat,
     totalAmount,
   }
+}
+
+/**
+ * unitCost snapshot for a written line.
+ * - Product line: the product's purchase price today (null when it has none yet, so Finansije flags it).
+ * - Line without a product that was already on the document (its product was deleted, or it is a free
+ *   line): keeps the stored snapshot, matched by name. Historical costs are never invented.
+ * - New free line (prevoz, usluga, ambalaža; ROADMAP A9.11): sells no goods from stock, cost of goods 0.
+ * - Anything else stays null.
+ */
+export function lineUnitCost(
+  item: { productId?: string | null; productName: string; free?: boolean },
+  productCosts: Map<string, Decimal | null>,
+  previousCosts: Map<string, Decimal | null> = new Map()
+): Decimal | number | null {
+  if (item.productId) return productCosts.get(item.productId) ?? null
+  if (previousCosts.has(item.productName)) return previousCosts.get(item.productName) ?? null
+  return item.free ? 0 : null
+}
+
+/** Stored costs of lines without a product, by name, for lineUnitCost when a document is rewritten. */
+export function costsOfLinesWithoutProduct(
+  items: Array<{ productId: string | null; productName: string; unitCost: Decimal | null }>
+): Map<string, Decimal | null> {
+  return new Map(items.filter((item) => !item.productId).map((item) => [item.productName, item.unitCost]))
 }
 
 export async function assertOwnedProducts(

@@ -131,25 +131,6 @@ export default function EditInvoicePage() {
     )
   }
 
-  if (products.length === 0) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <BackLink href={`/invoices/${invoiceId}`}>Nazad na fakturu</BackLink>
-          <h1 className="text-2xl font-bold lg:text-3xl">Izmena fakture</h1>
-        </div>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">
-            Prvo dodajte proizvode u asortiman.
-          </p>
-          <a href="/inventory" className="text-primary hover:underline">
-            Otvori asortiman
-          </a>
-        </div>
-      </div>
-    )
-  }
-
   if (!invoice) {
     return (
       <div className="max-w-4xl mx-auto">

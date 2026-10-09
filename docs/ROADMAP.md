@@ -16,7 +16,7 @@ Vlasnik male B2B firme (1-10 ljudi) koji sam vodi robu i ponude i prodaje **drug
 
 Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ katalog na WhatsApp, napraviš predračun, pretvoriš ga u fakturu i otpremnicu, kupac plati skeniranjem IPS QR koda.
 
-## Šta je urađeno (2026-10-09)
+## Šta je urađeno (2026-10-09, posle #121)
 
 | # | Šta | PR |
 |---|---|---|
@@ -48,6 +48,14 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A3.4 | Test: faktura radi bez SEF ključa (kod); prelazak na pravi SEF čeka A1.14 | #102 |
 | A3.x | Poruke za XML kažu gde se ispravlja (Podešavanja / faktura / Kupci); Podešavanja i Kupci imaju ista pravila kao SEF, sa greškom ispod polja (PIB 9 cifara + kontrolna, MB 8 cifara, adresa sa mestom, žiro-račun); faktura samo upozorava | #104, #105 |
 | A3.5 | "Preuzmi podatke iz Kupaca" na izmeni fakture; dugme "Izmeni" na fakturi; link "Izmeni fakturu" uz grešku XML-a i u SEF panelu | #107 |
+| A9.1-A9.3 | Lista faktura više ne izdaje nacrte sama ("Izdaj fakturu" sa potvrdom); plaćena faktura se ne briše; rok i "N dana" po beogradskom kalendaru | #111, #112, #113 |
+| A9.4-A9.5 | Srpski tekst svuda (Zod i API greške, brisanje proizvoda, Brzi sken "Nepoznat proizvod"); neuspelo učitavanje pokazuje "Podaci nisu učitani / Pokušaj ponovo" umesto praznog naloga | #114, #115 |
+| A9.9 | PDF fakture: MB prodavca i kupca, mesto i datum izdavanja, datum prometa, "Obveznik nije u sistemu PDV-a"; bez "Status" i polja "LOGO" | #118 |
+| A9.10 | Pretraga faktura po broju, kupcu i PIB-u (bez dijakritika); otvorene po roku | #117 |
+| A9.11 | Slobodna stavka (usluga, prevoz) bez proizvoda i lagera, nabavna 0; faktura bez asortimana; stavke obrisanih proizvoda zadržavaju trošak pri izmeni | #119 |
+| A9.12 | "Sačuvaj kupca u Kupce" na fakturi (sa MB uz PIB); "Faktura" i "Predračun" na kupcu | #121 |
+| A9.13 | Minimalna zaliha po proizvodu (polje u formi proizvoda) | #116 |
+| A10 | Playwright E2E (javni smoke na svaki deploy, prijava bez lozinke, `@writes` samo nad test bazom); svi unit testovi u CI-ju sa zaštitom liste | #109, #120 |
 | A2.11 | Stranice `/za/veleprodaju`, `/za/preduzetnike`, `/za/proizvodjace`; jedan izvor adrese (`src/lib/site-url.ts`); sitemap i robots očišćeni (`/shared/` se ne indeksira); OG slike iz koda; JSON-LD | #97 |
 
 Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 2026-10-05 (provereno u listi migracija Supabase projekta 2026-10-06). Baza je u `eu-west-1`, Vercel funkcije u `dub1` (EU).
@@ -122,16 +130,16 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.1 | 🟡 (PR otvoren) **Lista faktura sama izdaje nacrte** | Visoka | S | `src/app/(dashboard)/invoices/page.tsx` pri otvaranju šalje PATCH `UNPAID` za svaki nacrt (i predračun u nacrtu): roba izlazi sa lagera bez korisnika, tiho pada sa 402 na isteklom nalogu. Ukloniti; nacrt se izdaje samo dugmetom. |
-| A9.2 | **Plaćena faktura može da se obriše** | Visoka | S | Brisanje briše knjižen prihod, vraća robu i pravi rupu u brojevima. Server i lista odbijaju brisanje PAID; prvo "Vrati među otvorene". |
-| A9.3 | Datumi oko ponoći | Srednja | S | Podrazumevani rok se računa iz UTC datuma (između 00 i 02 h ispadne dan ranije); "Rok plaćanja: N dana" na PDF-u može biti 31. Beogradski kalendarski dani (`src/lib/local-date.ts`). |
+| A9.1 | ✅ (#111) **Lista faktura sama izdaje nacrte** | Visoka | S | `src/app/(dashboard)/invoices/page.tsx` pri otvaranju šalje PATCH `UNPAID` za svaki nacrt (i predračun u nacrtu): roba izlazi sa lagera bez korisnika, tiho pada sa 402 na isteklom nalogu. Ukloniti; nacrt se izdaje samo dugmetom. |
+| A9.2 | ✅ (#112) **Plaćena faktura može da se obriše** | Visoka | S | Brisanje briše knjižen prihod, vraća robu i pravi rupu u brojevima. Server i lista odbijaju brisanje PAID; prvo "Vrati među otvorene". |
+| A9.3 | ✅ (#113) Datumi oko ponoći | Srednja | S | Podrazumevani rok se računa iz UTC datuma (između 00 i 02 h ispadne dan ranije); "Rok plaćanja: N dana" na PDF-u može biti 31. Beogradski kalendarski dani (`src/lib/local-date.ts`). |
 
 **Izgled i doslednost**
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.4 | **Engleski tekst do korisnika** | Visoka | S | Dijalog brisanja proizvoda ("Delete Product"), bedževi "Scanned/Created/Deleted", Zod poruke na fakturi ("quantity must be an integer"), API greške ("Invoice not found", "Internal server error"), "Loading movements...", IN/OUT u istoriji; Brzi sken snima "Unknown Product" u bazu. Srpski tekst + mapa opštih API grešaka u `readApiErrorMessage`. |
-| A9.5 | **Greška učitavanja izgleda kao prazan nalog** | Visoka | S | Neuspeo `useQuery` daje `[]`, pa Fakture, Asortiman, Kupci i Katalozi na slabom signalu pokazuju "napravite prvu…". Jedna kartica "Nije učitano. Pokušaj ponovo". |
+| A9.4 | ✅ (#114) **Engleski tekst do korisnika** | Visoka | S | Dijalog brisanja proizvoda ("Delete Product"), bedževi "Scanned/Created/Deleted", Zod poruke na fakturi ("quantity must be an integer"), API greške ("Invoice not found", "Internal server error"), "Loading movements...", IN/OUT u istoriji; Brzi sken snima "Unknown Product" u bazu. Srpski tekst + mapa opštih API grešaka u `readApiErrorMessage`. |
+| A9.5 | ✅ (#115) **Greška učitavanja izgleda kao prazan nalog** | Visoka | S | Neuspeo `useQuery` daje `[]`, pa Fakture, Asortiman, Kupci i Katalozi na slabom signalu pokazuju "napravite prvu…". Jedna kartica "Nije učitano. Pokušaj ponovo". |
 | A9.6 | Datumi, procenti i množina po srpski | Srednja | S | Kalendar na engleskom sa nedeljom kao prvim danom, `format(…, 'PPP')` na engleskom, procenti sa tačkom, "1 otvorenih faktura". `sr-Latn` locale, `formatPercent`, pomoćna funkcija za množinu. |
 | A9.7 | Stari interni izrazi | Srednja | S | "agregiranu količinu svih dnevnih unosa", "SKU" u Asortimanu i izboru proizvoda (katalog već kaže "Šifra"). Svuda "Šifra / barkod". |
 | A9.8 | Zaglavlje fakture na telefonu | Srednja | S | Do 7 dugmadi jedno ispod drugog; ručno "Nazad" umesto `BackLink`; datum plaćanja se ne vidi. Glavne akcije (Označi plaćeno, PDF) + meni "Više" (Izmeni, Kopiraj, Otpremnica, XML); "Plaćeno: datum". |
@@ -140,11 +148,11 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.9 | **Faktura sa svim podacima koje kupac i knjigovođa očekuju** | Visoka | S | PDF nema matični broj prodavca i kupca, datum prometa, mesto izdavanja ni napomenu "Obveznik nije u sistemu PDV-a"; štampa "Status: Otvoreno" i sivo polje "LOGO". Tekst da potvrdi knjigovođa. |
-| A9.10 | **Pretraga i filteri faktura** | Visoka | S-M | Pretraga po broju i kupcu, filter kupca i perioda, otvorene poređane po roku. |
-| A9.11 | **Stavka bez proizvoda** (prevoz, usluga, ambalaža) | Visoka | S-M | Server već prima `productId: null`, a forma briše naziv i cenu. Bez kretanja lagera; nova faktura ne traži pun asortiman. |
-| A9.12 | **Kupac iz fakture i faktura iz kupca** | Visoka | S | "Sačuvaj kupca" na fakturi (kao u katalogu; XML traži MB iz Kupaca) i "Nova faktura / predračun" na kupcu. |
-| A9.13 | **Minimalna zaliha po proizvodu** | Visoka | S | `minStock` postoji (podrazumevano 2), ali se ne može menjati, pa je "Nizak lager" besmislen za robu u kutijama. Polje u ProductForm, bez migracije. |
+| A9.9 | ✅ (#118, tekst čeka knjigovođu) **Faktura sa svim podacima koje kupac i knjigovođa očekuju** | Visoka | S | PDF nema matični broj prodavca i kupca, datum prometa, mesto izdavanja ni napomenu "Obveznik nije u sistemu PDV-a"; štampa "Status: Otvoreno" i sivo polje "LOGO". Tekst da potvrdi knjigovođa. |
+| A9.10 | ✅ (#117, bez filtera perioda) **Pretraga i filteri faktura** | Visoka | S-M | Pretraga po broju i kupcu, filter kupca i perioda, otvorene poređane po roku. |
+| A9.11 | ✅ (#119) **Stavka bez proizvoda** (prevoz, usluga, ambalaža) | Visoka | S-M | Server već prima `productId: null`, a forma briše naziv i cenu. Bez kretanja lagera; nova faktura ne traži pun asortiman. |
+| A9.12 | ✅ (#121) **Kupac iz fakture i faktura iz kupca** | Visoka | S | "Sačuvaj kupca" na fakturi (kao u katalogu; XML traži MB iz Kupaca) i "Nova faktura / predračun" na kupcu. |
+| A9.13 | ✅ (#116) **Minimalna zaliha po proizvodu** | Visoka | S | `minStock` postoji (podrazumevano 2), ali se ne može menjati, pa je "Nizak lager" besmislen za robu u kutijama. Polje u ProductForm, bez migracije. |
 | A9.14 | Asortiman: "šta treba dopuniti" | Srednja | S | Filteri "Bez nabavne cene", "Bez prodajne cene", "Nizak lager" i sortiranje (naziv, stanje, cena). Brzi sken namerno ostavlja nabavnu praznu. |
 | A9.15 | Predračun iz kataloga | Srednja | S | Katalog ima kupca, popust i proizvode; dugme "Napravi predračun" kroz postojeći prefill (`copyFrom`). Zatvara korak katalog → faktura. |
 | A9.16 | Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
@@ -165,15 +173,17 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 | A9.21 | Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
 | A9.22 | Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
 
-Redosled: A9.1-A9.3 odmah; pa A9.4, A9.5, A9.9, A9.13, A9.10 (vide se u demo videu A1.8); pa A9.11, A9.12, A9.15, A9.18, A9.19; ostalo ako ostane vremena. Jedan mali PR po stavci.
+Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. Sledeće: A9.15 (predračun iz kataloga), A9.18 (ko mi duguje), A9.19 (lager po nabavnoj + XLSX); zatim A9.8, A9.6, A9.7, A9.14, A9.16, A9.17; A9.20-A9.22 ako ostane vremena (A9.21-22 traže migraciju i odobrenje). Jedan mali PR po stavci, sa E2E testom gde menja tok.
 
 ### A10. Kvalitet: automatski testovi u pregledaču
 
 | # | Šta | Stanje |
 |---|---|---|
-| A10.1 | Playwright u glavnom repou: javni smoke (desktop + telefon) na svaki Vercel deploy, prijava bez lozinke (Clerk tiket), `@writes` samo nad test bazom (`e2e/README.md`) | 🟡 #109 (javni deo 46/46 lokalno i na produkciji) |
+| A10.1 | Playwright u glavnom repou: javni smoke (desktop + telefon) na svaki Vercel deploy, prijava bez lozinke (Clerk tiket), `@writes` samo nad test bazom (`e2e/README.md`) | ✅ #109 (javni deo 46/46 lokalno i na produkciji). Na preview-ima se preskače dok vlasnik ne postavi `VERCEL_AUTOMATION_BYPASS_SECRET` |
 | A10.2 | Test baza za E2E: Supabase projekat iz A1.9 (vraćen backup) + test korisnik u Clerk Development; pokrenuti `npm run e2e:app` | Vlasnik + ja, do 20. okt |
-| A10.3 | E2E za svaku A9 stavku koja menja tok (faktura, predračun, katalog, lager) | Uz svaki PR |
+| A10.3 | E2E za svaku A9 stavku koja menja tok (faktura, predračun, katalog, lager) | Uz svaki PR: greška učitavanja (#115), slobodna stavka (#119), kupac iz fakture (#121); čekaju A10.2 |
+| A10.5 | Svi unit testovi u CI-ju: 6 fajlova nije bilo u `vitest.config.ts` (`validations.test.ts` bio zastareo); zaštitni test pada kad se novi fajl ne doda | ✅ #120 (108 fajlova / 699 testova) |
+| A10.6 | CI ne pravi `next build`; greška u bundle-u se vidi tek na Vercel proveri (#118). Pre spajanja: `npm run build` lokalno i zelen Vercel check | Pravilo za svaki PR |
 | A10.4 | A1.13 smoke na domenu: `E2E_BASE_URL=<domen> npm run e2e:public` + ručna faktura od registracije do PDF-a | 30. okt |
 
 **Zamrzavanje koda: 28. oktobar.** Posle toga samo popravke grešaka nađenih u A1.13.
@@ -186,7 +196,7 @@ Redosled: A9.1-A9.3 odmah; pa A9.4, A9.5, A9.9, A9.13, A9.10 (vide se u demo vid
 - [ ] Smoke test na produkcijskom domenu prolazi (A1.13)
 - [ ] Landing ima kontakt, primere i nijednu tvrdnju koja ne radi (kontakt i tvrdnje ✅ #94; primeri čekaju A1.7)
 - [ ] SEF: na PRD-u pravi SEF uključen (A1.14) ili #108 spojen i demo slanje sakriveno (A3.6); landing usklađen (A2.12)
-- [ ] A9.1-A9.3 spojeni (greške u fakturama)
+- [x] A9.1-A9.3 spojeni (greške u fakturama: #111, #112, #113)
 - [ ] Javni E2E smoke prolazi na domenu (A10.4)
 - [ ] Analitika i Sentry uključeni
 - [ ] Backup vraćen bar jednom

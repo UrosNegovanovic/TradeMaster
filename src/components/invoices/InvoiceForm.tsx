@@ -408,7 +408,7 @@ export function InvoiceForm({
       : invoiceCreateSchema.safeParse(payload)
     if (!validation.success) {
       const firstIssue = validation.error.errors[0]
-      setFormError(firstIssue?.message || 'Please correct the invalid invoice items')
+      setFormError(firstIssue?.message || 'Proverite stavke dokumenta.')
       return
     }
 

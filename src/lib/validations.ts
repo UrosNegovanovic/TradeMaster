@@ -35,10 +35,11 @@ function moneyMessage(
     if (kind === 'negative') return 'Nabavna cena ne može biti negativna'
     return 'Nabavna cena je van podržanog opsega'
   }
-  if (kind === 'invalid') return `${field} must be a valid decimal`
-  if (kind === 'decimals') return `${field} cannot have more than 2 decimal places`
-  if (kind === 'negative') return 'unitPrice must be greater than or equal to 0'
-  return `${field} is outside the supported range`
+  const label = field === 'discount' ? 'Popust' : 'Cena'
+  if (kind === 'invalid') return `${label} mora biti broj`
+  if (kind === 'decimals') return `${label} može imati najviše 2 decimale`
+  if (kind === 'negative') return `${label} ne može biti negativna`
+  return `${label} je van podržanog opsega`
 }
 
 function assertMoneyInput(
@@ -97,29 +98,29 @@ const discountSchema = z
   })
   .transform((value) => (value === undefined ? 0 : value))
 
-const dueDateSchema = z.string().min(1, 'dueDate is required').superRefine((value, ctx) => {
+const dueDateSchema = z.string().min(1, 'Unesite rok').superRefine((value, ctx) => {
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'dueDate must be a valid date',
+      message: 'Rok nije ispravan datum',
     })
   }
 })
 
 export const invoiceItemWriteSchema = z.object({
-  productId: z.string().min(1, 'productId must be a non-empty string').nullable().optional(),
-  productName: z.string().trim().min(1, 'productName is required').max(255),
+  productId: z.string().min(1, 'Proizvod nije ispravan').nullable().optional(),
+  productName: z.string().trim().min(1, 'Unesite naziv stavke').max(255, 'Naziv stavke je predugačak'),
   quantity: z
-    .number({ invalid_type_error: 'quantity must be a number' })
-    .int('quantity must be an integer')
-    .gte(QUANTITY_MIN, 'quantity must be a positive integer')
+    .number({ invalid_type_error: 'Količina mora biti broj' })
+    .int('Količina mora biti ceo broj')
+    .gte(QUANTITY_MIN, 'Količina mora biti najmanje 1')
     .lte(QUANTITY_MAX, 'quantity is outside the supported range'),
   unitPrice: unitPriceSchema,
   discount: discountSchema,
   vatRate: z
     .union([z.literal(0), z.literal(10), z.literal(20)], {
-      errorMap: () => ({ message: 'vatRate must be 0, 10 or 20' }),
+      errorMap: () => ({ message: 'Stopa PDV-a mora biti 0, 10 ili 20%' }),
     })
     .optional()
     .transform((value) => value ?? 0),
@@ -154,9 +155,9 @@ const clientPibPatchSchema = z
   .superRefine((value, ctx) => assertClientPib(value, ctx))
 
 export const invoiceWriteSchema = z.object({
-  invoiceNumber: z.string().trim().min(1, 'invoiceNumber is required').max(255),
+  invoiceNumber: z.string().trim().min(1, 'Unesite broj dokumenta').max(255),
   dueDate: dueDateSchema,
-  clientName: z.string().trim().min(1, 'clientName is required').max(255),
+  clientName: z.string().trim().min(1, 'Unesite naziv kupca').max(255, 'Naziv kupca je predugačak'),
   clientAddress: z.string().max(500).nullable().optional(),
   clientPib: clientPibWriteSchema,
   status: invoiceStatusSchema.optional(),
@@ -173,9 +174,9 @@ export const invoiceCreateSchema = invoiceWriteSchema
 export const invoicePatchSchema = z
   .object({
     status: invoiceStatusSchema.optional(),
-    invoiceNumber: z.string().trim().min(1, 'invoiceNumber is required').max(255).optional(),
+    invoiceNumber: z.string().trim().min(1, 'Unesite broj dokumenta').max(255).optional(),
     dueDate: dueDateSchema.optional(),
-    clientName: z.string().trim().min(1, 'clientName is required').max(255).optional(),
+    clientName: z.string().trim().min(1, 'Unesite naziv kupca').max(255, 'Naziv kupca je predugačak').optional(),
     clientAddress: z.string().max(500).nullable().optional(),
     clientPib: clientPibPatchSchema,
   })
@@ -187,7 +188,7 @@ export const invoicePatchSchema = z
       value.clientName !== undefined ||
       value.clientAddress !== undefined ||
       value.clientPib !== undefined,
-    { message: 'At least one supported field is required' }
+    { message: 'Nema izmena za čuvanje' }
   )
 
 export type InvoiceWriteInput = z.infer<typeof invoiceWriteSchema>
@@ -260,7 +261,18 @@ export type BulkAdjustItem = z.infer<typeof bulkAdjustItemSchema>
 const productFields = {
   name: z.string().min(1, 'Naziv je obavezan').max(255, 'Naziv je predugačak'),
   sku: z.string().min(1, 'SKU je obavezan').max(100, 'SKU je predugačak'),
-  quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1), // ✅ For warehouse mode scanning
+  quantity: z.number().int('Količina mora biti ceo broj').min(1, 'Količina mora biti najmanje 1').default(1), // ✅ For warehouse mode scanning
+  // "Nizak lager" shows when stock is at or below this (ROADMAP A9.13). Omitted = keep the stored value.
+  // An emptied number input arrives as NaN: treat it as "not sent".
+  minStock: z.preprocess(
+    (value) => (typeof value === 'number' && Number.isNaN(value) ? undefined : value),
+    z
+      .number({ invalid_type_error: 'Minimalna zaliha mora biti broj' })
+      .int('Minimalna zaliha mora biti ceo broj')
+      .min(0, 'Minimalna zaliha ne može biti negativna')
+      .max(1_000_000, 'Minimalna zaliha je prevelika')
+      .optional()
+  ),
   imageUrl: z
     .union([
       z.string().url('Adresa slike nije ispravna'),
@@ -306,15 +318,15 @@ export type ProductFormData = z.infer<typeof productSchema>
 
 // Catalog validations
 export const catalogSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
+  name: z.string().min(1, 'Unesite naziv kataloga').max(255, 'Naziv kataloga je predugačak'),
   clientName: z.string().max(255).optional().nullable(),
-  discount: z.number().min(0, 'Discount must be at least 0').max(100, 'Discount cannot exceed 100'),
+  discount: z.number().min(0, 'Popust ne može biti manji od 0').max(100, 'Popust ne može biti veći od 100%'),
   notes: z.string().max(1000).optional().nullable(),
   // Order matters: it is the manual catalog order (sortOrder).
   productIds: z
     .array(z.string())
-    .min(1, 'At least one product is required')
-    .refine((ids) => new Set(ids).size === ids.length, 'Duplicate products'),
+    .min(1, 'Izaberite bar jedan proizvod')
+    .refine((ids) => new Set(ids).size === ids.length, 'Isti proizvod je izabran dva puta'),
   layout: z.enum(CATALOG_LAYOUTS).default(DEFAULT_CATALOG_DISPLAY.layout),
   groupByCategory: z.boolean().default(DEFAULT_CATALOG_DISPLAY.groupByCategory),
   sortMode: z.enum(CATALOG_SORT_MODES).default(DEFAULT_CATALOG_DISPLAY.sortMode),

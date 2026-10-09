@@ -67,6 +67,8 @@ export const sr = {
     invalidBarcode: 'Neispravan barkod',
     invalidBarcodeDescription: 'Skenirani barkod je prekratak ili neispravan. Pokušajte ponovo.',
     unknown: 'Nepoznat proizvod',
+    minStock: 'Minimalna zaliha',
+    minStockHint: 'Kad stanje padne na ovaj broj ili ispod, proizvod se javlja u „Nizak lager”. Za robu u kutijama upišite više.',
     notFound: 'Proizvod nije pronađen',
     notFoundDescription: 'Pretražene su dostupne baze. SKU je sačuvan; unesite podatke ručno.',
     lookupFailed: 'Podaci o proizvodu nisu učitani',

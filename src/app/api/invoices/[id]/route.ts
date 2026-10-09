@@ -5,6 +5,8 @@ import {
   InvoiceClientError,
   assertInvoiceContentEditable,
   assertOwnedProducts,
+  costsOfLinesWithoutProduct,
+  lineUnitCost,
   computeInvoiceAmounts,
   invoiceErrorResponse,
   parseInvoicePatchBody,
@@ -160,6 +162,13 @@ export async function PUT(
       const { items, vatAmount, totalAmount } = computeInvoiceAmounts(parsed.items, vatEnabled)
 
       const productCosts = await assertOwnedProducts(profile.id, items, tx)
+      // Lines whose product was deleted keep their stored cost; they are rewritten below.
+      const previousCosts = costsOfLinesWithoutProduct(
+        await tx.invoiceItem.findMany({
+          where: { invoiceId: id, productId: null },
+          select: { productId: true, productName: true, unitCost: true },
+        })
+      )
 
       await tx.invoiceItem.deleteMany({
         where: { invoiceId: id },
@@ -182,7 +191,7 @@ export async function PUT(
               productName: item.productName,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
+              unitCost: lineUnitCost(item, productCosts, previousCosts),
               discount: item.discount,
               vatRate: item.vatRate,
               total: item.total,

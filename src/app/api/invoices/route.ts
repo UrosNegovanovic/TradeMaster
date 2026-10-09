@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import {
   InvoiceClientError,
   assertOwnedProducts,
+  lineUnitCost,
   computeInvoiceAmounts,
   invoiceErrorResponse,
   parseInvoiceCreateBody,
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
             data: {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
+              unitCost: lineUnitCost(item, productCosts),
               discount: item.discount,
               vatRate: item.vatRate,
               total: item.total,

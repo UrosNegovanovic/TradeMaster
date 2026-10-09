@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => {
     profile: { findUnique: vi.fn() },
     product: { findMany: vi.fn() },
     invoice: { findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() },
-    invoiceItem: { deleteMany: vi.fn(), create: vi.fn() },
+    invoiceItem: { deleteMany: vi.fn(), create: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     $executeRaw: vi.fn(),
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),

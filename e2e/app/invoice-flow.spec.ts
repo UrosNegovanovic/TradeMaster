@@ -62,4 +62,26 @@ test.describe('invoice flow @writes', () => {
       await api.delete(`/api/products/${product.id}`)
     }
   })
+
+  test('a free line (prevoz) is invoiced without a product and with cost of goods 0 (A9.11)', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'one run is enough')
+    await page.goto('/dashboard')
+    const api = page.request
+    await json(api, 'PUT', '/api/profile', testCompany())
+    const buyer = `E2E Usluga ${Date.now()}`
+
+    await page.goto('/invoices/new')
+    await page.getByLabel('Naziv kupca').fill(buyer)
+    await page.getByRole('button', { name: 'Slobodna stavka (usluga, prevoz)' }).first().click()
+    await page.getByLabel('Naziv slobodne stavke').first().fill('Prevoz robe')
+    await page.getByLabel('Jedinična cena').first().fill('1500')
+    await page.getByRole('button', { name: 'Sačuvaj fakturu' }).click()
+    await expect(page.getByText('Faktura je sačuvana')).toBeVisible()
+
+    const invoices: Array<{ id: string; clientName: string; items: Array<{ productId: string | null; productName: string; unitCost: string | null }> }> =
+      await json(api, 'GET', '/api/invoices')
+    const invoice = invoices.find((row) => row.clientName === buyer)
+    expect(invoice?.items).toEqual([expect.objectContaining({ productId: null, productName: 'Prevoz robe', unitCost: '0' })])
+    await json(api, 'DELETE', `/api/invoices/${invoice!.id}`)
+  })
 })

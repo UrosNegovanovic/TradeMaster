@@ -110,6 +110,8 @@ const dueDateSchema = z.string().min(1, 'Unesite rok').superRefine((value, ctx) 
 
 export const invoiceItemWriteSchema = z.object({
   productId: z.string().min(1, 'Proizvod nije ispravan').nullable().optional(),
+  // A line the user typed (usluga, prevoz) rather than picked from Asortiman (ROADMAP A9.11).
+  free: z.boolean().optional(),
   productName: z.string().trim().min(1, 'Unesite naziv stavke').max(255, 'Naziv stavke je predugačak'),
   quantity: z
     .number({ invalid_type_error: 'Količina mora biti broj' })

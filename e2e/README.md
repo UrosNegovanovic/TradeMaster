@@ -38,7 +38,7 @@ First time: `npx playwright install chromium`.
 
 ## CI
 
-`.github/workflows/playwright.yml` runs the public suite on every successful Vercel `deployment_status` (preview and production) and on demand (`workflow_dispatch` with a URL). If previews are protected, add the repo secret `VERCEL_AUTOMATION_BYPASS_SECRET`. Signed-in suites are not run in CI: previews share the production database.
+`.github/workflows/playwright.yml` runs the public suite on every successful Vercel `deployment_status` (preview and production) and on demand (`workflow_dispatch` with a URL). Previews are behind Vercel Deployment Protection: until the repo secret `VERCEL_AUTOMATION_BYPASS_SECRET` is set (Vercel → Project → Settings → Deployment Protection → Protection Bypass for Automation), preview runs are skipped with a warning; production deployments are tested. Signed-in suites are not run in CI: previews share the production database.
 
 ## Writing tests
 

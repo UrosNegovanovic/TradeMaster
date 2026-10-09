@@ -24,18 +24,32 @@ jobs:
       E2E_BASE_URL: ${{ github.event.deployment_status.environment_url || inputs.base_url }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
+      # A protected preview without the bypass secret only shows Vercel's login: skip with a warning.
+      - name: Check deployment protection
+        id: reach
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" "$E2E_BASE_URL/robots.txt")
+          if [ "$code" = "200" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::$E2E_BASE_URL answered $code (Vercel Deployment Protection?). Add the repo secret VERCEL_AUTOMATION_BYPASS_SECRET to run E2E on previews."
+          fi
       - uses: actions/checkout@v4
+        if: steps.reach.outputs.ok == 'true'
         with:
           ref: ${{ github.event.deployment.sha || github.sha }}
       - uses: actions/setup-node@v4
+        if: steps.reach.outputs.ok == 'true'
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --project=public-desktop --project=public-mobile
+      - if: steps.reach.outputs.ok == 'true'
+        run: npm ci
+      - if: steps.reach.outputs.ok == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.reach.outputs.ok == 'true'
+        run: npx playwright test --project=public-desktop --project=public-mobile
       - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.reach.outputs.ok == 'true' }}
         with:
           name: playwright-report
           path: playwright-report/

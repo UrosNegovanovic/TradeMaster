@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { InvoiceForm } from '@/components/invoices/InvoiceForm'
 import { BackLink } from '@/components/layout/BackLink'
-import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
 import { InvoiceCreateInput, InvoiceWithItems } from '@/types/invoice'
@@ -127,18 +126,6 @@ export default function NewInvoicePage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (products.length === 0) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <BackLink href={listHref}>{backLabel}</BackLink>
-          <h1 className="text-2xl font-bold lg:text-3xl">{labels.newTitle}</h1>
-        </div>
-        <FirstRunEmptyState kind="invoice" />
       </div>
     )
   }

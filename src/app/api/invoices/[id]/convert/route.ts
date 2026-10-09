@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import {
   InvoiceClientError,
   assertOwnedProducts,
+  costsOfLinesWithoutProduct,
+  lineUnitCost,
   computeInvoiceAmounts,
   invoiceErrorResponse,
 } from '@/lib/invoice-service'
@@ -82,6 +84,8 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
       )
       const { items, vatAmount, totalAmount } = computeInvoiceAmounts(lines, profile.inVatSystem)
       const productCosts = await assertOwnedProducts(profile.id, items, tx)
+      // Free lines keep the predračun's snapshot (0 for a service), product lines take today's cost.
+      const previousCosts = costsOfLinesWithoutProduct(proforma.items)
       const invoiceNumber = await reserveNextInvoiceNumber(tx, profile.id, new Date(), 'INVOICE')
       const status = OPEN_INVOICE_STATUS
 
@@ -104,7 +108,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
               productName: item.productName,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              unitCost: item.productId ? productCosts.get(item.productId) ?? null : null,
+              unitCost: lineUnitCost(item, productCosts, previousCosts),
               discount: item.discount,
               vatRate: item.vatRate,
               total: item.total,

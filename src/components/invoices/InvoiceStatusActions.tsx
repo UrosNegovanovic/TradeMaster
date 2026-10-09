@@ -22,7 +22,7 @@ async function patchInvoiceStatus(id: string, status: InvoiceStatus, request: Se
   })
 
   if (!response.ok) {
-    throw new Error(await readApiErrorMessage(response, 'Failed to update invoice'))
+    throw new Error(await readApiErrorMessage(response, 'Izmene nisu sačuvane.'))
   }
 
   return response.json()

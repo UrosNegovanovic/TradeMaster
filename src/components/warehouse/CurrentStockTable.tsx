@@ -161,7 +161,7 @@ function StockFilters({
       {hasActiveFilters && (
         <p className="text-sm text-muted-foreground">
           Pronađeno {resultCount} od {sourceCount} proizvoda
-          {selectedDate ? ` on ${format(selectedDate, 'PPP')}` : ''}
+          {selectedDate ? ` na dan ${format(selectedDate, 'dd.MM.yyyy.')}` : ''}
         </p>
       )}
     </div>
@@ -186,8 +186,8 @@ function StockEmptyState({
         {hasActiveFilters ? (
           <>
             Nema proizvoda
-            {searchQuery ? ` matching "${searchQuery}"` : ''}
-            {selectedDate ? ` on ${format(selectedDate, 'PPP')}` : ''}
+            {searchQuery ? ` za „${searchQuery}“` : ''}
+            {selectedDate ? ` na dan ${format(selectedDate, 'dd.MM.yyyy.')}` : ''}
           </>
         ) : (
           'Nema proizvoda u magacinu'

@@ -42,7 +42,7 @@ async function createInvoice(data: InvoiceCreateInput, request: SessionFetch) {
   })
 
   if (!response.ok) {
-    throw new Error(await readApiErrorMessage(response, 'Failed to create invoice'))
+    throw new Error(await readApiErrorMessage(response, 'Dokument nije sačuvan.'))
   }
 
   return response.json()

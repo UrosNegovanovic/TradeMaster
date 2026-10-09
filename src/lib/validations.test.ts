@@ -202,7 +202,7 @@ describe('catalogSchema', () => {
       expect(result.success).toBe(false)
       if (!result.success) {
         const msg = result.error.issues[0]?.message ?? ''
-        expect(msg).toContain('At least one product')
+        expect(msg).toContain('bar jedan proizvod')
       }
     })
 

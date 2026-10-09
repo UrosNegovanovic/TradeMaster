@@ -55,6 +55,9 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A9.11 | Slobodna stavka (usluga, prevoz) bez proizvoda i lagera, nabavna 0; faktura bez asortimana; stavke obrisanih proizvoda zadržavaju trošak pri izmeni | #119 |
 | A9.12 | "Sačuvaj kupca u Kupce" na fakturi (sa MB uz PIB); "Faktura" i "Predračun" na kupcu | #121 |
 | A9.13 | Minimalna zaliha po proizvodu (polje u formi proizvoda) | #116 |
+| A9.15 | "Napravi predračun" na katalogu (kupac, proizvodi, popust kataloga); forma imenuje stavke bez cene | #123 |
+| A9.18 | "Ko mi duguje" na Finansijama: otvoreno po kupcu, kašnjenje, link na njegove fakture | #124 |
+| A9.19 | Nabavna vrednost lagera u Magacinu; "Lager lista (Excel)" po šifri: stanje, nabavna i prodajna cena i vrednost | PR otvoren |
 | A10 | Playwright E2E (javni smoke na svaki deploy, prijava bez lozinke, `@writes` samo nad test bazom); svi unit testovi u CI-ju sa zaštitom liste | #109, #120 |
 | A2.11 | Stranice `/za/veleprodaju`, `/za/preduzetnike`, `/za/proizvodjace`; jedan izvor adrese (`src/lib/site-url.ts`); sitemap i robots očišćeni (`/shared/` se ne indeksira); OG slike iz koda; JSON-LD | #97 |
 
@@ -154,7 +157,7 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 | A9.12 | ✅ (#121) **Kupac iz fakture i faktura iz kupca** | Visoka | S | "Sačuvaj kupca" na fakturi (kao u katalogu; XML traži MB iz Kupaca) i "Nova faktura / predračun" na kupcu. |
 | A9.13 | ✅ (#116) **Minimalna zaliha po proizvodu** | Visoka | S | `minStock` postoji (podrazumevano 2), ali se ne može menjati, pa je "Nizak lager" besmislen za robu u kutijama. Polje u ProductForm, bez migracije. |
 | A9.14 | Asortiman: "šta treba dopuniti" | Srednja | S | Filteri "Bez nabavne cene", "Bez prodajne cene", "Nizak lager" i sortiranje (naziv, stanje, cena). Brzi sken namerno ostavlja nabavnu praznu. |
-| A9.15 | Predračun iz kataloga | Srednja | S | Katalog ima kupca, popust i proizvode; dugme "Napravi predračun" kroz postojeći prefill (`copyFrom`). Zatvara korak katalog → faktura. |
+| A9.15 | ✅ (#123) Predračun iz kataloga | Srednja | S | Katalog ima kupca, popust i proizvode; dugme "Napravi predračun" kroz postojeći prefill (`copyFrom`). Zatvara korak katalog → faktura. |
 | A9.16 | Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
 | A9.17 | Brze akcije na Početnoj | Srednja | S | "Nova faktura", "Novi predračun", "Ulaz robe" pored Brzog skena; "Naplaćeno ovog meseca". |
 
@@ -162,8 +165,8 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.18 | **Ko mi duguje** (potraživanja po kupcu) | Visoka | S-M | Kupac, otvoreno, najstariji rok, link na njegove fakture. |
-| A9.19 | **Vrednost lagera po nabavnoj ceni i "Lager lista" XLSX** | Visoka | S | Danas samo po prodajnoj; izvoz: šifra, naziv, stanje, nabavna, prodajna, vrednost (knjigovođa, popis). |
+| A9.18 | ✅ (#124) **Ko mi duguje** (potraživanja po kupcu) | Visoka | S-M | Kupac, otvoreno, najstariji rok, link na njegove fakture. |
+| A9.19 | ✅ (PR otvoren) **Vrednost lagera po nabavnoj ceni i "Lager lista" XLSX** | Visoka | S | Danas samo po prodajnoj; izvoz: šifra, naziv, stanje, nabavna, prodajna, vrednost (knjigovođa, popis). |
 | A9.20 | Najprodavaniji proizvodi i najbolji kupci po periodu | Srednja | S-M | Iz snimaka stavki, samo fakture. |
 
 **Sa migracijom (uz odobrenje vlasnika, posle ostalih)**
@@ -173,7 +176,7 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 | A9.21 | Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
 | A9.22 | Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
 
-Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. Sledeće: A9.15 (predračun iz kataloga), A9.18 (ko mi duguje), A9.19 (lager po nabavnoj + XLSX); zatim A9.8, A9.6, A9.7, A9.14, A9.16, A9.17; A9.20-A9.22 ako ostane vremena (A9.21-22 traže migraciju i odobrenje). Jedan mali PR po stavci, sa E2E testom gde menja tok.
+Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađeni (#123, #124, A9.19 PR). Sledeće: A9.8, A9.6, A9.7, A9.14, A9.16, A9.17; A9.20-A9.22 ako ostane vremena (A9.21-22 traže migraciju i odobrenje). Jedan mali PR po stavci, sa E2E testom gde menja tok.
 
 ### A10. Kvalitet: automatski testovi u pregledaču
 

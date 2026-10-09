@@ -22,6 +22,7 @@ import * as productLookupRoute from './products/lookup/route'
 import * as bulkAdjustRoute from './products/bulk-adjust/route'
 import * as stockMovementsRoute from './stock-movements/route'
 import * as lowStockRoute from './warehouse/low-stock/route'
+import * as stockListRoute from './warehouse/stock-list/route'
 import * as clientsRoute from './clients/route'
 import * as clientRoute from './clients/[id]/route'
 import * as categoriesRoute from './categories/route'
@@ -219,6 +220,12 @@ describe('tenant isolation against a dedicated test database', () => {
       const lowStock = await lowStockRoute.GET()
       expect(lowStock.status).toBe(200)
       expect(JSON.stringify(await lowStock.json())).not.toContain(b.productId)
+
+      // Lager lista (ROADMAP A9.19) lists only A's products.
+      const stockList = await stockListRoute.GET(request('warehouse/stock-list?format=csv'))
+      expect(stockList.status).toBe(200)
+      const csv = await stockList.text()
+      expect(csv).not.toContain(b.sku)
     })
 
     it('stock movements, also when filtered by a B product id', async () => {

@@ -78,3 +78,23 @@ describe('product PUT quantity', () => {
     expect(bodyHasQuantity(null)).toBe(false)
   })
 })
+
+describe('minStock (ROADMAP A9.13)', () => {
+  it('writes the low-stock threshold when the form sends it', () => {
+    expect(productPutFields(productSchema.parse({ ...priced, minStock: 12 }))).toMatchObject({ minStock: 12 })
+    expect(productPutFields(productSchema.parse({ ...priced, minStock: 0 }))).toMatchObject({ minStock: 0 })
+  })
+
+  it('keeps the stored threshold when it is missing or the field was emptied', () => {
+    expect(productPutFields(productSchema.parse(priced))).not.toHaveProperty('minStock')
+    expect(productPutFields(productSchema.parse({ ...priced, minStock: Number.NaN }))).not.toHaveProperty('minStock')
+  })
+
+  it('refuses negative and fractional thresholds in Serbian', () => {
+    const negative = productSchema.safeParse({ ...priced, minStock: -1 })
+    const fraction = productSchema.safeParse({ ...priced, minStock: 1.5 })
+    expect(negative.success).toBe(false)
+    expect(fraction.success).toBe(false)
+    if (!negative.success) expect(negative.error.issues[0].message).toBe('Minimalna zaliha ne može biti negativna')
+  })
+})

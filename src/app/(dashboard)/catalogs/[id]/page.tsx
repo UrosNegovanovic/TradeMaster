@@ -191,7 +191,7 @@ export default function CatalogDetailsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Created</CardTitle>
+            <CardTitle className="text-lg">Napravljen</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">

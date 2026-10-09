@@ -21,19 +21,19 @@ const variants = {
     icon: ScanBarcode,
     accent: 'bg-primary',
     iconWrap: 'bg-secondary text-primary',
-    badge: 'Scanned',
+    badge: 'Skenirano',
   },
   create: {
     icon: CheckCircle2,
     accent: 'bg-emerald-600',
     iconWrap: 'bg-emerald-50 text-emerald-700',
-    badge: 'Created',
+    badge: 'Dodato',
   },
   delete: {
     icon: Trash2,
     accent: 'bg-destructive',
     iconWrap: 'bg-red-50 text-destructive',
-    badge: 'Deleted',
+    badge: 'Obrisano',
   },
 } as const
 

@@ -72,7 +72,7 @@ async function createStockMovement(data: StockMovementCreateInput, request: Sess
   })
 
   if (!response.ok) {
-    throw new Error(await readApiErrorMessage(response, 'Failed to create stock movement'))
+    throw new Error(await readApiErrorMessage(response, 'Kretanje nije sačuvano.'))
   }
 
   return response.json()

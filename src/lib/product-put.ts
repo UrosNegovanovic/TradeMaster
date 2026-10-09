@@ -18,6 +18,7 @@ export function productPutFields(validated: ProductFormData, options: { quantity
     price: validated.price,
     ...productCostWriteFields(validated),
     ...(quantityProvided ? { quantity: validated.quantity } : {}),
+    ...(validated.minStock !== undefined ? { minStock: validated.minStock } : {}),
     description: validated.description === '' ? null : validated.description ?? null,
     categoryId: validated.categoryId ?? null,
   }

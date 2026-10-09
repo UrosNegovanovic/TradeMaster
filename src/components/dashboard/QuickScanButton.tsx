@@ -16,6 +16,7 @@ import { useAuth } from '@clerk/nextjs'
 import { createIntakeQueue } from '@/lib/intake-request'
 import { createScanGate } from '@/lib/scan-gate'
 import { scanBeep } from '@/lib/scan-beep'
+import { sr } from '@/lib/ui-copy'
 
 interface ProductMetadata {
   name: string
@@ -117,7 +118,7 @@ export function QuickScanProvider({ children }: { children: ReactNode }) {
   ): Promise<{ success: boolean; action?: 'created' | 'updated'; quantityAdded?: number }> => {
     try {
       const productData = {
-        name: metadata.name || 'Unknown Product',
+        name: metadata.name || sr.product.unknown,
         sku: barcode,
         price: 0, // Default to 0 for quick intake (user can update later)
         quantity: 1, // Default quantity

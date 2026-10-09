@@ -31,11 +31,14 @@ npm run typecheck    # tsc --noEmit (CI creates next-env.d.ts if missing)
 npm run lint         # next lint
 npm run test:run     # all unit tests, same as CI
 npm run test:db      # DB integration tests, needs a test DATABASE_URL
+npm run e2e:public   # Playwright public smoke (starts dev server; E2E_BASE_URL=<url> for a deployment)
+npm run e2e:app      # signed-in Playwright suites, needs .env.e2e (see e2e/README.md)
 ```
 
-Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-09, after #105): 97 test files / 591 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
+Before every push: `npm run typecheck && npm run lint && npm run test:run`. CI (`.github/workflows/ci.yml`) runs exactly these on Node 20. Baseline on main (2026-10-09, after #107): 98 test files / 600 tests pass, lint shows 5 known warnings (BarcodeScanner and catalog edit page hook deps, InvoicePDF image alt) that are not yours to fix.
 `vitest.config.ts` has an explicit `include` list: a new `*.test.ts` file does not run until you add it there.
 `test:db` refuses to run unless `TEST_DATABASE_URL` points at a dedicated test database; never aim it at the live project.
+E2E (`e2e/`, `playwright.config.ts`): public suites are read-only and safe on any deployment; tests tagged `@writes` run only with `E2E_ALLOW_WRITES=1` on localhost or `E2E_WRITE_HOSTS`, never with `sk_live_`. Locators by role/label and Serbian text, data via API, unique SKUs, clean up after.
 
 ## Data model in one paragraph
 

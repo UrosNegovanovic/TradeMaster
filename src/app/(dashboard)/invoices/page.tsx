@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { LoadErrorState } from '@/components/layout/LoadErrorState'
+import { failedBeforeFirstLoad } from '@/lib/query-state'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -184,7 +186,7 @@ export default function InvoicesPage() {
   const request = useAuthorizedFetch()
   const view = parseInvoiceView(searchParams.get('status'), searchParams.get('view'))
 
-  const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
+  const { data: invoices = [], isLoading, isError: loadFailed, dataUpdatedAt: loadedAt, refetch: reload, isFetching: reloading } = useQuery<Invoice[]>({
     queryKey: ['invoices'],
     queryFn: fetchInvoices,
   })
@@ -269,6 +271,10 @@ export default function InvoicesPage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
+  }
+
+  if (failedBeforeFirstLoad({ isError: loadFailed, dataUpdatedAt: loadedAt })) {
+    return <LoadErrorState title="Fakture" onRetry={() => reload()} retrying={reloading} />
   }
 
   const hasAnyInvoices = invoices.length > 0

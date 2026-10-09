@@ -17,6 +17,9 @@
     "test": "vitest",
     "test:run": "vitest --run",
     "test:db": "vitest --run --config vitest.db.config.ts",
+    "e2e": "playwright test",
+    "e2e:public": "playwright test --project=public-desktop --project=public-mobile",
+    "e2e:app": "playwright test --project=app-desktop --project=app-mobile",
     "test:unit": "vitest --run --exclude '**/*.integration.test.ts'",
     "test:integration": "vitest --run integration",
     "test:ci": "vitest --run"
@@ -61,6 +64,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@clerk/testing": "^1.14.10",
+    "@playwright/test": "^1.64.0",
     "@types/node": "^20.14.12",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.3",

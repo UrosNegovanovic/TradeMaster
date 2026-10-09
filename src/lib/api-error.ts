@@ -21,3 +21,22 @@ export async function readApiErrorMessage(response: Response, fallback: string):
   if (response.status === 401) return 'Unauthorized'
   return fallback
 }
+
+/** A failed fetch that keeps its HTTP status, so callers can tell "gone" from "try again". */
+export class HttpStatusError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message)
+  }
+}
+
+/**
+ * TanStack Query retry for public links: a missing or revoked link (4xx) is final and shows its message
+ * at once; a network or server error is retried once.
+ */
+export function retryUnlessClientError(failureCount: number, error: unknown): boolean {
+  if (error instanceof HttpStatusError && error.status >= 400 && error.status < 500) return false
+  return failureCount < 1
+}

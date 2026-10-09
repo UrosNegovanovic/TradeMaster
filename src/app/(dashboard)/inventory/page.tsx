@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { LoadErrorState } from '@/components/layout/LoadErrorState'
+import { failedBeforeFirstLoad } from '@/lib/query-state'
 import { Product } from '@/types/product'
 import { ProductForm } from '@/components/inventory/ProductForm'
 import { ProductList } from '@/components/inventory/ProductList'
@@ -157,7 +159,7 @@ export default function InventoryPage() {
   }, [pathname, router, searchParams])
 
   // Fetch products
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError: loadFailed, dataUpdatedAt: loadedAt, refetch: reload, isFetching: reloading } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
   })
@@ -351,6 +353,10 @@ export default function InventoryPage() {
         <p className="text-muted-foreground">Učitavanje asortimana...</p>
       </div>
     )
+  }
+
+  if (failedBeforeFirstLoad({ isError: loadFailed, dataUpdatedAt: loadedAt })) {
+    return <LoadErrorState title="Asortiman" onRetry={() => reload()} retrying={reloading} />
   }
 
   const isEmptyAssortment = products.length === 0

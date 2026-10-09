@@ -1,6 +1,8 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { LoadErrorState } from '@/components/layout/LoadErrorState'
+import { failedBeforeFirstLoad } from '@/lib/query-state'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, Eye, Edit, Loader2 } from 'lucide-react'
@@ -42,7 +44,7 @@ export default function CatalogsPage() {
   const request = useAuthorizedFetch()
 
   // Fetch catalogs
-  const { data: catalogs, isLoading } = useQuery<Catalog[]>({
+  const { data: catalogs, isLoading, isError: loadFailed, dataUpdatedAt: loadedAt, refetch: reload, isFetching: reloading } = useQuery<Catalog[]>({
     queryKey: ['catalogs'],
     queryFn: fetchCatalogs,
   })
@@ -90,6 +92,10 @@ export default function CatalogsPage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
+  }
+
+  if (failedBeforeFirstLoad({ isError: loadFailed, dataUpdatedAt: loadedAt })) {
+    return <LoadErrorState title="Katalozi" onRetry={() => reload()} retrying={reloading} />
   }
 
   return (

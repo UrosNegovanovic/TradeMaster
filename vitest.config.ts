@@ -97,6 +97,7 @@ export default defineConfig({
       'src/app/api/clients/route.test.ts',
       'src/lib/client-fill.test.ts',
       'src/lib/invoice-search.test.ts',
+      'src/lib/query-state.test.ts',
       'src/lib/invoice-edit.test.ts',
       'src/lib/invoice-export.test.ts',
       'src/lib/ips-qr.test.ts',

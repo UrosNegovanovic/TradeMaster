@@ -478,6 +478,8 @@ export function InvoiceForm({
       ...(initialData ? {} : { status: InvoiceStatus.UNPAID, documentType }),
       items: validation.data.items.map((item) => ({
         productId: item.productId ?? null,
+        // Keep the free-line flag: without it the server stores no cost for a service line (ROADMAP A9.11).
+        ...(item.free && !item.productId ? { free: true } : {}),
         productName: item.productName,
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),

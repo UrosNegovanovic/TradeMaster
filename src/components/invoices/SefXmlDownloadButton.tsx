@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { FileCode2, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { Edit, FileCode2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { notify } from '@/lib/notify'
 import { readApiErrorMessage } from '@/lib/api-error'
@@ -12,15 +13,19 @@ import { sr } from '@/lib/ui-copy'
 type SefXmlDownloadButtonProps = {
   invoiceId: string
   invoiceNumber: string
+  /** Shown after missing data blocks the XML, while the invoice can still be edited. */
+  editHref?: string | null
 }
 
 /** Downloads the UBL file the user uploads on the SEF portal (Izlazni dokumenti → Učitaj datoteku). */
-export function SefXmlDownloadButton({ invoiceId, invoiceNumber }: SefXmlDownloadButtonProps) {
+export function SefXmlDownloadButton({ invoiceId, invoiceNumber, editHref }: SefXmlDownloadButtonProps) {
   const request = useAuthorizedFetch()
   const [loading, setLoading] = useState(false)
+  const [blocked, setBlocked] = useState(false)
 
   const download = async () => {
     setLoading(true)
+    setBlocked(false)
     try {
       const response = await request(`/api/invoices/${invoiceId}/sef-xml`)
       if (response.status === 422) {
@@ -33,6 +38,7 @@ export function SefXmlDownloadButton({ invoiceId, invoiceNumber }: SefXmlDownloa
             ? `${problems.join(' ')} ${sr.sef.problemsHint}`
             : undefined,
         })
+        setBlocked(true)
         return
       }
       if (!response.ok) {
@@ -60,15 +66,25 @@ export function SefXmlDownloadButton({ invoiceId, invoiceNumber }: SefXmlDownloa
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      className="min-h-11 w-full sm:w-auto"
-      disabled={loading}
-      onClick={download}
-    >
-      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCode2 className="mr-2 h-4 w-4" />}
-      XML za SEF
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11 w-full sm:w-auto"
+        disabled={loading}
+        onClick={download}
+      >
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileCode2 className="mr-2 h-4 w-4" />}
+        XML za SEF
+      </Button>
+      {blocked && editHref ? (
+        <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+          <Link href={editHref}>
+            <Edit className="mr-2 h-4 w-4" />
+            Izmeni fakturu
+          </Link>
+        </Button>
+      ) : null}
+    </>
   )
 }

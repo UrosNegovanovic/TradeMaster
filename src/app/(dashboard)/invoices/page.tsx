@@ -23,6 +23,7 @@ import { currentMonthKey, groupInvoicesByMonth } from '@/lib/invoice-archive'
 import { notify } from '@/lib/notify'
 import { SefStatusBadge } from '@/components/sef/SefStatusBadge'
 import { isLockedBySef } from '@/lib/sef-status'
+import { invoiceEditHref } from '@/lib/invoice-edit'
 import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -74,6 +75,7 @@ interface InvoiceCardProps {
 function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
   // Sent to SEF: no edit or delete here (storno goes through SEF).
   const sefLocked = isLockedBySef(invoice.sefStatus)
+  const editHref = invoiceEditHref(invoice)
   return (
     <Card className={cn(invoice.status === InvoiceStatus.PAID && 'opacity-95')}>
       <CardHeader>
@@ -120,9 +122,9 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
                 PDF
               </Link>
             </Button>
-            {!sefLocked && !isPaidInvoiceStatus(invoice.status) && !(isProforma(invoice) && invoice.convertedInvoiceId) && (
+            {editHref && (
               <Button variant="outline" size="sm" className="min-h-11" asChild>
-                <Link href={`/invoices/${invoice.id}/edit`}>
+                <Link href={editHref}>
                   <Edit className="h-4 w-4" />
                   <span className="sr-only">Izmeni</span>
                 </Link>

@@ -18,7 +18,7 @@ import { findProductByScan, scanTarget } from '@/lib/invoice-scan'
 import type { InvoiceCopyPrefill } from '@/lib/invoice-copy'
 import { Product } from '@/types/product'
 import type { Client } from '@/types/client'
-import { clientToInvoiceFields } from '@/lib/client-fill'
+import { clientToInvoiceFields, findSavedClientForInvoice, savedClientDiffers } from '@/lib/client-fill'
 import { InvoiceCreateInput, InvoiceStatus } from '@/types/invoice'
 import { invoiceCreateSchema, invoiceWriteSchema } from '@/lib/validations'
 import { documentLabels } from '@/lib/document-type'
@@ -160,6 +160,20 @@ export function InvoiceForm({
       }
     }
   }, [initialData])
+
+  const fillFromClient = (client: Client) => {
+    const fields = clientToInvoiceFields(client)
+    setClientName(fields.clientName)
+    setClientPib(fields.clientPib)
+    setClientAddress(fields.clientAddress)
+  }
+
+  // Editing: the document keeps its own buyer snapshot, so a fix made later in Kupci is offered here (ROADMAP A3.5).
+  const savedClientMatch = initialData ? findSavedClientForInvoice(clients, { clientName, clientPib }) : undefined
+  const savedClientUpdate =
+    savedClientMatch && savedClientDiffers(savedClientMatch, { clientName, clientPib, clientAddress })
+      ? savedClientMatch
+      : undefined
 
   // Unsaved-changes guard: compare what the user can edit with what the form started from.
   const draftSnapshot = invoiceDraftSnapshot({ invoiceNumber, dueDate, clientName, clientAddress, clientPib, items })
@@ -458,6 +472,17 @@ export function InvoiceForm({
               />
             </div>
           </div>
+            {savedClientUpdate ? (
+              <div className="flex flex-col gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                <p>
+                  Kupac {savedClientUpdate.name} u Kupcima ima drugačije podatke. {labels.name} čuva podatke kupca iz
+                  trenutka kada je napravljen{isProformaDoc ? '' : 'a'}.
+                </p>
+                <Button type="button" variant="outline" className="min-h-11 shrink-0 bg-background" onClick={() => fillFromClient(savedClientUpdate)}>
+                  Preuzmi podatke iz Kupaca
+                </Button>
+              </div>
+            ) : null}
             {clients.length > 0 ? (
               <div className="space-y-2">
                 <Label htmlFor="savedClient">Sačuvani kupac</Label>
@@ -466,11 +491,7 @@ export function InvoiceForm({
                   defaultValue=""
                   onChange={(e) => {
                     const client = clients.find((c) => c.id === e.target.value)
-                    if (!client) return
-                    const fields = clientToInvoiceFields(client)
-                    setClientName(fields.clientName)
-                    setClientPib(fields.clientPib)
-                    setClientAddress(fields.clientAddress)
+                    if (client) fillFromClient(client)
                   }}
                   className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:h-10"
                 >

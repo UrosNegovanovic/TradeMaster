@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, ArrowLeft, Copy } from 'lucide-react'
+import { Loader2, ArrowLeft, Copy, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { InvoiceWithItems } from '@/types/invoice'
 import { Profile } from '@/types/profile'
@@ -21,6 +21,7 @@ import { DeliveryNoteButton } from '@/components/invoices/DeliveryNoteButton'
 import { SefSendPanel } from '@/components/sef/SefSendPanel'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 import { invoiceCopyHref } from '@/lib/invoice-copy'
+import { invoiceEditHref } from '@/lib/invoice-edit'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
   ssr: false,
@@ -93,6 +94,7 @@ export default function InvoiceDetailPage() {
   const labels = documentLabels(invoice.documentType)
   const statusView = documentStatusView(invoice)
   const backHref = isProformaDoc ? '/invoices?view=proforma' : invoicesListHref(invoice.status)
+  const editHref = invoiceEditHref(invoice)
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -130,6 +132,14 @@ export default function InvoiceDetailPage() {
               className="min-h-11 w-full sm:w-auto"
             />
           )}
+          {editHref ? (
+            <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
+              <Link href={editHref}>
+                <Edit className="mr-2 h-4 w-4" />
+                Izmeni
+              </Link>
+            </Button>
+          ) : null}
           <InvoicePdfDownload invoice={invoice} />
           <Button variant="outline" className="min-h-11 w-full sm:w-auto" asChild>
             <Link href={invoiceCopyHref(invoice)}>
@@ -140,13 +150,13 @@ export default function InvoiceDetailPage() {
           {canPrintDeliveryNote(invoice) ? (
             <>
               <DeliveryNoteButton invoice={invoice} />
-              <SefXmlDownloadButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} />
+              <SefXmlDownloadButton invoiceId={invoice.id} invoiceNumber={invoice.invoiceNumber} editHref={editHref} />
             </>
           ) : null}
         </div>
       </div>
 
-      <SefSendPanel invoiceId={invoice.id} />
+      <SefSendPanel invoiceId={invoice.id} editHref={editHref} />
 
       <InvoiceSharing
         invoiceId={invoice.id}

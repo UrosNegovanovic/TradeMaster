@@ -35,7 +35,7 @@ type SefPanelData = {
  * "Pošalji u SEF" on the invoice page (ROADMAP A3): one tap, a confirmation with amount and buyer,
  * then the status badge. Hidden unless the company saved a SEF API key.
  */
-export function SefSendPanel({ invoiceId }: { invoiceId: string }) {
+export function SefSendPanel({ invoiceId, editHref }: { invoiceId: string; editHref?: string | null }) {
   const request = useAuthorizedFetch()
   const queryClient = useQueryClient()
   const queryKey = ['invoice-sef', invoiceId]
@@ -167,6 +167,11 @@ export function SefSendPanel({ invoiceId }: { invoiceId: string }) {
                 ))}
               </ul>
               <p className="mt-2 text-muted-foreground">{sr.sef.problemsHint}</p>
+              {editHref ? (
+                <Link href={editHref} className="mt-2 inline-block font-medium underline">
+                  Izmeni fakturu
+                </Link>
+              ) : null}
             </div>
           ) : buyerNotOnSef ? (
             <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

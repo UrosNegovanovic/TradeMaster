@@ -18,7 +18,7 @@ export const sr = {
   },
   sef: {
     problemsHint:
-      'Podatke firme menjate u Podešavanjima, a kupca na fakturi (Izmeni). Izmena u Kupcima ne menja već napravljenu fakturu.',
+      'Podatke firme menjate u Podešavanjima. Faktura čuva kupca iz trenutka izdavanja: posle ispravke u Kupcima otvorite Izmeni fakturu i dodirnite "Preuzmi podatke iz Kupaca".',
   },
   scan: {
     missingCostNote:

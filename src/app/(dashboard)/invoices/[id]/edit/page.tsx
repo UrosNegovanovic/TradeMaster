@@ -6,6 +6,8 @@ import { InvoiceForm } from '@/components/invoices/InvoiceForm'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { invoicesListHref, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { Product } from '@/types/product'
+import type { Client } from '@/types/client'
+import { SEF_LOCKED_MESSAGE, isLockedBySef } from '@/lib/sef-status'
 import { InvoiceCreateInput } from '@/types/invoice'
 import { Loader2 } from 'lucide-react'
 import { notify } from '@/lib/notify'
@@ -75,6 +77,16 @@ export default function EditInvoicePage() {
   const { data: invoice, isLoading: isLoadingInvoice } = useQuery({
     queryKey: ['invoice', invoiceId],
     queryFn: () => fetchInvoice(invoiceId),
+  })
+
+  // Saved buyers: the picker and "Preuzmi podatke iz Kupaca" (ROADMAP A3.5).
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients')
+      if (!response.ok) throw new Error('Failed to fetch clients')
+      return response.json()
+    },
   })
 
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
@@ -183,6 +195,18 @@ export default function EditInvoicePage() {
   const labels = documentLabels(invoice.documentType)
   const isProformaDoc = invoice.documentType === 'PROFORMA'
 
+  if (isLockedBySef(invoice.sefStatus)) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <BackLink href={`/invoices/${invoice.id}`}>Nazad na fakturu</BackLink>
+          <h1 className="text-2xl font-bold lg:text-3xl">Faktura je zaključana</h1>
+          <p className="text-muted-foreground mt-2">{SEF_LOCKED_MESSAGE}</p>
+        </div>
+      </div>
+    )
+  }
+
   if (isProformaDoc && invoice.convertedInvoiceId) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -212,6 +236,7 @@ export default function EditInvoicePage() {
 
       <InvoiceForm
         products={products}
+        clients={clients}
         inVatSystem={profile?.inVatSystem === true}
         onSubmit={handleSubmit}
         isLoading={updateMutation.isPending}

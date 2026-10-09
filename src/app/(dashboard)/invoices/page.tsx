@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Plus, Trash2, Download, Loader2, Edit, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Download, Loader2, Edit, ChevronDown, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { Invoice, InvoiceStatus } from '@/types/invoice'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,8 @@ import { FirstRunEmptyState } from '@/components/onboarding/FirstRunEmptyState'
 import { InvoiceStatusActions } from '@/components/invoices/InvoiceStatusActions'
 import { InvoiceExport } from '@/components/invoices/InvoiceExport'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { matchesInvoiceQuery, sortByDueDate } from '@/lib/invoice-search'
 import { canDeleteInvoice, isPaidInvoiceStatus } from '@/lib/invoice-status'
 import { INVOICE_TONE_BADGE_VARIANT, documentStatusView } from '@/lib/invoice-status-view'
 import { isProforma, onlyInvoices } from '@/lib/document-type'
@@ -233,11 +235,17 @@ export default function InvoicesPage() {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
+  // ROADMAP A9.10: search by number, buyer or PIB; tab counts follow the search.
+  const [search, setSearch] = useState('')
+  const searching = search.trim().length > 0
+
   const { openInvoices, paidInvoices, proformas, sefRejected, visibleInvoices } = useMemo(() => {
-    const realInvoices = onlyInvoices(invoices)
-    const open = realInvoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status))
+    const found = searching ? invoices.filter((invoice) => matchesInvoiceQuery(invoice, search)) : invoices
+    const realInvoices = onlyInvoices(found)
+    // Open invoices: what is due first is collected first.
+    const open = sortByDueDate(realInvoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status)))
     const paid = realInvoices.filter((invoice) => isPaidInvoiceStatus(invoice.status))
-    const proformaList = invoices.filter((invoice) => isProforma(invoice))
+    const proformaList = found.filter((invoice) => isProforma(invoice))
     // ROADMAP A3: what the buyer rejected in SEF, so it is fixed first.
     const rejected = realInvoices.filter((invoice) => invoice.sefStatus === 'REJECTED')
     return {
@@ -248,7 +256,7 @@ export default function InvoicesPage() {
       visibleInvoices:
         view === 'paid' ? paid : view === 'proforma' ? proformaList : view === 'sef-rejected' ? rejected : open,
     }
-  }, [invoices, view])
+  }, [invoices, view, search, searching])
 
   // Plaćene fakture samo rastu tokom vremena, pa ih grupišemo po mesecu: tekući
   // mesec se prikazuje odmah, a stariji meseci idu u arhivu koja se otvara na klik.
@@ -341,7 +349,28 @@ export default function InvoicesPage() {
               </Button>
             ) : null}
           </div>
-          {view === 'proforma' || view === 'sef-rejected' ? null : (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Pretraži po broju, kupcu ili PIB-u"
+              aria-label="Pretraži fakture"
+              className="h-11 pl-9 pr-10"
+            />
+            {searching ? (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Obriši pretragu"
+                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+          {view === 'proforma' || view === 'sef-rejected' || searching ? null : (
           <Card>
             <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
               {view === 'paid' ? (
@@ -378,6 +407,16 @@ export default function InvoicesPage() {
 
       {!hasAnyInvoices ? (
         <FirstRunEmptyState kind="invoice" />
+      ) : isEmptyView && searching ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <h3 className="text-lg font-semibold mb-2">Nema rezultata za „{search.trim()}“</h3>
+            <p className="text-muted-foreground mb-4">Pokušajte deo naziva kupca, broj (npr. 12/2026) ili PIB.</p>
+            <Button variant="outline" onClick={() => setSearch('')}>
+              Obriši pretragu
+            </Button>
+          </CardContent>
+        </Card>
       ) : isEmptyView && view === 'proforma' ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -427,7 +466,7 @@ export default function InvoicesPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : view === 'paid' ? (
+      ) : view === 'paid' && !searching ? (
         <div className="space-y-8">
           {currentMonthGroup ? (
             <div className="space-y-3">

@@ -107,6 +107,13 @@ export default defineConfig({
       'src/lib/sentry-scrub.test.ts',
       'src/app/api/invoices/export/route.test.ts',
       'src/test/require-test-database.test.ts',
+      'src/lib/onboarding.test.ts',
+      'src/lib/openfoodfacts.fetch.test.ts',
+      'src/lib/openfoodfacts.test.ts',
+      'src/lib/utils.test.ts',
+      'src/lib/validations.test.ts',
+      'src/lib/invoice-service.test.ts',
+      'src/test/vitest-include.test.ts',
     ],
     exclude: [
       '**/node_modules/**',

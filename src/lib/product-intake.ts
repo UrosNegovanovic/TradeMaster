@@ -57,6 +57,7 @@ export async function saveProductIntake(profileId: string, input: ProductIntakeD
             }),
             quantity: input.quantity, description: input.description || null,
             imageUrl, categoryId: input.categoryId ?? null,
+            ...(input.minStock !== undefined ? { minStock: input.minStock } : {}),
           },
           include,
         })

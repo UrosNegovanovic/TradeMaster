@@ -1,4 +1,5 @@
-import { splitSerbianAddress } from '@/lib/sef-ubl'
+// company-fields is client-safe; sef-ubl pulls Prisma into the browser bundle.
+import { splitSerbianAddress } from '@/lib/company-fields'
 
 /**
  * Header facts a Serbian buyer and accountant expect on a printed invoice (ROADMAP A9.9):

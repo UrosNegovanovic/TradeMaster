@@ -51,6 +51,14 @@ describe('splitSerbianAddress', () => {
   it('uses the whole text for both when there is no comma', () => {
     expect(splitSerbianAddress('Beograd')).toEqual({ street: 'Beograd', city: 'Beograd', postalZone: null })
   })
+
+  it('collapses repeated spaces and keeps every letter', () => {
+    expect(splitSerbianAddress('Bulevar  oslobođenja   5,  11000   Beograd sever')).toEqual({
+      street: 'Bulevar oslobođenja 5',
+      city: 'Beograd sever',
+      postalZone: '11000',
+    })
+  })
 })
 
 describe('buildSefInvoiceXml', () => {

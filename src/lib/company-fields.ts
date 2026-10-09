@@ -42,3 +42,26 @@ export function addressHasCity(value: string | null | undefined): boolean {
 
 export const ADDRESS_CITY_MESSAGE =
   'Unesite ulicu i broj, zarez, pa poštanski broj i mesto, npr. "Kralja Petra I 10, 11000 Beograd".'
+
+/**
+ * "Bulevar 12, 11000 Beograd" -> street "Bulevar 12", city "Beograd" (postal code split off).
+ * One-part addresses use the same text for both, because SEF requires a city.
+ */
+export function splitSerbianAddress(address: string | null | undefined): {
+  street: string
+  city: string
+  postalZone: string | null
+} {
+  const parts = (address ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  if (parts.length === 0) return { street: '', city: '', postalZone: null }
+  const last = parts.length > 1 ? parts[parts.length - 1] : parts[0]
+  const postal = /^(\d{5})\s+(.+)$/.exec(last)
+  const city = postal ? postal[2] : last
+  const street = parts.length > 1 ? parts.slice(0, -1).join(', ') : parts[0]
+  return { street, city, postalZone: postal ? postal[1] : null }
+}

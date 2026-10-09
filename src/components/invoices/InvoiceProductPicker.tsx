@@ -30,7 +30,7 @@ export function InvoiceProductMeta({
       </p>
       {sku ? (
         <p className="break-words text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
-          SKU: {sku}
+          Šifra: {sku}
         </p>
       ) : null}
       {stock != null ? (

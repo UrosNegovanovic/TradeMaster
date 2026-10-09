@@ -96,6 +96,7 @@ export default defineConfig({
       'src/app/api/categories/route.test.ts',
       'src/app/api/clients/route.test.ts',
       'src/lib/client-fill.test.ts',
+      'src/lib/receivables-by-buyer.test.ts',
       'src/lib/catalog-proforma.test.ts',
       'src/lib/invoice-service.test.ts',
       'src/lib/invoice-pdf-facts.test.ts',

@@ -13,6 +13,8 @@ import {
 } from '@/lib/invoice-finance'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { sr } from '@/lib/ui-copy'
+import { buyerInvoicesHref, receivablesByBuyer } from '@/lib/receivables-by-buyer'
+import { formatDaysOverdue } from '@/lib/overdue-invoices'
 
 export default async function FinancePage() {
   const { userId } = await auth()
@@ -35,6 +37,8 @@ export default async function FinancePage() {
       id: true,
       invoiceNumber: true,
       clientName: true,
+      clientPib: true,
+      dueDate: true,
       status: true,
       totalAmount: true,
       vatAmount: true,
@@ -68,6 +72,19 @@ export default async function FinancePage() {
       })
     )
   )
+
+  // ROADMAP A9.18: who owes what, the most late first.
+  const debtors = receivablesByBuyer(
+    invoices.map((invoice) => ({
+      status: invoice.status,
+      clientName: invoice.clientName,
+      clientPib: invoice.clientPib,
+      totalAmount: invoice.totalAmount.toString(),
+      dueDate: invoice.dueDate,
+      createdAt: invoice.createdAt,
+    }))
+  )
+  const DEBTORS_SHOWN = 10
 
   const maxMonthTotal = Math.max(...snapshot.months.map((month) => month.total), 0)
   const hasAnyInvoices = invoices.length > 0
@@ -208,6 +225,52 @@ export default async function FinancePage() {
           </div>
 
           <p className="text-sm text-muted-foreground">{sr.finance.profitNote}</p>
+
+          {debtors.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ko mi duguje</CardTitle>
+                <CardDescription>
+                  Otvorene fakture po kupcu, sa PDV-om. Prvo kupci koji najduže kasne.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="divide-y p-0">
+                {debtors.slice(0, DEBTORS_SHOWN).map((buyer) => (
+                  <Link
+                    key={`${buyer.clientPib ?? ''}-${buyer.clientName}`}
+                    href={buyerInvoicesHref(buyer)}
+                    className="flex items-start justify-between gap-3 px-6 py-3 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                  >
+                    <div className="min-w-0">
+                      <p className="break-words font-medium [overflow-wrap:anywhere]">{buyer.clientName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {buyer.openCount === 1 ? '1 otvorena faktura' : `Otvorenih faktura: ${buyer.openCount}`}
+                        {buyer.clientPib ? ` · PIB ${buyer.clientPib}` : ''}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-semibold tabular-nums">{formatRsd(buyer.openTotal)}</p>
+                      {buyer.maxDaysOverdue > 0 ? (
+                        <p className="text-xs font-medium text-destructive">
+                          Kasni {formatDaysOverdue(buyer.maxDaysOverdue)}
+                          {buyer.overdueTotal < buyer.openTotal ? ` · ${formatRsd(buyer.overdueTotal)}` : ''}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Rok {buyer.oldestDueDate.toLocaleDateString('sr-RS')}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+                {debtors.length > DEBTORS_SHOWN ? (
+                  <p className="px-6 py-3 text-sm text-muted-foreground">
+                    Još kupaca: {debtors.length - DEBTORS_SHOWN}. Svi su na stranici Fakture.
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader>

@@ -5,6 +5,8 @@
  * - Tests never sign in with a live Clerk key (sk_live_): real customers live there.
  * - Tests that create or change data (@writes) run only against hosts explicitly allowed for writes:
  *   localhost by default, plus E2E_WRITE_HOSTS. Production is read-only smoke.
+ * - On localhost, writes need the app to run on the test database (E2E_DATABASE_URL, ROADMAP A10.2);
+ *   E2E_ALLOW_LIVE_DB_WRITES=1 is the owner's explicit opt-in for the app's own database.
  */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1'])
 
@@ -18,6 +20,8 @@ export type E2eEnv = {
   userEmail: string | null
   vercelBypassSecret: string | null
   webkit: boolean
+  /** Test database the local app runs on (scripts/test-db.mjs), or null. */
+  databaseUrl: string | null
 }
 
 function list(value: string | undefined): string[] {
@@ -41,6 +45,8 @@ export function e2eEnv(source: NodeJS.ProcessEnv = process.env): E2eEnv {
   else if (source.E2E_ALLOW_WRITES !== '1') writesBlockedReason = 'E2E_ALLOW_WRITES is not 1'
   else if (!isLocal && !list(source.E2E_WRITE_HOSTS).includes(host)) {
     writesBlockedReason = `host ${host} is not in E2E_WRITE_HOSTS`
+  } else if (isLocal && !source.E2E_DATABASE_URL?.trim() && source.E2E_ALLOW_LIVE_DB_WRITES !== '1') {
+    writesBlockedReason = 'local app is not on the test database (set E2E_DATABASE_URL, see e2e/README.md)'
   }
 
   return {
@@ -53,5 +59,6 @@ export function e2eEnv(source: NodeJS.ProcessEnv = process.env): E2eEnv {
     userEmail,
     vercelBypassSecret: source.VERCEL_AUTOMATION_BYPASS_SECRET?.trim() || null,
     webkit: source.E2E_WEBKIT === '1',
+    databaseUrl: source.E2E_DATABASE_URL?.trim() || null,
   }
 }

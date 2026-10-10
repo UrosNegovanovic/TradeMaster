@@ -183,11 +183,12 @@ Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađe
 | # | Šta | Stanje |
 |---|---|---|
 | A10.1 | Playwright u glavnom repou: javni smoke (desktop + telefon) na svaki Vercel deploy, prijava bez lozinke (Clerk tiket), `@writes` samo nad test bazom (`e2e/README.md`) | ✅ #109 (javni deo 46/46 lokalno i na produkciji). Na preview-ima se preskače dok vlasnik ne postavi `VERCEL_AUTOMATION_BYPASS_SECRET` |
-| A10.2 | Test baza za E2E: Supabase projekat iz A1.9 (vraćen backup) + test korisnik u Clerk Development; pokrenuti `npm run e2e:app` | Vlasnik + ja, do 20. okt |
+| A10.2 | Test baza za E2E i DB testove: Postgres u Dockeru (`npm run test:db:up`) i u CI-ju (`test-database.yml`), test korisnik `e2e+clerk_test@example.com` u Clerk Development; `@writes` na localhost-u samo nad test bazom | ✅ (#133). Lokalno: 30 E2E prolazi, 46 DB testova prolazi (prvi put). CI: DB testovi i E2E sa prijavom i upisom (secrets dodati 2026-10-10): 29 prolazi + 1 flaky (A10.7) |
 | A10.3 | E2E za svaku A9 stavku koja menja tok (faktura, predračun, katalog, lager) | Uz svaki PR: greška učitavanja (#115), slobodna stavka (#119), kupac iz fakture (#121); čekaju A10.2 |
 | A10.5 | Svi unit testovi u CI-ju: 6 fajlova nije bilo u `vitest.config.ts` (`validations.test.ts` bio zastareo); zaštitni test pada kad se novi fajl ne doda | ✅ #120 (108 fajlova / 699 testova) |
 | A10.6 | CI ne pravi `next build`; greška u bundle-u se vidi tek na Vercel proveri (#118). Pre spajanja: `npm run build` lokalno i zelen Vercel check | Pravilo za svaki PR |
 | A10.4 | A1.13 smoke na domenu: `E2E_BASE_URL=<domen> npm run e2e:public` + ručna faktura od registracije do PDF-a | 30. okt |
+| A10.7 | Istražiti povremenu React grešku #418/#422 (hydration) na Podešavanjima za potpuno nov nalog dok drugi test upisuje podatke firme; React se oporavi, korisnik ne vidi ništa, CI prolazi iz drugog pokušaja (1 "flaky" u prvom CI pokretanju #133). Nije reprodukovano bez istovremenih upisa (52 + 5 pokretanja) | Niska prioritet |
 
 **Zamrzavanje koda: 28. oktobar.** Posle toga samo popravke grešaka nađenih u A1.13.
 

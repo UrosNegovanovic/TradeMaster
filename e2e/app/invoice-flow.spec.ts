@@ -21,6 +21,14 @@ test.describe('invoice flow @writes', () => {
     return response.status() === 204 ? null : response.json()
   }
 
+  /** With an empty Asortiman the first line already is a free line; otherwise switch it. */
+  async function makeFirstLineFree(page: import('@playwright/test').Page) {
+    const freeName = page.getByLabel('Naziv slobodne stavke').first()
+    if (await freeName.isVisible()) return
+    await page.getByRole('button', { name: 'Slobodna stavka (usluga, prevoz)' }).first().click()
+    await expect(freeName).toBeVisible()
+  }
+
   /** There is no GET /api/products/[id]: read the product's stock from the list. */
   async function stockOf(request: APIRequestContext, productId: string): Promise<number | undefined> {
     const products: Array<{ id: string; quantity: number }> = await json(request, 'GET', '/api/products')
@@ -97,7 +105,7 @@ test.describe('invoice flow @writes', () => {
 
     await page.goto('/invoices/new')
     await page.getByLabel('Naziv kupca').fill(buyer)
-    await page.getByRole('button', { name: 'Slobodna stavka (usluga, prevoz)' }).first().click()
+    await makeFirstLineFree(page)
     await page.getByLabel('Naziv slobodne stavke').first().fill('Prevoz robe')
     await page.getByLabel('Jedinična cena').first().fill('1500')
     await page.getByRole('button', { name: 'Sačuvaj fakturu' }).click()
@@ -120,7 +128,7 @@ test.describe('invoice flow @writes', () => {
     await page.goto('/invoices/new')
     await page.getByLabel('Naziv kupca').fill(buyer)
     await page.getByLabel('Sačuvaj kupca u Kupce').check()
-    await page.getByRole('button', { name: 'Slobodna stavka (usluga, prevoz)' }).first().click()
+    await makeFirstLineFree(page)
     await page.getByLabel('Naziv slobodne stavke').first().fill('Usluga')
     await page.getByLabel('Jedinična cena').first().fill('100')
     await page.getByRole('button', { name: 'Sačuvaj fakturu' }).click()

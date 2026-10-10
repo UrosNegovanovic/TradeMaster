@@ -13,6 +13,9 @@ setup('sign in the E2E user', async ({ page }) => {
   await clerkSetup({ publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY })
   await page.goto('/sign-in')
   await clerk.signIn({ page, emailAddress: env.userEmail! })
+  // A brand-new account has no Profile until GET /api/profile creates it (Početna sends it to Podešavanja).
+  const profile = await page.request.get('/api/profile')
+  expect(profile.ok(), `GET /api/profile ${profile.status()}`).toBeTruthy()
   await page.goto('/dashboard')
   await expect(page.getByRole('heading', { name: 'Početna', level: 1 })).toBeVisible({ timeout: 30_000 })
   await page.context().storageState({ path: AUTH_FILE })

@@ -121,7 +121,7 @@ export async function runBilling(options: BillingRunOptions): Promise<BillingRun
         continue
       }
 
-      const notice = await claimNotice(db, profile.id, period, existing?.id, now)
+      const notice = await claimNotice(db, profile.id, period, existing?.id)
       if (!notice) {
         items.push({ ...base, recipient, outcome: 'in_progress' })
         continue
@@ -183,8 +183,7 @@ async function claimNotice(
   db: PrismaClient,
   profileId: string,
   period: { fromYmd: string; untilYmd: string },
-  existingId: string | undefined,
-  now: Date
+  existingId: string | undefined
 ) {
   if (!existingId) {
     try {
@@ -205,7 +204,8 @@ async function claimNotice(
   const claimed = await db.billingNotice.updateMany({
     where: {
       id: existingId,
-      OR: [{ status: 'failed' }, { status: 'pending', updatedAt: { lt: new Date(now.getTime() - STALE_CLAIM_MS) } }],
+      // Real clock, not the run's `now`: updatedAt is written by the database clock.
+      OR: [{ status: 'failed' }, { status: 'pending', updatedAt: { lt: new Date(Date.now() - STALE_CLAIM_MS) } }],
     },
     data: { status: 'pending', attempts: { increment: 1 }, error: null },
   })

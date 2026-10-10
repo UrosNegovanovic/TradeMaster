@@ -13,6 +13,7 @@ export default defineConfig({
       'src/app/api/catalogs/catalog-access.db.test.ts',
       'src/lib/access-extension.db.test.ts',
       'src/lib/billing-run.db.test.ts',
+      'src/lib/identity-link-db.db.test.ts',
     ],
     fileParallelism: false,
   },

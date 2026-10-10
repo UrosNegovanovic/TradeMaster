@@ -53,6 +53,8 @@ export default defineConfig({
       'src/lib/pwa-install.test.ts',
       'src/lib/rate-limit.test.ts',
       'src/lib/after-auth.test.ts',
+      'src/lib/identity-link.test.ts',
+      'src/lib/identity-link-clerk.test.ts',
       'src/lib/landing-copy.test.ts',
       'src/lib/ui-copy.test.ts',
       'src/lib/invoice-scan.test.ts',

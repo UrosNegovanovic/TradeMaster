@@ -25,6 +25,7 @@ import { fetchProductMetadata, isValidBarcode } from '@/lib/openfoodfacts'
 import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
 import { sr } from '@/lib/ui-copy'
+import { productMarginHint } from '@/lib/product-margin'
 
 /** Same as the column default (prisma/schema.prisma): alert when 2 or fewer are left. */
 const DEFAULT_MIN_STOCK = 2
@@ -84,6 +85,7 @@ export function ProductForm({
   const currentDescription = watch('description')
   const currentImageUrl = watch('imageUrl')
   const currentCostPrice = watch('costPrice')
+  const marginHint = productMarginHint(watch('price'), currentCostPrice)
   const showZeroCostReason = currentCostPrice === 0
 
   React.useEffect(() => {
@@ -341,7 +343,10 @@ export function ProductForm({
                 placeholder={sr.product.namePlaceholder}
                 {...register('name')}
               />
-              <p className="text-xs text-muted-foreground">{sr.product.nameEditableHint}</p>
+              {/* Only a scanned name is a suggestion; a typed one needs no hint. */}
+              {initialData?.name && !product ? (
+                <p className="text-xs text-muted-foreground">{sr.product.nameEditableHint}</p>
+              ) : null}
               {errors.name && (
                 <p className="text-sm text-destructive">{errors.name.message}</p>
               )}
@@ -452,6 +457,17 @@ export function ProductForm({
               {errors.costPrice && (
                 <p className="text-sm text-destructive">{errors.costPrice.message}</p>
               )}
+              {marginHint ? (
+                <p
+                  className={
+                    marginHint.negative ? 'text-sm font-medium text-destructive' : 'text-sm text-muted-foreground'
+                  }
+                  aria-live="polite"
+                >
+                  {marginHint.text}
+                  {marginHint.negative ? ' (prodajna je niža od nabavne)' : ''}
+                </p>
+              ) : null}
             </div>
 
             {showZeroCostReason ? (

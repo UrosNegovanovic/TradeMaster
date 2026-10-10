@@ -28,9 +28,9 @@ async function fetchClients(): Promise<Client[]> {
   return response.json()
 }
 
-type FormState = { name: string; pib: string; registrationNumber: string; address: string }
+type FormState = { name: string; pib: string; registrationNumber: string; address: string; phone: string; email: string }
 type FieldErrors = Partial<Record<keyof FormState, string>>
-const emptyForm: FormState = { name: '', pib: '', registrationNumber: '', address: '' }
+const emptyForm: FormState = { name: '', pib: '', registrationNumber: '', address: '', phone: '', email: '' }
 
 /** Same rules as SEF (clientWriteSchema), one message per field. */
 function validateClient(form: FormState): FieldErrors {
@@ -128,6 +128,8 @@ export default function ClientsPage() {
       pib: client.pib ?? '',
       registrationNumber: client.registrationNumber ?? '',
       address: client.address ?? '',
+      phone: client.phone ?? '',
+      email: client.email ?? '',
     })
     setFieldErrors({})
     setSubmitted(false)
@@ -227,9 +229,38 @@ export default function ClientsPage() {
                   />
                   <FieldError id="clientAddress-error" message={fieldErrors.address} />
                 </div>
+                {/* ROADMAP A9.21: reminders and shared links open straight to this buyer. */}
+                <div className="space-y-2">
+                  <Label htmlFor="clientPhone">Telefon (WhatsApp)</Label>
+                  <Input
+                    id="clientPhone"
+                    type="tel"
+                    inputMode="tel"
+                    value={form.phone}
+                    onChange={(e) => updateField('phone', e.target.value)}
+                    placeholder="npr. 064 123 4567"
+                    aria-invalid={Boolean(fieldErrors.phone)}
+                    aria-describedby="clientPhone-error"
+                  />
+                  <FieldError id="clientPhone-error" message={fieldErrors.phone} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="clientEmail">Email</Label>
+                  <Input
+                    id="clientEmail"
+                    type="email"
+                    inputMode="email"
+                    value={form.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    placeholder="kupac@firma.rs"
+                    aria-invalid={Boolean(fieldErrors.email)}
+                    aria-describedby="clientEmail-error"
+                  />
+                  <FieldError id="clientEmail-error" message={fieldErrors.email} />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Za SEF kupac treba PIB, matični broj i adresu sa mestom. Kupac bez PIB-a (npr. fizičko lice) može da se sačuva samo sa nazivom.
+                Za SEF kupac treba PIB, matični broj i adresu sa mestom. Kupac bez PIB-a (npr. fizičko lice) može da se sačuva samo sa nazivom. Sa telefonom i mejlom podsetnik i link idu direktno kupcu.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <Button type="button" variant="outline" className="min-h-11" onClick={closeForm}>
@@ -283,6 +314,11 @@ export default function ClientsPage() {
                   {client.address ? (
                     <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                       {client.address}
+                    </p>
+                  ) : null}
+                  {client.phone || client.email ? (
+                    <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                      {[client.phone, client.email].filter(Boolean).join(' · ')}
                     </p>
                   ) : null}
                 </div>

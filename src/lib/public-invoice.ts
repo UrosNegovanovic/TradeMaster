@@ -31,6 +31,7 @@ export const publicInvoiceSelect = {
   dueDate: true,
   clientName: true,
   clientAddress: true,
+  note: true,
   clientPib: true,
   status: true,
   totalAmount: true,
@@ -72,6 +73,7 @@ export type PublicInvoice = {
   dueDate: string
   clientName: string
   clientAddress: string | null
+  note: string | null
   clientPib: string | null
   status: (typeof SHAREABLE_INVOICE_STATUSES)[number]
   totalAmount: string

@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Mail, MessageCircle, Phone, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { buildShareTargets } from '@/lib/share-links'
+import { buildShareTargets, type ShareRecipient } from '@/lib/share-links'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 
 type ShareState = { url: string | null }
@@ -22,11 +22,24 @@ type ShareLinkPanelProps = {
   shareSubject: string
   /** When set, sharing is unavailable and this explains why (e.g. a draft invoice). */
   unavailableReason?: string
+  /** Saved buyer's phone/e-mail: WhatsApp and e-mail open straight to them (ROADMAP A9.21). */
+  recipient?: ShareRecipient
   /** Extra line at the bottom of the panel (e.g. how often a catalog link was opened). */
   children?: ReactNode
 }
 
-export function ShareLinkPanel({ endpoint, queryKey, parsePath, label, description, shareText, shareSubject, unavailableReason, children }: ShareLinkPanelProps) {
+export function ShareLinkPanel({
+  endpoint,
+  queryKey,
+  parsePath,
+  label,
+  description,
+  shareText,
+  shareSubject,
+  unavailableReason,
+  recipient,
+  children,
+}: ShareLinkPanelProps) {
   const queryClient = useQueryClient()
   const request = useAuthorizedFetch()
   const [busy, setBusy] = useState(false)
@@ -73,7 +86,7 @@ export function ShareLinkPanel({ endpoint, queryKey, parsePath, label, descripti
 
   const url = unavailableReason ? null : data?.url ?? null
   const absoluteUrl = url && typeof window !== 'undefined' ? new URL(url, window.location.origin).href : null
-  const targets = absoluteUrl ? buildShareTargets({ url: absoluteUrl, text: shareText, subject: shareSubject }) : null
+  const targets = absoluteUrl ? buildShareTargets({ url: absoluteUrl, text: shareText, subject: shareSubject, recipient }) : null
 
   return (
     <section aria-label={label} className="mb-6 rounded-lg border bg-card p-4">

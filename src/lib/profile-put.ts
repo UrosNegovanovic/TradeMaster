@@ -26,6 +26,8 @@ export function toProfileFormValues(profile?: {
   giroAccount?: string | null
   inVatSystem?: boolean | null
   logoUrl?: string | null
+  defaultPaymentDays?: number | null
+  invoiceNote?: string | null
 } | null): ProfileFormData {
   return {
     companyName: profile?.companyName ?? '',
@@ -37,6 +39,8 @@ export function toProfileFormValues(profile?: {
     giroAccount: profile?.giroAccount ?? '',
     inVatSystem: profile?.inVatSystem ?? false,
     logoUrl: persistableImageUrl(profile?.logoUrl) ?? '',
+    defaultPaymentDays: profile?.defaultPaymentDays ?? null,
+    invoiceNote: profile?.invoiceNote ?? '',
   }
 }
 
@@ -61,6 +65,9 @@ export function profilePutFields(validated: ProfileFormData, rawBody: unknown = 
       ? { inVatSystem: validated.inVatSystem }
       : {}),
     ...(hasOwn(rawBody, 'logoUrl') ? logoUrlPatch(validated.logoUrl) : {}),
+    // ROADMAP A9.22, omitted by older clients: keep the stored defaults.
+    ...(hasOwn(rawBody, 'defaultPaymentDays') ? { defaultPaymentDays: validated.defaultPaymentDays ?? null } : {}),
+    ...(hasOwn(rawBody, 'invoiceNote') ? { invoiceNote: emptyToNull(validated.invoiceNote?.trim() ?? null) } : {}),
   }
 }
 

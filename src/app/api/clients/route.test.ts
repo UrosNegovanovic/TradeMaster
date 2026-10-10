@@ -71,7 +71,7 @@ describe('/api/clients', () => {
     )
     expect(response.status).toBe(201)
     expect(mocks.client.create).toHaveBeenCalledWith({
-      data: { name: 'Kupac DOO', pib: '123456788', address: null, registrationNumber: '12345678', profileId: profile.id },
+      data: { name: 'Kupac DOO', pib: '123456788', address: null, registrationNumber: '12345678', phone: null, email: null, profileId: profile.id },
     })
   })
 
@@ -100,7 +100,7 @@ describe('/api/clients', () => {
     expect(put.status).toBe(200)
     expect(mocks.client.update).toHaveBeenCalledWith({
       where: { id: 'c1' },
-      data: { name: 'Novi naziv', pib: null, address: 'Adresa 1, Beograd', registrationNumber: null },
+      data: { name: 'Novi naziv', pib: null, address: 'Adresa 1, Beograd', registrationNumber: null, phone: null, email: null },
     })
     expect((await DELETE(jsonRequest('DELETE', {}), ctx('c1'))).status).toBe(200)
     expect(mocks.client.delete).toHaveBeenCalledWith({ where: { id: 'c1' } })

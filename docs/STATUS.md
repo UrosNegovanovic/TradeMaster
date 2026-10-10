@@ -32,6 +32,8 @@ _Last updated: 2026-10-09. Target release: 2026-11-01 (owner decision 2026-10-06
 - Still to check on real devices: scan into invoice, WhatsApp/Viber reminder links, otpremnica and catalog PDF with QR (add to `docs/device-checklist.md` run).
 - Data correctness before launch (ROADMAP A2.1-A2.3, A2.5, A2.6): atomic Ulaz/Izlaz without going below zero, product PUT without quantity keeps stock (#74); catalog on phones and picker without duplicate SKUs (#73); tenant isolation test across all owner API routes, foreign catalog returns 404 (#78, #79).
 
+- Migration `20261010120000_buyer_contact_invoice_defaults.sql` applied in production 2026-10-10 with the owner's approval (`prisma migrate status` and the Supabase migration list checked first; all earlier repo migrations were applied): `clients.phone/email`, `profiles.defaultPaymentDays/invoiceNote`, `invoices.note` (snapshot), all optional, nothing backfilled.
+
 ## In review
 
 - #93 ROADMAP A2.10 (DPA in /uslovi, privacy notice, sign-up consent line): draft, waits for the lawyer's review.

@@ -273,6 +273,41 @@ export default function SettingsPage() {
                 </p>
               </div>
 
+              {/* ROADMAP A9.22: defaults for new invoices and predračuni. */}
+              <div className="space-y-2">
+                <Label htmlFor="defaultPaymentDays">Podrazumevani rok plaćanja (dana)</Label>
+                <Input
+                  id="defaultPaymentDays"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={365}
+                  step={1}
+                  placeholder="30"
+                  {...register('defaultPaymentDays', { setValueAs: (value) => (value === '' ? null : Number(value)) })}
+                />
+                {errors.defaultPaymentDays && (
+                  <p className="text-sm text-destructive">{errors.defaultPaymentDays.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Rok na novim dokumentima; prazno = 30 dana.</p>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="invoiceNote">Napomena na fakturi</Label>
+                <textarea
+                  id="invoiceNote"
+                  rows={3}
+                  maxLength={1000}
+                  placeholder="npr. Reklamacije u roku od 8 dana. Roba ostaje vlasništvo prodavca do uplate."
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  {...register('invoiceNote')}
+                />
+                {errors.invoiceNote && <p className="text-sm text-destructive">{errors.invoiceNote.message}</p>}
+                <p className="text-xs text-muted-foreground">
+                  Upisuje se u svaku novu fakturu i predračun, gde je možete izmeniti. Već izdati dokumenti se ne menjaju.
+                </p>
+              </div>
+
               <div className="space-y-2 md:col-span-2">
                 <label
                   htmlFor="inVatSystem"

@@ -33,6 +33,7 @@ export type Invoice = {
   dueDate: Date
   clientName: string
   clientAddress: string | null
+  note?: string | null
   clientPib: string | null
   status: InvoiceStatus
   /** Amount payable (osnovica + PDV). */
@@ -68,6 +69,8 @@ export type InvoiceWithItems = Invoice & {
 }
 
 export type InvoiceCreateInput = {
+  /** Printed on the document (ROADMAP A9.22). */
+  note?: string | null
   invoiceNumber?: string
   dueDate: string | Date
   clientName: string

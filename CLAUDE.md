@@ -96,7 +96,7 @@ E2E (`e2e/`, `playwright.config.ts`): public suites are read-only and safe on an
 | Auth fetch | `src/lib/authorized-fetch.ts` |
 | Landing / legal | `src/components/landing/`, `src/lib/landing-copy.ts`, `src/lib/operator.ts`, `src/app/privatnost`, `src/app/uslovi` |
 | SEO / trade pages | `src/lib/site-url.ts` (one site URL), `src/lib/trade-pages.ts` + `src/app/za/[slug]/`, `src/app/robots.ts`, `src/app/sitemap.ts`, `src/lib/og-image.tsx` + `src/lib/og-image-text.ts` (OG text must fit the subset fonts in `src/assets/og`) |
-| Schema | `prisma/schema.prisma`, `supabase/migrations/` (15 files; all hand-applied, never auto) |
+| Schema | `prisma/schema.prisma`, `supabase/migrations/` (17 files; all hand-applied, never auto; latest `buyer_contact_invoice_defaults` applied 2026-10-10) |
 | Rate limits / headers / images | `src/lib/rate-limit.ts`, `next.config.js` (security headers, allowed image hosts) |
 | PWA | `src/app/manifest.ts`, `public/sw.js` (network-only worker, no caching), `src/lib/pwa-install.ts` |
 | Older docs | `docs/mobile-launch-readiness-2026-09-23.md` is a dated snapshot (its P0 catalog-access and debug-ingest items are since fixed); `SEO_DEVOPS_AUDIT.md` and `README.md` are partly outdated |

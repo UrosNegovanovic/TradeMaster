@@ -23,6 +23,8 @@ model Profile {
   giroAccount  String? // Merchant žiro-račun printed on invoices
   logoUrl      String? // URL to uploaded logo (stored in Supabase Storage)
   inVatSystem  Boolean  @default(false) // Company is in the PDV system; new invoices carry VAT
+  defaultPaymentDays Int? // Default "rok" for new documents in days (NULL = 30), ROADMAP A9.22
+  invoiceNote  String? // Default note prefilled on new documents, ROADMAP A9.22
   accessExpiresAt DateTime? // Manual billing: access until this day (Belgrade midnight); NULL = no limit
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -93,6 +95,8 @@ model Client {
   pib       String?
   registrationNumber String? // Matični broj (8 digits), used for the SEF XML (matched by PIB)
   address   String?
+  phone     String? // For reminders and shared links straight to the buyer (wa.me), ROADMAP A9.21
+  email     String? // mailto: recipient, ROADMAP A9.21
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -212,6 +216,7 @@ model Invoice {
   dueDate       DateTime
   clientName    String
   clientAddress String?
+  note          String? // Note printed on this document, snapshot of what it was issued with (ROADMAP A9.22)
   clientPib     String? // Buyer PIB (9 digits) printed on the invoice
   status        InvoiceStatus @default(DRAFT)
   totalAmount   Decimal       @db.Decimal(10, 2) // Amount payable (osnovica + PDV)

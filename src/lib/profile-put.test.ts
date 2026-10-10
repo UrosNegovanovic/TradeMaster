@@ -77,3 +77,22 @@ describe('inVatSystem', () => {
     expect(toProfileFormValues({ inVatSystem: true }).inVatSystem).toBe(true)
   })
 })
+
+describe('invoice defaults (ROADMAP A9.22)', () => {
+  it('writes the default payment term and note only when the form sends them', () => {
+    const body = { ...base, defaultPaymentDays: 15, invoiceNote: '  Roba ostaje vlasništvo prodavca do uplate.  ' }
+    const fields = profilePutFields(profileSchema.parse(body), body)
+    expect(fields.defaultPaymentDays).toBe(15)
+    expect(fields.invoiceNote).toBe('Roba ostaje vlasništvo prodavca do uplate.')
+    expect(profilePutFields(profileSchema.parse(base), base)).not.toHaveProperty('defaultPaymentDays')
+  })
+
+  it('clears both with empty values; days stay within 0-365', () => {
+    const body = { ...base, defaultPaymentDays: '', invoiceNote: '' }
+    const fields = profilePutFields(profileSchema.parse(body), body)
+    expect(fields.defaultPaymentDays).toBeNull()
+    expect(fields.invoiceNote).toBeNull()
+    expect(profileSchema.safeParse({ ...base, defaultPaymentDays: 400 }).success).toBe(false)
+    expect(profileSchema.safeParse({ ...base, defaultPaymentDays: 7.5 }).success).toBe(false)
+  })
+})

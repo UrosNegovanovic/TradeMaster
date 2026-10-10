@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { CATALOG_LAYOUTS, CATALOG_SORT_MODES, DEFAULT_CATALOG_DISPLAY } from './catalog-layout'
 import { INVALID_GIRO_MESSAGE, normalizeGiroAccount } from './giro-account'
 import { ADDRESS_CITY_MESSAGE, addressHasCity, pibProblem, registrationNumberProblem } from './company-fields'
+import { emailForMailto, phoneForWhatsApp } from './share-links'
 
 export const invoiceStatusSchema = z.enum(['DRAFT', 'PAID', 'UNPAID'])
 
@@ -163,7 +164,14 @@ export const invoiceWriteSchema = z.object({
   clientAddress: z.string().max(500).nullable().optional(),
   clientPib: clientPibWriteSchema,
   status: invoiceStatusSchema.optional(),
-  items: z.array(invoiceItemWriteSchema).min(1, 'Invoice must have at least one item'),
+  // Printed on the document; snapshot of what it was issued with (ROADMAP A9.22). Empty = no note.
+  note: z
+    .string()
+    .max(1000, 'Napomena je predugačka (najviše 1000 znakova).')
+    .nullable()
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value?.trim() || null)),
+  items: z.array(invoiceItemWriteSchema).min(1, 'Dodajte bar jednu stavku'),
 })
 
 export const documentTypeSchema = z.enum(['INVOICE', 'PROFORMA'])
@@ -372,6 +380,18 @@ export const profileSchema = z.object({
       fieldIssue(ctx, !value ? 'Žiro-račun je obavezan.' : normalizeGiroAccount(value) ? null : INVALID_GIRO_MESSAGE)
     ),
   inVatSystem: z.boolean().optional(),
+  // ROADMAP A9.22: defaults for new documents. Empty days = 30.
+  defaultPaymentDays: z.preprocess(
+    (value) => (value === '' || (typeof value === 'number' && Number.isNaN(value)) ? null : value),
+    z
+      .number({ invalid_type_error: 'Rok mora biti broj dana' })
+      .int('Rok mora biti ceo broj dana')
+      .min(0, 'Rok ne može biti negativan')
+      .max(365, 'Rok može biti najviše 365 dana')
+      .nullable()
+      .optional()
+  ),
+  invoiceNote: z.string().max(1000, 'Napomena je predugačka (najviše 1000 znakova).').nullable().optional(),
   logoUrl: z
     .union([
       z.string().url('Adresa logotipa nije ispravna.'),
@@ -383,6 +403,11 @@ export const profileSchema = z.object({
 })
 
 export type ProfileFormData = z.infer<typeof profileSchema>
+
+/** Optional free text: trimmed, empty = null, at most 100 characters. */
+const optionalText = z
+  .union([z.string().max(100, 'Predugačko (najviše 100 znakova).'), z.null(), z.undefined()])
+  .transform((value) => value?.trim() || null)
 
 const optionalTrimmed = z.union([z.string(), z.null(), z.undefined()]).transform((value) => normalizeClientPib(value) ?? null)
 
@@ -401,6 +426,13 @@ export const clientWriteSchema = z
     address: optionalTrimmed.superRefine((value, ctx) => {
       if (value === null) return
       fieldIssue(ctx, value.length > 500 ? 'Adresa je predugačka.' : addressHasCity(value) ? null : ADDRESS_CITY_MESSAGE)
+    }),
+    // ROADMAP A9.21: reminders and shared links go straight to the buyer.
+    phone: optionalText.superRefine((value, ctx) => {
+      if (value !== null && !phoneForWhatsApp(value)) fieldIssue(ctx, 'Telefon nije ispravan, npr. 064 123 4567.')
+    }),
+    email: optionalText.superRefine((value, ctx) => {
+      if (value !== null && !emailForMailto(value)) fieldIssue(ctx, 'Email nije ispravan.')
     }),
   })
   .superRefine((value, ctx) => {

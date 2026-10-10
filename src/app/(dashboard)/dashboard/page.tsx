@@ -27,6 +27,7 @@ import { getOnboardingProgress } from '@/lib/onboarding'
 import { formatLocalYmd, startOfLocalDay, startOfLocalMonth, startOfLocalTomorrow } from '@/lib/local-date'
 import { formatRsd, sumInvoiceBaseAmounts } from '@/lib/invoice-finance'
 import { countSr } from '@/lib/sr-format'
+import { findSavedClientForInvoice } from '@/lib/client-fill'
 import { FilePlus2, PackagePlus } from 'lucide-react'
 import { fetchLowStockProducts } from '@/lib/low-stock'
 import { sr } from '@/lib/ui-copy'
@@ -82,6 +83,7 @@ async function getDashboardData(profileId: string) {
     todayMovementGroups,
     todayMovements,
     paidThisMonth,
+    reminderClients,
   ] = await Promise.all([
     prisma.$queryRaw<Array<{ totalQuantity: bigint | number | null; stockValue: Decimal | number | null }>>(
       Prisma.sql`
@@ -138,6 +140,7 @@ async function getDashboardData(profileId: string) {
         id: true,
         invoiceNumber: true,
         clientName: true,
+        clientPib: true,
         totalAmount: true,
         dueDate: true,
         shareEnabled: true,
@@ -190,6 +193,11 @@ async function getDashboardData(profileId: string) {
       where: { profileId, documentType: 'INVOICE', status: InvoiceStatus.PAID, paidAt: { gte: startOfLocalMonth() } },
       select: { totalAmount: true, vatAmount: true },
     }),
+    // ROADMAP A9.21: saved buyers' contacts, so a reminder opens straight to the buyer.
+    prisma.client.findMany({
+      where: { profileId, OR: [{ phone: { not: null } }, { email: { not: null } }] },
+      select: { name: true, pib: true, phone: true, email: true },
+    }),
   ])
 
   const stock = stockRows[0]
@@ -226,6 +234,7 @@ async function getDashboardData(profileId: string) {
     todayIntakes: previewTodayIntakes(todayMovements),
     todayMovementPreview: previewTodayMovements(todayMovements),
     paidThisMonthTotal: sumInvoiceBaseAmounts(paidThisMonth),
+    reminderClients,
   }
 }
 
@@ -267,6 +276,7 @@ export default async function DashboardPage() {
     todayIntakes,
     todayMovementPreview,
     paidThisMonthTotal,
+    reminderClients,
   } = await getDashboardData(profile.id)
 
   const onboarding = getOnboardingProgress({
@@ -371,6 +381,10 @@ export default async function DashboardPage() {
                       sharePath={
                         invoice.shareEnabled && invoice.shareToken ? invoiceSharePath(invoice.shareToken) : null
                       }
+                      recipient={findSavedClientForInvoice(reminderClients, {
+                        clientName: invoice.clientName,
+                        clientPib: invoice.clientPib ?? '',
+                      })}
                     />
                   </div>
                   ) : (

@@ -26,6 +26,8 @@ import { SefSendPanel } from '@/components/sef/SefSendPanel'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 import { invoiceCopyHref } from '@/lib/invoice-copy'
 import { invoiceEditHref } from '@/lib/invoice-edit'
+import { findSavedClientForInvoice } from '@/lib/client-fill'
+import type { Client } from '@/types/client'
 import { formatPercent } from '@/lib/sr-format'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
@@ -50,6 +52,15 @@ export default function InvoiceDetailPage() {
   const params = useParams()
   const invoiceId = params.id as string
   const [moreOpen, setMoreOpen] = useState(false)
+  // Saved buyers are optional here: they only address the share links (ROADMAP A9.21).
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients')
+      if (!response.ok) throw new Error('Failed to fetch clients')
+      return response.json()
+    },
+  })
 
   // Fetch invoice
   const { data: invoice, isLoading } = useQuery<InvoiceWithItems & { profile: Profile }>({
@@ -185,6 +196,7 @@ export default function InvoiceDetailPage() {
         status={invoice.status}
         companyName={invoice.profile?.companyName}
         documentType={invoice.documentType}
+        recipient={findSavedClientForInvoice(clients, { clientName: invoice.clientName, clientPib: invoice.clientPib ?? '' })}
       />
 
       <div className="grid gap-6 md:grid-cols-3">

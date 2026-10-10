@@ -181,6 +181,7 @@ export async function PUT(
           dueDate: new Date(parsed.dueDate),
           clientName: parsed.clientName,
           clientAddress: parsed.clientAddress || null,
+          ...(parsed.note !== undefined ? { note: parsed.note } : {}),
           clientPib: parsed.clientPib,
           totalAmount,
           vatEnabled,

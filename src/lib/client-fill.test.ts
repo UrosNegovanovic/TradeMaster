@@ -93,7 +93,10 @@ describe('newClientFromInvoice (ROADMAP A9.12)', () => {
 
   it('saves a buyer with only a name', () => {
     const result = newClientFromInvoice(buyer)
-    expect(result).toEqual({ ok: true, data: { name: 'Kupac DOO', pib: null, registrationNumber: null, address: null } })
+    expect(result).toEqual({
+      ok: true,
+      data: { name: 'Kupac DOO', pib: null, registrationNumber: null, address: null, phone: null, email: null },
+    })
   })
 
   it('asks for the matični broj when the buyer has a PIB', () => {

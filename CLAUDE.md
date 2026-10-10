@@ -85,7 +85,7 @@ E2E (`e2e/`, `playwright.config.ts`): public suites are read-only and safe on an
 | Invoice PDF | `src/components/invoices/InvoicePDF.tsx` |
 | Analytics / Sentry | `src/lib/analytics.ts`, `src/components/analytics/`, `sentry.*.config.ts`, `src/instrumentation.ts`, `src/lib/sentry-scrub.ts` (both off unless `NEXT_PUBLIC_ANALYTICS=on` / `NEXT_PUBLIC_SENTRY_DSN` are set; keep events free of personal data) |
 | PWA install | `src/lib/use-pwa-install.ts`, `src/components/pwa/`, `src/lib/pwa-install.ts`, `public/pwa-capture.js`, `src/app/manifest.ts` (button says "Instaliraj aplikaciju" on Android, "Dodaj na početni ekran" only on iPhone) |
-| Access period / manual billing | `src/lib/access-period.ts` (2 grace days after expiry, then read-only; `extendAccessAfterPayment`), `src/lib/access-notice.ts`, `src/lib/access-guard.ts`, `src/components/layout/AccessBanner.tsx`, Podešavanja → Pristup i uplata, `npm run access:extend` (owner, after a payment), `Profile.accessExpiresAt` (NULL = no limit) |
+| Access period / manual billing | `src/lib/access-period.ts` (2 grace days after expiry, then read-only; one payment = one calendar month, `planAccessExtension`), `src/lib/access-extension.ts` (writes the extension + `access_extensions` trace; unique payment reference), `src/lib/access-notice.ts`, `src/lib/access-guard.ts`, `src/components/layout/AccessBanner.tsx`, Podešavanja → Pristup i uplata, `npm run access:extend` (owner, after a payment), `npm run billing:due`, `docs/billing-runbook.md`, `Profile.accessExpiresAt` (NULL = no limit) |
 | IPS QR (PDF) | `src/lib/ips-qr.ts`, `src/components/invoices/InvoicePDF.tsx` |
 | Accountant export | `src/lib/invoice-export.ts`, `src/app/api/invoices/export/route.ts`, `src/components/invoices/InvoiceExport.tsx` |
 | Catalog layout / PDF | `src/lib/catalog-layout.ts`, `src/lib/catalog-picker.ts` (multi-category product picker), `src/components/catalogs/CatalogPDF.tsx`, `src/components/catalogs/CatalogItemsView.tsx`, `src/components/catalogs/CatalogForm.tsx` |
@@ -96,7 +96,7 @@ E2E (`e2e/`, `playwright.config.ts`): public suites are read-only and safe on an
 | Auth fetch | `src/lib/authorized-fetch.ts` |
 | Landing / legal | `src/components/landing/`, `src/lib/landing-copy.ts`, `src/lib/operator.ts`, `src/app/privatnost`, `src/app/uslovi` |
 | SEO / trade pages | `src/lib/site-url.ts` (one site URL), `src/lib/trade-pages.ts` + `src/app/za/[slug]/`, `src/app/robots.ts`, `src/app/sitemap.ts`, `src/lib/og-image.tsx` + `src/lib/og-image-text.ts` (OG text must fit the subset fonts in `src/assets/og`) |
-| Schema | `prisma/schema.prisma`, `supabase/migrations/` (17 files; all hand-applied, never auto; latest `buyer_contact_invoice_defaults` applied 2026-10-10) |
+| Schema | `prisma/schema.prisma`, `supabase/migrations/` (18 files; all hand-applied, never auto; `buyer_contact_invoice_defaults` applied 2026-10-10; `access_extensions` applied 2026-10-10) |
 | Rate limits / headers / images | `src/lib/rate-limit.ts`, `next.config.js` (security headers, allowed image hosts) |
 | PWA | `src/app/manifest.ts`, `public/sw.js` (network-only worker, no caching), `src/lib/pwa-install.ts` |
 | Older docs | `docs/mobile-launch-readiness-2026-09-23.md` is a dated snapshot (its P0 catalog-access and debug-ingest items are since fixed); `SEO_DEVOPS_AUDIT.md` and `README.md` are partly outdated |

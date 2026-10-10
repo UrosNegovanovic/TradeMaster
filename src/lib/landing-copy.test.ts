@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { getSafeCatalogSharePath } from './public-catalog'
 import { getSafeInvoiceSharePath } from './public-invoice'
 import {
+  ACCESS_ACTIVATION,
+  BILLING_PERIOD_RULE,
   MONTHLY_PRICE,
   PRICING_OFFER,
   benefits,
@@ -15,6 +17,7 @@ import {
   landingExamples,
   notList,
   paymentFaq,
+  pricingCardNote,
   pricingIncludes,
   pricingNote,
   workflowSteps,
@@ -38,6 +41,16 @@ describe('landing pricing copy', () => {
     expect(blob).toContain(MONTHLY_PRICE)
     expect(blob).toMatch(/samo za pregled/)
     expect(blob).not.toMatch(/30 €/)
+  })
+
+  it('bills by calendar month and promises activation only after the payment is checked', () => {
+    const blob = [paymentFaq.a, pricingCardNote, pricingNote].join(' ')
+    expect(paymentFaq.a).toContain(BILLING_PERIOD_RULE)
+    expect(paymentFaq.a).toContain(ACCESS_ACTIVATION)
+    expect(BILLING_PERIOD_RULE).toMatch(/kalendarski mesec/)
+    expect(ACCESS_ACTIVATION).toMatch(/najkasnije narednog radnog dana/)
+    expect(blob).toMatch(/7 dana pre isteka/)
+    expect(blob).not.toMatch(/30 dana|čim uplata|odmah po uplati/)
   })
 })
 

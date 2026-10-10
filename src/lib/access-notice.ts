@@ -27,7 +27,7 @@ export function accessNotice(
       state: status.state,
       tone: 'warning',
       title: `${period} ističe ${formatDaysLeft(status.daysLeft ?? 0)} (${until}).`,
-      detail: `Za nastavak rada uplatite ${MONTHLY_PRICE} za sledećih 30 dana. Posle isteka imate još ${ACCESS_GRACE_DAYS} dana za uplatu.`,
+      detail: `Za nastavak rada uplatite ${MONTHLY_PRICE} za sledeći mesec. Uplata pre isteka se nastavlja na tekući period. Posle isteka imate još ${ACCESS_GRACE_DAYS} dana za uplatu.`,
       action: 'Uplata i produženje',
     }
   }
@@ -37,7 +37,7 @@ export function accessNotice(
       state: status.state,
       tone: 'danger',
       title: `${period} ${expired} ${until} Uplatite do ${graceUntil} (rok ističe ${left === 0 ? 'danas' : left === 1 ? 'sutra' : `za ${left} dana`}).`,
-      detail: `Do tada sve radi normalno. Posle roka aplikacija prelazi u režim samo za pregled dok uplata ne stigne. Iznos: ${MONTHLY_PRICE} za 30 dana.`,
+      detail: `Do tada sve radi normalno. Posle roka aplikacija prelazi u režim samo za pregled dok ne proverimo uplatu. Iznos: ${MONTHLY_PRICE} za jedan mesec. Pristup produžavamo posle provere izvoda, najkasnije narednog radnog dana od dana kada uplata stigne.`,
       action: 'Kako da platim',
     }
   }
@@ -46,7 +46,7 @@ export function accessNotice(
       state: status.state,
       tone: 'danger',
       title: `${period} ${expired} ${until} Rok za uplatu je prošao ${graceUntil} Aplikacija je u režimu samo za pregled.`,
-      detail: 'Podaci su vidljivi i mogu da se izvezu, a linkovi kupcima i dalje rade. Dodavanje i izmene rade ponovo čim uplata stigne.',
+      detail: 'Podaci su vidljivi i mogu da se izvezu, a linkovi kupcima i dalje rade. Dodavanje i izmene ponovo rade kada proverimo uplatu, najkasnije narednog radnog dana od dana kada uplata stigne.',
       action: 'Uplatite i nastavite',
     }
   }

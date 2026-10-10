@@ -38,8 +38,30 @@ model Profile {
   categories     Category[]
   clients        Client[]
   sefCredential  SefCredential?
+  accessExtensions AccessExtension[]
 
   @@map("profiles")
+}
+
+/// One row per confirmed payment that extended access (manual billing, scripts/extend-access.ts).
+/// `reference` (predračun/faktura number, normalized) is unique: the same payment never extends twice.
+model AccessExtension {
+  id                String    @id @default(cuid())
+  profileId         String
+  reference         String    @unique
+  paidOn            DateTime  @db.Date // Bank statement date, not the day "Plaćeno" was clicked
+  basis             String // 'continue' | 'reactivate' (src/lib/access-period.ts)
+  periodFrom        DateTime  @db.Date
+  periodUntil       DateTime  @db.Date
+  anchorDay         Int // Renewal day of the month, 31 = always the last day
+  previousExpiresAt DateTime?
+  newExpiresAt      DateTime
+  createdAt         DateTime  @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+  @@map("access_extensions")
 }
 
 /// One SEF API key per company (ROADMAP A3), AES-256-GCM encrypted (src/lib/sef-key-crypto.ts).

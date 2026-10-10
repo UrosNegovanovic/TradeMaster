@@ -11,6 +11,7 @@ export default defineConfig({
       'src/app/api/products/intake.db.test.ts',
       'src/app/api/tenant-isolation.db.test.ts',
       'src/app/api/catalogs/catalog-access.db.test.ts',
+      'src/lib/access-extension.db.test.ts',
     ],
     fileParallelism: false,
   },

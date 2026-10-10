@@ -6,6 +6,12 @@ export const FREE_PERIOD = '60 dana'
 export const MONTHLY_PRICE = '20 €'
 /** "Prvih 60 dana besplatno, zatim 20 € mesečno" */
 export const PRICING_OFFER = `Prvih ${FREE_PERIOD} besplatno, zatim ${MONTHLY_PRICE} mesečno`
+/** One payment = one calendar month (src/lib/access-period.ts, planAccessExtension). */
+export const BILLING_PERIOD_RULE =
+  'Jedna uplata produžava pristup za jedan kalendarski mesec, do istog dana u sledećem mesecu. Uplata pre isteka se nastavlja na tekući period, pa ne gubite nijedan dan.'
+/** Honest activation time: the owner checks the bank statement by hand (docs/billing-runbook.md). */
+export const ACCESS_ACTIVATION =
+  'Pristup produžavamo kada proverimo uplatu na izvodu banke, najkasnije narednog radnog dana od dana kada uplata stigne na naš račun.'
 
 export const pricingIncludes = [
   'Neograničen broj proizvoda i dokumenata',
@@ -19,13 +25,13 @@ export const pricingIncludes = [
 export const pricingCardPeriod = `mesečno, posle ${FREE_PERIOD} besplatno`
 
 export const pricingCardNote =
-  'Bez kartice. Posle probnog perioda šaljemo račun jednom mesečno.'
+  'Bez kartice. Posle probnog perioda šaljemo predračun jednom mesečno.'
 
-export const pricingNote = 'Naplata u dinarima po važećem kursu NBS na dan fakturisanja.'
+export const pricingNote = 'Naplata u dinarima po kursu NBS na dan izdavanja predračuna.'
 
 export const paymentFaq = {
   q: 'Šta se dešava posle 60 besplatnih dana?',
-  a: `${PRICING_OFFER}. Za sada nema pretplate u aplikaciji: račun za svaki mesec šaljemo ručno, a pristup se produžava posle uplate. Kada pristup istekne, imate još 2 dana da uplatite i sve radi kao do tada; posle toga aplikacija prelazi u režim samo za pregled (vaši podaci ostaju vidljivi i mogu da se izvezu) dok uplata ne stigne. Svaka uplata produžava pristup za 30 dana. Nema otkaza pretplate jer pretplata još ne postoji.`,
+  a: `${PRICING_OFFER}. Za sada nema pretplate u aplikaciji: predračun za svaki mesec šaljemo ručno, najkasnije 7 dana pre isteka. ${BILLING_PERIOD_RULE} ${ACCESS_ACTIVATION} Kada pristup istekne, imate još 2 dana da uplatite i sve radi kao do tada; posle toga aplikacija prelazi u režim samo za pregled (vaši podaci ostaju vidljivi i mogu da se izvezu) dok ne proverimo uplatu. Nema otkaza pretplate jer pretplata još ne postoji.`,
 } as const
 
 /*

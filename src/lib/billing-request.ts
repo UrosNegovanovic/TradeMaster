@@ -3,15 +3,15 @@ import { contactLinks } from '@/lib/landing-copy'
 
 type BillingProfile = { companyName?: string | null; pib?: string | null } | null | undefined
 
-/** Message the merchant sends to ask for the monthly invoice (manual billing). */
+/** Message the merchant sends to ask for the predračun for the next month (manual billing). */
 export function billingRequestText(profile: BillingProfile): string {
   const company = profile?.companyName?.trim() || 'moja firma'
   const pib = profile?.pib?.trim() ? `, PIB ${profile.pib.trim()}` : ''
-  return `Pozdrav, molim račun za TradeMaster pretplatu (30 dana) za ${company}${pib}. Hvala!`
+  return `Pozdrav, molim predračun za TradeMaster pretplatu za sledeći mesec za ${company}${pib}. Hvala!`
 }
 
 export function billingMailto(profile: BillingProfile): string {
-  const subject = 'TradeMaster: račun za pretplatu'
+  const subject = 'TradeMaster: predračun za pretplatu'
   return `mailto:${operator.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(billingRequestText(profile))}`
 }
 

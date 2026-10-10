@@ -6,7 +6,7 @@ describe('billing request (manual billing)', () => {
   const profile = { companyName: 'Firma DOO', pib: '101134702' }
 
   it('names the company and PIB', () => {
-    expect(billingRequestText(profile)).toBe('Pozdrav, molim račun za TradeMaster pretplatu (30 dana) za Firma DOO, PIB 101134702. Hvala!')
+    expect(billingRequestText(profile)).toBe('Pozdrav, molim predračun za TradeMaster pretplatu za sledeći mesec za Firma DOO, PIB 101134702. Hvala!')
     expect(billingRequestText(null)).toContain('za moja firma.')
   })
 

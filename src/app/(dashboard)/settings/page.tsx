@@ -18,8 +18,8 @@ import { SefSettingsCard } from '@/components/sef/SefSettingsCard'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
-import { MONTHLY_PRICE, PRICING_OFFER } from '@/lib/landing-copy'
-import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
+import { ACCESS_ACTIVATION, BILLING_PERIOD_RULE, MONTHLY_PRICE, PRICING_OFFER } from '@/lib/landing-copy'
+import { ACCESS_WARNING_DAYS, accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 import { accessNotice } from '@/lib/access-notice'
 import { billingMailto, billingWhatsApp } from '@/lib/billing-request'
 import { sr } from '@/lib/ui-copy'
@@ -142,7 +142,7 @@ export default function SettingsPage() {
       <Card id="pristup" className="mb-6 scroll-mt-20">
         <CardHeader>
           <CardTitle>Pristup i uplata</CardTitle>
-          <CardDescription>{PRICING_OFFER}. Naplata je ručna: šaljemo račun, a pristup produžavamo za 30 dana čim uplata stigne.</CardDescription>
+          <CardDescription>{PRICING_OFFER}. Naplata je ručna, preko predračuna. {BILLING_PERIOD_RULE}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           {(() => {
@@ -170,13 +170,13 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <p className="font-medium">Kako da platite</p>
             <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-              <li>Zatražite račun: pošaljemo ga sa IPS QR kodom za uplatu iz mobilnog bankarstva.</li>
-              <li>Uplatite {MONTHLY_PRICE} u dinarima po kursu NBS na dan računa.</li>
-              <li>Čim uplata stigne, pristup produžavamo za 30 dana i javljamo vam.</li>
+              <li>Predračun sa IPS QR kodom šaljemo na mejl firme najkasnije {ACCESS_WARNING_DAYS} dana pre isteka. Možete ga zatražiti i ranije.</li>
+              <li>Uplatite {MONTHLY_PRICE} u dinarima po kursu NBS na dan predračuna, sa pozivom na broj sa predračuna.</li>
+              <li>{ACCESS_ACTIVATION} Javljamo vam do kog datuma važi.</li>
             </ol>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row">
               <Button asChild className="min-h-11">
-                <a href={billingMailto(profile)}>Zatraži račun mejlom</a>
+                <a href={billingMailto(profile)}>Zatraži predračun mejlom</a>
               </Button>
               {billingWhatsApp(profile) ? (
                 <Button asChild variant="outline" className="min-h-11">

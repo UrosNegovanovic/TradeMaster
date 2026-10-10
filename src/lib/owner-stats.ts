@@ -86,7 +86,7 @@ const mondayOf = (dayNumber: number) => dayNumber - ((new Date(dayNumber * DAY_M
 const ymdOf = (dayNumber: number) => new Date(dayNumber * DAY_MS).toISOString().slice(0, 10)
 const noKinds = (): AccessKindCounts => ({ trial: 0, paid: 0, manual: 0 })
 
-function accessKind(company: OwnerStatsCompany): AccessKind {
+export function accessKind(company: Pick<OwnerStatsCompany, 'createdAt' | 'accessExpiresAt' | 'paymentCount'>): AccessKind {
   if (company.paymentCount > 0) return 'paid'
   return isTrialPeriod(company.createdAt, company.accessExpiresAt) ? 'trial' : 'manual'
 }

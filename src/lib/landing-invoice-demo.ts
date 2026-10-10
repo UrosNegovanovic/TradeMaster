@@ -2,7 +2,7 @@ import { buildIpsQrPayload } from '@/lib/ips-qr'
 
 /** Fictional invoice for the landing page. No real company, PIB or account. */
 export const DEMO_INVOICE = {
-  number: '2026-014',
+  number: '14/2026',
   company: 'Demo Trgovina d.o.o.',
   customer: 'Market Primer d.o.o.',
   giroAccount: '160-0000000000001-73',

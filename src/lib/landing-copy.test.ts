@@ -70,6 +70,15 @@ describe('landing page copy (A2.9)', () => {
     expect(dataPoints.join(' ')).toMatch(/EU \(Irska\)/)
   })
 
+  it('mentions the A9 features that work in production (free lines, reports, stock list)', () => {
+    expect(invoicePoints.join(' ')).toMatch(/usluge, prevoz/)
+    expect(pricingIncludes.join(' ')).toMatch(/ko vam duguje/)
+    expect(pricingIncludes.join(' ')).toMatch(/Lager lista/)
+    expect(workflowSteps[3].line).toMatch(/Iz kataloga/)
+    // SEF stays the honest "no" until real SEF sending is switched on (ROADMAP A1.14, A2.12).
+    expect(notList.join(' ')).toMatch(/Ne šalje fakture u SEF/)
+  })
+
   it('does not promise features that do not exist yet', () => {
     expect(allText).not.toMatch(/šalje(mo)? (fakture )?u SEF jednim|automatski u SEF|više korisnika|tim(ski)? nalog|veštačk|\bAI\b|offline radi/i)
   })

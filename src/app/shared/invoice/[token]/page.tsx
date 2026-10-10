@@ -118,7 +118,27 @@ export default function SharedInvoicePage({ params }: { params: { token: string 
           {invoice.clientPib && <p className="text-sm text-muted-foreground">PIB: {invoice.clientPib}</p>}
         </section>
 
-        <div className="overflow-x-auto rounded-lg border">
+        {/* On a phone the table would scroll sideways and hide the amounts: one card per line instead. */}
+        <ul className="divide-y rounded-lg border text-sm sm:hidden" aria-label="Stavke">
+          {invoice.items.map((item) => {
+            const discount = Number(item.discount || 0)
+            return (
+              <li key={item.id} className="flex items-start justify-between gap-3 px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="break-words font-medium [overflow-wrap:anywhere]">{item.productName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.quantity} × {formatCurrency(item.unitPrice)}
+                    {discount > 0 ? ` · popust ${formatPercent(discount)}` : ''}
+                    {vat ? ` · PDV ${Number(item.vatRate)}%` : ''}
+                  </p>
+                </div>
+                <p className="shrink-0 font-semibold tabular-nums">{formatCurrency(item.total)}</p>
+              </li>
+            )
+          })}
+        </ul>
+
+        <div className="hidden overflow-x-auto rounded-lg border sm:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-muted-foreground">

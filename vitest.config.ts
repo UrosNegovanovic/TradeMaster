@@ -55,6 +55,8 @@ export default defineConfig({
       'src/lib/after-auth.test.ts',
       'src/lib/platform-owner.test.ts',
       'src/app/api/owner/ping/route.test.ts',
+      'src/lib/owner-stats.test.ts',
+      'src/app/api/owner/stats/route.test.ts',
       'src/lib/landing-copy.test.ts',
       'src/lib/ui-copy.test.ts',
       'src/lib/invoice-scan.test.ts',

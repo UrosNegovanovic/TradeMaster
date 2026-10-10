@@ -158,8 +158,8 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 | A9.13 | ✅ (#116) **Minimalna zaliha po proizvodu** | Visoka | S | `minStock` postoji (podrazumevano 2), ali se ne može menjati, pa je "Nizak lager" besmislen za robu u kutijama. Polje u ProductForm, bez migracije. |
 | A9.14 | ✅ (#129) Asortiman: "šta treba dopuniti" | Srednja | S | Filteri "Bez nabavne cene", "Bez prodajne cene", "Nizak lager" i sortiranje (naziv, stanje, cena). Brzi sken namerno ostavlja nabavnu praznu. |
 | A9.15 | ✅ (#123) Predračun iz kataloga | Srednja | S | Katalog ima kupca, popust i proizvode; dugme "Napravi predračun" kroz postojeći prefill (`copyFrom`). Zatvara korak katalog → faktura. |
-| A9.16 | ✅ (PR otvoren) Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
-| A9.17 | ✅ (PR otvoren) Brze akcije na Početnoj | Srednja | S | "Nova faktura", "Novi predračun", "Ulaz robe" pored Brzog skena; "Naplaćeno ovog meseca". |
+| A9.16 | ✅ (#130) Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
+| A9.17 | ✅ (#130) Brze akcije na Početnoj | Srednja | S | "Nova faktura", "Novi predračun", "Ulaz robe" pored Brzog skena; "Naplaćeno ovog meseca". |
 
 **Izveštaji**
 
@@ -167,7 +167,7 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 |---|---|---|---|---|
 | A9.18 | ✅ (#124) **Ko mi duguje** (potraživanja po kupcu) | Visoka | S-M | Kupac, otvoreno, najstariji rok, link na njegove fakture. |
 | A9.19 | ✅ (#125) **Vrednost lagera po nabavnoj ceni i "Lager lista" XLSX** | Visoka | S | Danas samo po prodajnoj; izvoz: šifra, naziv, stanje, nabavna, prodajna, vrednost (knjigovođa, popis). |
-| A9.20 | Najprodavaniji proizvodi i najbolji kupci po periodu | Srednja | S-M | Iz snimaka stavki, samo fakture. |
+| A9.20 | ✅ (PR otvoren) Najprodavaniji proizvodi i najbolji kupci po periodu | Srednja | S-M | Iz snimaka stavki, samo fakture. |
 
 **Sa migracijom (uz odobrenje vlasnika, posle ostalih)**
 

@@ -77,6 +77,8 @@ export type InvoiceCreateInput = {
   documentType?: 'INVOICE' | 'PROFORMA'
   items: {
     productId?: string | null
+    /** Free line (usluga, prevoz): no product, cost of goods 0. */
+    free?: boolean
     productName: string
     quantity: number
     unitPrice: number

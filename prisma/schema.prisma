@@ -40,6 +40,7 @@ model Profile {
   sefCredential  SefCredential?
   accessExtensions AccessExtension[]
   billingNotices   BillingNotice[]
+  clerkIdentityLink ClerkIdentityLink?
 
   @@map("profiles")
 }
@@ -63,6 +64,27 @@ model AccessExtension {
 
   @@index([profileId, createdAt])
   @@map("access_extensions")
+}
+
+/// Clerk Development → Production cutover (ROADMAP A0.3): one row per profile the owner approved to carry over.
+/// The only way a production Clerk id may replace Profile.clerkUserId (src/lib/identity-link-db.ts).
+model ClerkIdentityLink {
+  id             String    @id @default(cuid())
+  profileId      String    @unique
+  oldClerkUserId String    @unique // Development id the profile had when the owner approved it
+  newClerkUserId String?   @unique // Production id, once that user exists in the Production instance
+  accountClass   String // 'REAL' | 'OWNER' | 'DEMO' | 'TEST' (account inventory, A0.1)
+  status         String    @default("PENDING") // 'PENDING' | 'LINKED' | 'REVERTED'
+  approvedBy     String
+  approvedAt     DateTime  @default(now())
+  linkedAt       DateTime?
+  revertedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("clerk_identity_links")
 }
 
 /// Automatic subscription predračun, one per company and paid month (src/lib/billing-run.ts).

@@ -507,7 +507,7 @@ export default async function DashboardPage() {
             <CardTitle className="text-lg">Nizak lager</CardTitle>
             <CardDescription>
               {lowStock.length === 0
-                ? 'Isti prag kao na Magacinu: količina SKU-a je na ili ispod minimuma.'
+                ? 'Isti prag kao u Magacinu: stanje šifre je na minimalnoj zalihi ili ispod nje.'
                 : `${lowStock.length} ${lowStock.length === 1 ? 'proizvod je' : 'proizvoda su'} na minimumu`}
             </CardDescription>
           </CardHeader>
@@ -525,7 +525,7 @@ export default async function DashboardPage() {
                       <p className="break-words font-medium leading-tight [overflow-wrap:anywhere]">
                         {product.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                      <p className="text-xs text-muted-foreground">Šifra: {product.sku}</p>
                       {product.missingPrice ? (
                         <Link href={`/inventory?edit=${product.id}`} className="text-xs font-medium text-amber-700 underline dark:text-amber-400">
                           Nedostaje cena · Dodaj cenu

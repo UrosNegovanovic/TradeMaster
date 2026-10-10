@@ -26,6 +26,7 @@ import { SefSendPanel } from '@/components/sef/SefSendPanel'
 import { canPrintDeliveryNote, documentLabels } from '@/lib/document-type'
 import { invoiceCopyHref } from '@/lib/invoice-copy'
 import { invoiceEditHref } from '@/lib/invoice-edit'
+import { formatPercent } from '@/lib/sr-format'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
   ssr: false,
@@ -324,7 +325,7 @@ export default function InvoiceDetailPage() {
                         {formatCurrency(Number(item.unitPrice))}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {discount > 0 ? `${discount.toFixed(2)}%` : '-'}
+                        {discount > 0 ? formatPercent(discount) : '-'}
                       </td>
                       {vat ? (
                         <td className="py-3 px-4 text-right">{Number(item.vatRate ?? 0)}%</td>

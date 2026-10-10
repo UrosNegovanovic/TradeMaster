@@ -10,6 +10,7 @@ import { getSafeEmailHref, getSafePhoneHref } from '@/lib/public-catalog'
 import { isShareToken, type PublicInvoice } from '@/lib/public-invoice'
 import { documentLabels } from '@/lib/document-type'
 import { sr } from '@/lib/ui-copy'
+import { formatPercent } from '@/lib/sr-format'
 
 const InvoicePdfDownload = dynamic(() => import('@/components/invoices/InvoicePdfDownload'), {
   ssr: false,
@@ -137,7 +138,7 @@ export default function SharedInvoicePage({ params }: { params: { token: string 
                     <td className="px-3 py-2">{item.productName}</td>
                     <td className="px-3 py-2 text-right">{item.quantity}</td>
                     <td className="px-3 py-2 text-right">{formatCurrency(item.unitPrice)}</td>
-                    <td className="px-3 py-2 text-right">{discount > 0 ? `${discount.toFixed(2)}%` : '-'}</td>
+                    <td className="px-3 py-2 text-right">{discount > 0 ? formatPercent(discount) : '-'}</td>
                     {vat ? <td className="px-3 py-2 text-right">{Number(item.vatRate)}%</td> : null}
                     <td className="px-3 py-2 text-right font-medium">{formatCurrency(item.total)}</td>
                   </tr>

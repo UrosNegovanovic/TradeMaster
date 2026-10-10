@@ -195,7 +195,7 @@ export function StockOutForm({
                                 {product.name}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
-                                SKU: {product.sku} • Stanje: {product.quantity || 0}
+                                Šifra: {product.sku} • Stanje: {product.quantity || 0}
                               </p>
                             </div>
                           </div>

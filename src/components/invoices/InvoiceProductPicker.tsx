@@ -30,7 +30,7 @@ export function InvoiceProductMeta({
       </p>
       {sku ? (
         <p className="break-words text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
-          SKU: {sku}
+          Šifra: {sku}
         </p>
       ) : null}
       {stock != null ? (
@@ -124,7 +124,7 @@ export function InvoiceProductPicker({
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Traži naziv ili SKU"
+            placeholder="Traži naziv ili šifru"
             className="h-11 pl-9"
             aria-label="Traži proizvod"
           />

@@ -31,6 +31,7 @@ import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
+import { countSr } from '@/lib/sr-format'
 
 async function fetchInvoices() {
   const response = await fetch('/api/invoices')
@@ -166,7 +167,7 @@ function MonthArchiveSection({ group, onDelete, isDeleting }: MonthArchiveSectio
         <span className="font-medium">{group.label}</span>
         <span className="flex items-center gap-3 text-sm text-muted-foreground">
           <span>
-            {group.invoices.length} {group.invoices.length === 1 ? 'faktura' : 'faktura'} · {formatRsd(group.total)}
+            {countSr(group.invoices.length, 'faktura', 'fakture', 'faktura')} · {formatRsd(group.total)}
           </span>
           <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
         </span>
@@ -393,7 +394,7 @@ export default function InvoicesPage() {
                   <p className="text-sm text-muted-foreground">Potraživanja</p>
                   <p className="text-2xl font-bold">{formatRsd(finance.receivables)}</p>
                   <p className="text-sm text-muted-foreground">
-                    {finance.openCount} otvorenih faktura čeka uplatu
+                    {countSr(finance.openCount, 'otvorena faktura čeka', 'otvorene fakture čekaju', 'otvorenih faktura čeka')} uplatu
                   </p>
                 </div>
               )}

@@ -107,7 +107,7 @@ export function AssortmentLaptop({ className }: { className?: string }) {
         <span className="h-2 w-2 rounded-full bg-neutral-200" />
         <div className="ml-1 flex flex-1 items-center gap-2 rounded-md bg-neutral-50 px-2.5 py-1.5 text-[11px] text-muted-foreground">
           <Search className="h-3.5 w-3.5" />
-          <span>Pronađi proizvod, barkod ili SKU…</span>
+          <span>Pronađi proizvod, barkod ili šifru…</span>
         </div>
         <span className="hidden items-center gap-1 rounded-md bg-brand px-2 py-1 text-[10px] font-medium text-white sm:inline-flex">
           <Plus className="h-3 w-3" />

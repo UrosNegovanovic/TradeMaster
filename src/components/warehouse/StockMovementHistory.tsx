@@ -91,7 +91,7 @@ function MovementFilters({
         <div className="relative w-full max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Pretraga po nazivu ili SKU..."
+            placeholder="Pretraga po nazivu ili šifri…"
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
             className="pl-10"
@@ -191,7 +191,7 @@ function MovementList({ movements }: { movements: StockMovement[] }) {
                 <TableCell>
                   <div>
                     <p className="font-medium">{movement.product.name}</p>
-                    <p className="text-xs text-muted-foreground">SKU: {movement.product.sku}</p>
+                    <p className="text-xs text-muted-foreground">Šifra: {movement.product.sku}</p>
                   </div>
                 </TableCell>
                 <TableCell>

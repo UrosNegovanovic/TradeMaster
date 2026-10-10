@@ -73,7 +73,7 @@ describe('productSchema (ProductForm: purchase price required)', () => {
     })
 
     it('fails when sku is empty', () => {
-      expect(firstMessage(productSchema.safeParse({ ...minimal, sku: '' }))).toBe('SKU je obavezan')
+      expect(firstMessage(productSchema.safeParse({ ...minimal, sku: '' }))).toBe('Šifra je obavezna')
     })
 
     it('fails when the sale price is negative', () => {

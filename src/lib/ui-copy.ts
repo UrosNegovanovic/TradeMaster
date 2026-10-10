@@ -37,7 +37,7 @@ export const sr = {
   },
   pages: {
     inventory:
-      'Šta prodajete i po kojoj ceni. Svaki red je jedan unos po datumu, a ne zbirno trenutno stanje.',
+      'Šta prodajete i po kojoj ceni. Ukupno stanje po šifri vidite u Magacinu.',
     warehouse: 'Koliko robe imate i kretanje robe: ulaz, izlaz i uvoz.',
   },
   product: {
@@ -48,7 +48,7 @@ export const sr = {
     name: 'Naziv proizvoda',
     namePlaceholder: 'Unesite naziv proizvoda',
     nameEditableHint: 'Naziv iz skenirane baze je samo predlog — izmenite ga pre čuvanja ako je potrebno.',
-    skuPlaceholder: 'Unesite SKU ili skenirajte barkod',
+    skuPlaceholder: 'Unesite šifru ili skenirajte barkod',
     quantityTip: 'Skenirajte isti barkod više puta da automatski povećate količinu.',
     salePrice: 'Cena',
     salePriceOptional: 'Cena (opciono)',
@@ -70,7 +70,7 @@ export const sr = {
     minStock: 'Minimalna zaliha',
     minStockHint: 'Kad stanje padne na ovaj broj ili ispod, proizvod se javlja u „Nizak lager”. Za robu u kutijama upišite više.',
     notFound: 'Proizvod nije pronađen',
-    notFoundDescription: 'Pretražene su dostupne baze. SKU je sačuvan; unesite podatke ručno.',
+    notFoundDescription: 'Pretražene su dostupne baze. Šifra je sačuvana; unesite podatke ručno.',
     lookupFailed: 'Podaci o proizvodu nisu učitani',
     lookupFailedDescription: 'Unesite podatke o proizvodu ručno.',
   },
@@ -186,7 +186,7 @@ export const sr = {
     groupByCategory: 'Grupiši po kategorijama',
     groupByCategoryHelp: 'Svaka kategorija dobija naslov i u PDF-u počinje na novoj strani. Duga kategorija nastavlja na narednim stranama, a sledeća kategorija počinje tek posle nje.',
     visibleFields: 'Prikaži na proizvodu',
-    showSku: 'SKU / šifra',
+    showSku: 'Šifra',
     showDescription: 'Opis',
     showOriginalPrice: 'Stara cena (precrtana) kad postoji popust',
     manualOrder: 'Ručni redosled',

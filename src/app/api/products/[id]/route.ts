@@ -74,7 +74,7 @@ export async function PUT(
 
       if (skuExists) {
         return NextResponse.json(
-          { error: 'Proizvod sa ovim SKU-om već postoji' },
+          { error: 'Proizvod sa ovom šifrom već postoji' },
           { status: 409 }
         )
       }

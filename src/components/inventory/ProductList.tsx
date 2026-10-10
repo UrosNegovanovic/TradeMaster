@@ -135,7 +135,7 @@ export function ProductList({
               <TableRow>
                 <TableHead className="w-[100px]">Slika</TableHead>
                 <TableHead className="min-w-[180px]">Naziv</TableHead>
-                <TableHead className="min-w-[120px]">SKU</TableHead>
+                <TableHead className="min-w-[120px]">Šifra</TableHead>
                 <TableHead className="min-w-[120px]">Kategorija</TableHead>
                 <TableHead className="min-w-[80px] text-right">Količina</TableHead>
                 <TableHead className="min-w-[100px] text-right">Cena</TableHead>

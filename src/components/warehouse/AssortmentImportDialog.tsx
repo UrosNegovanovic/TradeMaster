@@ -274,7 +274,7 @@ export function AssortmentImportDialog({
                     <TableRow>
                       <TableHead>Red</TableHead>
                       <TableHead>Naziv</TableHead>
-                      <TableHead>SKU</TableHead>
+                      <TableHead>Šifra</TableHead>
                       <TableHead>Količina</TableHead>
                       <TableHead>Cena</TableHead>
                       <TableHead>Nabavna</TableHead>

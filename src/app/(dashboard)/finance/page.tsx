@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { sr } from '@/lib/ui-copy'
 import { buyerInvoicesHref, receivablesByBuyer } from '@/lib/receivables-by-buyer'
 import { formatDaysOverdue } from '@/lib/overdue-invoices'
+import { countSr, formatPercent } from '@/lib/sr-format'
 
 export default async function FinancePage() {
   const { userId } = await auth()
@@ -124,7 +125,7 @@ export default async function FinancePage() {
               <CardContent className="space-y-3">
                 <p className="text-2xl font-bold">{formatRsd(snapshot.receivables)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {snapshot.openCount} otvorenih faktura
+                  {countSr(snapshot.openCount, 'otvorena faktura', 'otvorene fakture', 'otvorenih faktura')}
                 </p>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/invoices">
@@ -156,7 +157,7 @@ export default async function FinancePage() {
                     <p className="text-2xl font-bold">{formatRsd(snapshot.monthProfit)}</p>
                     <p className="text-sm text-muted-foreground">
                       Trošak {formatRsd(snapshot.monthCost ?? 0)} · Marža{' '}
-                      {snapshot.monthMarginPercent?.toFixed(2) ?? '0,00'}%
+                      {formatPercent(snapshot.monthMarginPercent)}
                     </p>
                   </>
                 )}
@@ -203,7 +204,7 @@ export default async function FinancePage() {
                     <p className="text-2xl font-bold">{formatRsd(snapshot.yearProfit)}</p>
                     <p className="text-sm text-muted-foreground">
                       Trošak {formatRsd(snapshot.yearCost ?? 0)} · Marža{' '}
-                      {snapshot.yearMarginPercent?.toFixed(2) ?? '0,00'}%
+                      {formatPercent(snapshot.yearMarginPercent)}
                     </p>
                   </>
                 )}
@@ -244,7 +245,7 @@ export default async function FinancePage() {
                     <div className="min-w-0">
                       <p className="break-words font-medium [overflow-wrap:anywhere]">{buyer.clientName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {buyer.openCount === 1 ? '1 otvorena faktura' : `Otvorenih faktura: ${buyer.openCount}`}
+                        {countSr(buyer.openCount, 'otvorena faktura', 'otvorene fakture', 'otvorenih faktura')}
                         {buyer.clientPib ? ` · PIB ${buyer.clientPib}` : ''}
                       </p>
                     </div>
@@ -297,7 +298,7 @@ export default async function FinancePage() {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {month.count === 0 ? 'Nema naplate' : `${month.count} naplaćenih`}
+                      {month.count === 0 ? 'Nema naplate' : countSr(month.count, 'naplaćena faktura', 'naplaćene fakture', 'naplaćenih faktura')}
                     </p>
                   </div>
                 )
@@ -334,7 +335,7 @@ export default async function FinancePage() {
                           </span>
                           {invoice.hasCompleteCost ? (
                             <span className="block text-xs text-muted-foreground">
-                              Profit {formatRsd(invoice.profit ?? 0)} · {invoice.marginPercent?.toFixed(2)}%
+                              Profit {formatRsd(invoice.profit ?? 0)} · {formatPercent(invoice.marginPercent)}
                             </span>
                           ) : (
                             <span className="block text-xs text-amber-700">

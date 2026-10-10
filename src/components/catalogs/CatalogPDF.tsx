@@ -24,6 +24,7 @@ import {
   type CatalogSection,
 } from '@/lib/catalog-layout'
 import { sr } from '@/lib/ui-copy'
+import { formatPercent } from '@/lib/sr-format'
 
 registerPdfFonts()
 
@@ -561,7 +562,7 @@ export function CatalogPDF({ catalog, shareUrl }: CatalogPDFProps) {
   const discountBadge = discount > 0 && (
     <View style={styles.discountBadge}>
       <Text style={styles.discountBadgeText}>
-        {discount.toFixed(2)}% popust
+        {formatPercent(discount)} popust
       </Text>
     </View>
   )

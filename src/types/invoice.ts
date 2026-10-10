@@ -38,6 +38,8 @@ export type Invoice = {
   status: InvoiceStatus
   /** Amount payable (osnovica + PDV). */
   totalAmount: Decimal
+  /** TradeMaster subscription predračun (or its invoice) in the owner's account, src/lib/subscription-documents.ts. */
+  subscription?: boolean
   /** Snapshot of the company's PDV setting at issue time. */
   vatEnabled: boolean
   vatAmount: Decimal

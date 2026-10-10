@@ -2,7 +2,8 @@
  * Owner's billing checklist (docs/billing-runbook.md), run every working day: companies whose access ends within
  * PREDRACUN_LEAD_DAYS (so the predračun goes out at least ACCESS_WARNING_DAYS before expiry, even after a
  * weekend or a holiday), companies in the 2 grace days and read-only ones, with the e-mail for the predračun and
- * the month the predračun should name. Read-only, changes nothing.
+ * the month the predračun should name, and whether the automatic predračun (billing:send / daily cron) went out.
+ * Read-only, changes nothing.
  *
  *   npm run billing:due              # who needs a predračun / a reminder now
  *   npm run billing:due -- --all     # every company with an access date
@@ -33,6 +34,12 @@ async function main() {
       createdAt: true,
       accessExpiresAt: true,
       accessExtensions: { orderBy: { createdAt: 'desc' }, take: 1, select: { anchorDay: true, newExpiresAt: true } },
+      billingNotices: {
+        where: { isTest: false },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { periodFrom: true, status: true, invoiceNumber: true, recipient: true, sentAt: true, error: true, ownerOnly: true },
+      },
     },
   })
 
@@ -57,7 +64,18 @@ async function main() {
       const anchorDay = last && last.newExpiresAt.getTime() === profile.accessExpiresAt!.getTime() ? last.anchorDay : null
       const next = planAccessExtension({ expiresAt: profile.accessExpiresAt, paidOn: today, anchorDay })
       const period = `period na predračunu: ${formatAccessDate(next.fromYmd)} - ${formatAccessDate(next.untilYmd)}`
-      action = `${sendBy < today ? 'predračun kasni, pošaljite odmah' : `pošaljite predračun najkasnije ${formatAccessDate(sendBy)}`} (${period})`
+      const notice = profile.billingNotices[0]
+      const forThisMonth = notice && notice.periodFrom.toISOString().slice(0, 10) === next.fromYmd ? notice : null
+      if (forThisMonth?.status === 'sent') {
+        const sentOn = forThisMonth.sentAt ? formatAccessDate(formatLocalYmd(forThisMonth.sentAt)) : '-'
+        action = forThisMonth.ownerOnly
+          ? `predračun ${forThisMonth.invoiceNumber} poslat ${sentOn} SAMO VAMA (${forThisMonth.recipient}); prosledite ga kupcu`
+          : `predračun ${forThisMonth.invoiceNumber} poslat ${sentOn} na ${forThisMonth.recipient}`
+      } else if (forThisMonth) {
+        action = `SLANJE NIJE USPELO (${forThisMonth.invoiceNumber ?? 'bez predračuna'}): ${forThisMonth.error ?? forThisMonth.status}`
+      } else {
+        action = `${sendBy < today ? 'predračun kasni, pošaljite odmah' : `predračun najkasnije ${formatAccessDate(sendBy)} (automatski)`} (${period})`
+      }
     } else if (status.state === 'grace') {
       action = 'rok za uplatu teče, podsetite'
     } else if (status.state === 'expired') {

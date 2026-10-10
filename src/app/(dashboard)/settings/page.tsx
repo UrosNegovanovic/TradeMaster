@@ -15,6 +15,7 @@ import { ImageUpload } from '@/components/shared/ImageUpload'
 import { notify } from '@/lib/notify'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { SefSettingsCard } from '@/components/sef/SefSettingsCard'
+import { SubscriptionDocuments } from '@/components/settings/SubscriptionDocuments'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
@@ -170,8 +171,8 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <p className="font-medium">Kako da platite</p>
             <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-              <li>Predračun sa IPS QR kodom šaljemo na mejl firme najkasnije {ACCESS_WARNING_DAYS} dana pre isteka. Možete ga zatražiti i ranije.</li>
-              <li>Uplatite {MONTHLY_PRICE} u dinarima po kursu NBS na dan predračuna, sa pozivom na broj sa predračuna.</li>
+              <li>Predračun sa IPS QR kodom stiže na mejl firme {ACCESS_WARNING_DAYS} dana pre isteka (mejl iz ovih Podešavanja, a ako ga nema, mejl naloga). Možete ga zatražiti i ranije.</li>
+              <li>Uplatite {MONTHLY_PRICE} u dinarima po srednjem kursu NBS na dan predračuna, sa pozivom na broj sa predračuna.</li>
               <li>{ACCESS_ACTIVATION} Javljamo vam do kog datuma važi.</li>
             </ol>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row">
@@ -187,6 +188,7 @@ export default function SettingsPage() {
               ) : null}
             </div>
           </div>
+          <SubscriptionDocuments />
         </CardContent>
       </Card>
 

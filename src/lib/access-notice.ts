@@ -27,7 +27,7 @@ export function accessNotice(
       state: status.state,
       tone: 'warning',
       title: `${period} ističe ${formatDaysLeft(status.daysLeft ?? 0)} (${until}).`,
-      detail: `Za nastavak rada uplatite ${MONTHLY_PRICE} za sledeći mesec. Uplata pre isteka se nastavlja na tekući period. Posle isteka imate još ${ACCESS_GRACE_DAYS} dana za uplatu.`,
+      detail: `Za nastavak rada uplatite ${MONTHLY_PRICE} za sledeći mesec. Predračun šaljemo na mejl firme. Uplata pre isteka se nastavlja na tekući period. Posle isteka imate još ${ACCESS_GRACE_DAYS} dana za uplatu.`,
       action: 'Uplata i produženje',
     }
   }

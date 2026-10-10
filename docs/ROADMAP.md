@@ -167,14 +167,14 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 |---|---|---|---|---|
 | A9.18 | ✅ (#124) **Ko mi duguje** (potraživanja po kupcu) | Visoka | S-M | Kupac, otvoreno, najstariji rok, link na njegove fakture. |
 | A9.19 | ✅ (#125) **Vrednost lagera po nabavnoj ceni i "Lager lista" XLSX** | Visoka | S | Danas samo po prodajnoj; izvoz: šifra, naziv, stanje, nabavna, prodajna, vrednost (knjigovođa, popis). |
-| A9.20 | ✅ (PR otvoren) Najprodavaniji proizvodi i najbolji kupci po periodu | Srednja | S-M | Iz snimaka stavki, samo fakture. |
+| A9.20 | ✅ (#131) Najprodavaniji proizvodi i najbolji kupci po periodu | Srednja | S-M | Iz snimaka stavki, samo fakture. |
 
 **Sa migracijom (uz odobrenje vlasnika, posle ostalih)**
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.21 | ✅ (PR otvoren; migracija u produkciji 2026-10-10) Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
-| A9.22 | ✅ (PR otvoren; migracija u produkciji 2026-10-10) Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
+| A9.21 | ✅ (#132; migracija u produkciji 2026-10-10) Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
+| A9.22 | ✅ (#132; migracija u produkciji 2026-10-10) Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
 
 Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađeni (#123, #124, A9.19 PR). Sledeće: A9.8, A9.6, A9.7, A9.14, A9.16, A9.17; A9.20-A9.22 ako ostane vremena (A9.21-22 traže migraciju i odobrenje). Jedan mali PR po stavci, sa E2E testom gde menja tok.
 

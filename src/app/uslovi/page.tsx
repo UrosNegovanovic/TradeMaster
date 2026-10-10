@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
 import { operator } from '@/lib/operator'
-import { FREE_PERIOD, MONTHLY_PRICE } from '@/lib/landing-copy'
+import { ACCESS_ACTIVATION, FREE_PERIOD, MONTHLY_PRICE } from '@/lib/landing-copy'
 import { ACCESS_GRACE_DAYS, ACCESS_WARNING_DAYS } from '@/lib/access-period'
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function UsloviPage() {
   return (
-    <LegalDocument title="Uslovi korišćenja" updated="Ažurirano 1. oktobra 2026.">
+    <LegalDocument title="Uslovi korišćenja" updated="Ažurirano 10. oktobra 2026.">
       <LegalSection title="Usluga">
         <p>
           TradeMaster je veb usluga za trgovce i malu veleprodaju: skeniranje
@@ -48,17 +48,25 @@ export default function UsloviPage() {
 
       <LegalSection title="Cena, plaćanje i pristup">
         <p>
-          Prvih {FREE_PERIOD} su besplatni (probni period), bez kartice i bez obaveze. Posle toga naknada je {MONTHLY_PRICE} za svakih 30 dana korišćenja,
-          plativo u dinarima po kursu NBS na dan izdavanja predračuna, uplatom na račun naveden na predračunu (može i skeniranjem IPS QR koda).
+          Prvih {FREE_PERIOD} su besplatni (probni period), bez kartice i bez obaveze. Posle toga naknada je {MONTHLY_PRICE} mesečno, za svaki
+          kalendarski mesec korišćenja, plativo u dinarima po kursu NBS na dan izdavanja predračuna, uplatom na račun naveden na predračunu (može i
+          skeniranjem IPS QR koda).
         </p>
         <p>
-          Najkasnije {ACCESS_WARNING_DAYS} dana pre isteka perioda šaljemo predračun na mejl firme, a obaveštenje se vidi i u aplikaciji. Pristup
-          produžavamo za 30 dana kada uplata bude vidljiva na izvodu banke. Uplata pre isteka ne skraćuje tekući period: novih 30 dana se nastavlja na njega.
+          Najkasnije {ACCESS_WARNING_DAYS} dana pre isteka perioda šaljemo predračun na mejl firme, a obaveštenje se vidi i u aplikaciji.{' '}
+          {ACCESS_ACTIVATION}
+        </p>
+        <p>
+          Jedna uplata produžava pristup za jedan kalendarski mesec: do istog dana u sledećem mesecu, a pristup važi i ceo taj dan. Ako tog dana u
+          mesecu nema, period traje do poslednjeg dana meseca, a sledeći se vraća na isti dan (npr. 31. januar, zatim 28. februar, odnosno 29. u
+          prestupnoj godini, pa 31. mart). Uplata pre isteka ili u roku od {ACCESS_GRACE_DAYS} dana posle isteka nastavlja se na tekući period, pa se
+          nijedan plaćeni dan ne gubi. Uplata posle prelaska u režim samo za pregled važi jedan kalendarski mesec od dana kada ponovo uključimo
+          pristup. Da li je uplata stigla na vreme, određuje datum uplate na izvodu banke.
         </p>
         <p>
           Ako uplata ne stigne do isteka, još {ACCESS_GRACE_DAYS} dana aplikacija radi kao i do tada, uz upozorenje. Posle toga prelazi u režim samo za
-          pregled: podaci ostaju vidljivi i mogu da se izvezu, a linkovi koje ste poslali kupcima i dalje rade. Dodavanje i izmene ponovo rade čim uplata
-          stigne.
+          pregled: podaci ostaju vidljivi i mogu da se izvezu, a linkovi koje ste poslali kupcima i dalje rade. Dodavanje i izmene ponovo rade kada proverimo
+          uplatu, najkasnije narednog radnog dana od dana kada stigne na naš račun.
         </p>
         <p>
           Nema automatske naplate ni skrivenih troškova. Ako ne želite da nastavite, dovoljno je da ne platite sledeći predračun. Cenu menjamo samo

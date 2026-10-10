@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { accessNotice } from './access-notice'
-import { extendAccessAfterPayment, initialAccessExpiry } from './access-period'
+import { initialAccessExpiry, planAccessExtension } from './access-period'
 
 const created = new Date('2026-08-11T10:00:00.000Z')
 const trialEnd = initialAccessExpiry(created) // expiry day 10.10.2026
@@ -26,12 +26,24 @@ describe('accessNotice (billing banner)', () => {
   })
 
   it('uses "Pretplata je istekla" after a paid month, and read-only wording after the deadline', () => {
-    const paidUntil = extendAccessAfterPayment(trialEnd, new Date('2026-10-01T10:00:00.000Z'))
-    const grace = accessNotice(paidUntil, created, new Date('2026-11-10T10:00:00.000Z'))
-    expect(grace?.title).toMatch(/^Pretplata je istekla 09\.11\.2026\./)
+    const paidUntil = planAccessExtension({ expiresAt: trialEnd, paidOn: '2026-10-01', now: new Date('2026-10-02T10:00:00.000Z') }).expiresAt
+    const grace = accessNotice(paidUntil, created, new Date('2026-11-11T10:00:00.000Z'))
+    expect(grace?.title).toMatch(/^Pretplata je istekla 10\.11\.2026\./)
     const locked = accessNotice(paidUntil, created, new Date('2026-11-13T10:00:00.000Z'))
     expect(locked).toMatchObject({ tone: 'danger', state: 'expired' })
     expect(locked?.title).toMatch(/režimu samo za pregled/)
+  })
+})
+
+describe('notice copy follows the monthly model and the honest activation time', () => {
+  it('never says 30 days or promises access "as soon as the payment arrives"', () => {
+    for (const day of ['2026-10-05', '2026-10-11', '2026-10-20']) {
+      const notice = accessNotice(trialEnd, created, new Date(`${day}T10:00:00.000Z`))
+      const text = `${notice?.title} ${notice?.detail}`
+      expect(text).not.toMatch(/30 dana|čim uplata/)
+    }
+    expect(accessNotice(trialEnd, created, new Date('2026-10-05T10:00:00.000Z'))?.detail).toMatch(/za sledeći mesec/)
+    expect(accessNotice(trialEnd, created, new Date('2026-10-20T10:00:00.000Z'))?.detail).toMatch(/najkasnije narednog radnog dana/)
   })
 })
 

@@ -16,7 +16,7 @@ Vlasnik male B2B firme (1-10 ljudi) koji sam vodi robu i ponude i prodaje **drug
 
 Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ katalog na WhatsApp, napraviš predračun, pretvoriš ga u fakturu i otpremnicu, kupac plati skeniranjem IPS QR koda.
 
-## Šta je urađeno (2026-10-10, posle #137; #138 čeka "merge")
+## Šta je urađeno (2026-10-10, posle #138)
 
 | # | Šta | PR |
 |---|---|---|
@@ -60,7 +60,7 @@ Glavna poruka: **ceo posao sa robom iz telefona**. Skeniraš robu, pošalješ ka
 | A9.19 | Nabavna vrednost lagera u Magacinu; "Lager lista (Excel)" po šifri: stanje, nabavna i prodajna cena i vrednost | #125 |
 | A10 | Playwright E2E (javni smoke na svaki deploy, prijava bez lozinke, `@writes` samo nad test bazom); svi unit testovi u CI-ju sa zaštitom liste | #109, #120 |
 | B9.0 | **Ručna naplata po kalendarskom mesecu** (2026-10-10): 60 dana proba, 7 dana obaveštenje, 2 dana roka, pa samo pregled; jedna uplata = jedan kalendarski mesec sa istim danom obnove (31.01. → 28/29.02. → 31.03.); `npm run access:extend --ref --paid` sa evidencijom u `access_extensions` (ista uplata nikad dvaput); aktivacija najkasnije narednog radnog dana; `docs/billing-runbook.md`. Migracija `access_extensions` u produkciji | #136, #137 |
-| B9.1 | **Automatski predračun za pretplatu** (draft, čeka "merge"): Vercel Cron + Resend, 20 € po srednjem kursu NBS bez PDV-a (T&G Nest paušalac), iz T&G Nest naloga, kopija vlasniku; kupcima tek uz `BILLING_AUTO_SEND=on`, do tada samo vlasniku; naplata pretplate (B) strogo odvojena od faktura korisnika (A); vlasnik filtrira "Pretplate TradeMaster", korisnik vidi svoje u Podešavanja → Pristup i uplata; `billing:send --test`. Migracije `billing_notices` i `billing_notices_test_owner_flags` u produkciji; proba PR-03/2026 (TEST) poslata vlasniku 2026-10-10 | #138 |
+| B9.1 | **Automatski predračun za pretplatu**: Vercel Cron + Resend, 20 € po srednjem kursu NBS bez PDV-a (T&G Nest paušalac), iz T&G Nest naloga, kopija vlasniku; kupcima tek uz `BILLING_AUTO_SEND=on`, do tada samo vlasniku; naplata pretplate (B) strogo odvojena od faktura korisnika (A); vlasnik filtrira "Pretplate TradeMaster", korisnik vidi svoje u Podešavanja → Pristup i uplata; `billing:send --test`. Migracije `billing_notices` i `billing_notices_test_owner_flags` u produkciji; proba PR-03/2026 (TEST) poslata vlasniku i obrisana 2026-10-10 | #138 |
 | A2.11 | Stranice `/za/veleprodaju`, `/za/preduzetnike`, `/za/proizvodjace`; jedan izvor adrese (`src/lib/site-url.ts`); sitemap i robots očišćeni (`/shared/` se ne indeksira); OG slike iz koda; JSON-LD | #97 |
 
 Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 2026-10-05 (provereno u listi migracija Supabase projekta 2026-10-06). Baza je u `eu-west-1`, Vercel funkcije u `dub1` (EU).
@@ -75,7 +75,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A1.2 | `docs/device-checklist.md` na Android i iPhone telefonu; IPS QR skeniran pravom bankarskom aplikacijom | 19. okt | Skener i QR su glavne scene u reklami |
 | A1.3 | Promeniti lozinku test korisnika u Clerk Dev i učiniti repo `TradeMasterPW` privatnim (lozinka je u javnoj istoriji commit-a) | 12. okt | Bezbednost |
 | A1.4 | Pravi podaci operatera u Vercel env: `OPERATOR_PIB`, `OPERATOR_MB`, `OPERATOR_ADDRESS` (od #138 se ne upisuju u kod), pa redeploy | 20. okt | Bez njih /uslovi i /privatnost kažu da podaci tek stižu |
-| A1.15 | **Naplata pretplate u Vercel env** (posle spajanja #138): `CRON_SECRET`, `BILLING_ISSUER_PROFILE_ID`, `BILLING_EXCLUDE_PROFILE_IDS`, `RESEND_API_KEY`, `BILLING_EMAIL_BCC`, `BILLING_EMAIL_REPLY_TO`; posle domena (A1.10) verifikovati trademaster.rs u Resend-u i `BILLING_EMAIL_FROM`, pa tek onda `BILLING_AUTO_SEND=on`. Potvrditi probni predračun PR-03/2026 (TEST) i obrisati ga | 30. okt | Prvi pravi predračuni idu početkom decembra (49 firmi ističe u decembru) |
+| A1.15 | **Naplata pretplate u Vercel env** (#138 je spojen): `CRON_SECRET`, `BILLING_ISSUER_PROFILE_ID`, `BILLING_EXCLUDE_PROFILE_IDS`, `RESEND_API_KEY`, `BILLING_EMAIL_BCC`, `BILLING_EMAIL_REPLY_TO`; posle domena (A1.10) verifikovati trademaster.rs u Resend-u i `BILLING_EMAIL_FROM`, pa tek onda `BILLING_AUTO_SEND=on`. | 30. okt | Prvi pravi predračuni idu početkom decembra (49 firmi ističe u decembru) |
 | A1.5 | Kontakt za podršku (telefon/WhatsApp), slika i dve rečenice "ko stoji iza" | 20. okt | Ulazi u landing (A2.9) |
 | A1.6 | ✅ (2026-10-10) Cena: 20 € mesečno po srednjem kursu NBS, bez PDV-a (T&G Nest paušalac); najava promene cene 30 dana unapred | 20. okt | Ulazi u landing |
 | A1.7 | ✅ (2026-10-10, PR otvoren) Demo firma sa izmišljenim podacima (20-30 artikala sa slikama, katalog, predračun, faktura) za javne primere i video. "Sunčano Polje Veleprodaja d.o.o." na produkciji (nalog `demo+clerk_test@example.com`, alat `e2e/demo`); dugmad "Pogledajte primer kataloga/fakture" na landingu. Za video se vlasnik prijavljuje tim nalogom (ili isti seed na novom nalogu) | 24. okt | "Otvori primer" dugmad i snimanje videa |

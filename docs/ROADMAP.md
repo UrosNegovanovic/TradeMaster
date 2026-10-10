@@ -265,7 +265,7 @@ Redosled i rokovi: O1-O3 samo čitaju i ne diraju korisničke stranice, pa mogu 
 
 **Ponuda (predlog, čeka potvrdu vlasnika A1.6):** pretplata uključuje 1 Admin nalog (sve stranice, kao danas) i 1 Magacioner nalog. Dodatni članovi kasnije, uz doplatu.
 
-**Šta vidi Magacioner (predlog za potvrdu):**
+**Šta vidi Magacioner (odluka vlasnika 2026-10-10):**
 
 | Deo | Admin | Magacioner |
 |---|---|---|

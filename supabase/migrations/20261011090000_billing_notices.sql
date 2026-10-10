@@ -1,5 +1,5 @@
 -- Automatic predračun for the TradeMaster subscription (docs/billing-runbook.md, src/lib/billing-run.ts).
--- NOT applied yet: needs the owner's separate approval before it runs in production.
+-- Applied in production 2026-10-10 with the owner's approval (Supabase migration "billing_notices").
 -- One row per company and paid month: which predračun (in the issuer's account) was sent, to whom, when, the NBS
 -- rate used, the Resend message id and the last error. The owner reads it with `npm run billing:due`.
 -- Protection: (profileId, periodFrom) is unique, so a company never gets two predračuni for the same month, even

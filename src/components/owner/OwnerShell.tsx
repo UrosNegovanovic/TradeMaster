@@ -12,7 +12,7 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-brand-surface">
       <header className="bg-brand text-white">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link href={OWNER_HOME_PATH} className="flex min-h-11 items-center gap-2.5">
             <TradeMasterMark className="h-8 w-8 text-white" />
             <span className="leading-tight">
@@ -26,7 +26,7 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
         </div>
         <OwnerNav />
       </header>
-      <main className="mx-auto w-full max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
     </div>
   )
 }

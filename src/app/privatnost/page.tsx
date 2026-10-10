@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PrivatnostPage() {
   return (
-    <LegalDocument title="Privatnost" updated="Ažurirano 29. septembra 2026.">
+    <LegalDocument title="Privatnost" updated="Ažurirano 10. oktobra 2026.">
       <LegalSection title="Šta je TradeMaster">
         <p>
           TradeMaster je veb aplikacija za trgovce i malu veleprodaju: skeniranje
@@ -49,6 +49,15 @@ export default function PrivatnostPage() {
           fakturu, ne podaci izdavača TradeMaster-a. Čuvamo i asortiman,
           količine, kretanja robe, kataloge i fakture koje unesete, kao i slike
           koje otpremite.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Šta operater vidi">
+        <p>
+          Radi naplate i podrške operater ima pregled naloga: naziv i PIB firme, mejl kojim je nalog otvoren, datum
+          otvaranja, stanje i rok pristupa, uplate i predračune za korišćenje TradeMaster-a, broj proizvoda i
+          faktura i datum poslednje aktivnosti. U tom pregledu se ne prikazuju vaši proizvodi, kupci, katalozi ni
+          fakture, kao ni cene i iznosi.
         </p>
       </LegalSection>
 

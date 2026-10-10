@@ -14,6 +14,7 @@ export default defineConfig({
       'src/lib/access-extension.db.test.ts',
       'src/lib/billing-run.db.test.ts',
       'src/lib/owner-stats-query.db.test.ts',
+      'src/lib/owner-accounts-query.db.test.ts',
     ],
     fileParallelism: false,
   },

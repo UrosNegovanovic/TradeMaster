@@ -57,6 +57,8 @@ export default defineConfig({
       'src/app/api/owner/ping/route.test.ts',
       'src/lib/owner-stats.test.ts',
       'src/app/api/owner/stats/route.test.ts',
+      'src/lib/owner-accounts.test.ts',
+      'src/lib/clerk-emails.test.ts',
       'src/lib/landing-copy.test.ts',
       'src/lib/ui-copy.test.ts',
       'src/lib/invoice-scan.test.ts',

@@ -9,7 +9,7 @@ export function OwnerNav() {
   const pathname = usePathname()
 
   return (
-    <nav aria-label="Panel vlasnika" className="mx-auto w-full max-w-5xl overflow-x-auto px-4">
+    <nav aria-label="Panel vlasnika" className="mx-auto w-full max-w-6xl overflow-x-auto px-4">
       <ul className="flex gap-1 pb-2">
         {ownerNavigation.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`)

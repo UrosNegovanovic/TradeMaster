@@ -81,12 +81,15 @@ export default defineConfig({
   ],
   // Local runs start the app; a remote E2E_BASE_URL is tested as deployed.
   // E2E_SERVER=start tests a production build (no first-compile delays); default is the dev server.
+  // With E2E_DATABASE_URL the app runs on the test database (ROADMAP A10.2). A server that is already
+  // running is never reused then: it could be on the real database.
   webServer: env.isLocal
     ? {
         command: process.env.E2E_SERVER === 'start' ? 'npm run build && npm run start' : 'npm run dev',
         url: env.baseURL,
-        reuseExistingServer: !CI,
+        reuseExistingServer: !CI && !env.databaseUrl,
         timeout: 300_000,
+        env: env.databaseUrl ? { DATABASE_URL: env.databaseUrl, DIRECT_URL: env.databaseUrl } : undefined,
       }
     : undefined,
 })

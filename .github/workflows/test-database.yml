@@ -1,0 +1,103 @@
+name: DB and E2E (test database)
+
+# ROADMAP A10.2: everything that writes data runs here, on a throwaway Postgres, never on the real database.
+# - db-tests: npm run test:db (tenant isolation, stock and invoice rules on a real database). No secrets.
+# - e2e-app: the signed-in Playwright suites, including @writes, against `next start` on the same kind of
+#   database. Needs the Clerk Development keys as repo secrets; without them the job is skipped with a warning.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: test-database-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TEST_DB: postgresql://postgres:postgres@localhost:5432/trademaster_test
+
+jobs:
+  db-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trademaster_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Create the schema
+        run: npx prisma db push --skip-generate --accept-data-loss
+        env:
+          DATABASE_URL: ${{ env.TEST_DB }}
+          DIRECT_URL: ${{ env.TEST_DB }}
+      - name: DB tests
+        run: npm run test:db
+        env:
+          TEST_DATABASE_URL: ${{ env.TEST_DB }}
+
+  e2e-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trademaster_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      CLERK_SECRET_KEY: ${{ secrets.E2E_CLERK_SECRET_KEY }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.E2E_CLERK_PUBLISHABLE_KEY }}
+      E2E_USER_EMAIL: ${{ vars.E2E_USER_EMAIL || 'e2e+clerk_test@example.com' }}
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trademaster_test
+      E2E_ALLOW_WRITES: '1'
+      E2E_SERVER: start
+    steps:
+      - name: Check Clerk test keys
+        id: keys
+        run: |
+          if [[ "$CLERK_SECRET_KEY" == sk_test_* && -n "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" ]]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Add repo secrets E2E_CLERK_SECRET_KEY (sk_test_) and E2E_CLERK_PUBLISHABLE_KEY to run the signed-in E2E suites."
+          fi
+      - uses: actions/checkout@v4
+        if: steps.keys.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.keys.outputs.ok == 'true'
+        with:
+          node-version: 20
+          cache: npm
+      - if: steps.keys.outputs.ok == 'true'
+        run: npm ci
+      - name: Create the schema
+        if: steps.keys.outputs.ok == 'true'
+        run: npx prisma db push --skip-generate --accept-data-loss
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+          DIRECT_URL: ${{ env.E2E_DATABASE_URL }}
+      - if: steps.keys.outputs.ok == 'true'
+        run: npx playwright install --with-deps chromium
+      - name: Signed-in E2E on the test database
+        if: steps.keys.outputs.ok == 'true'
+        run: npx playwright test --project=setup --project=app-desktop --project=app-mobile
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.keys.outputs.ok == 'true' }}
+        with:
+          name: playwright-report-app
+          path: playwright-report/
+          retention-days: 14

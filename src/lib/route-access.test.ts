@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NextRequest } from 'next/server'
-import { shouldProtectHtmlRoute } from '@/lib/route-access'
+import { isPublicRoute, shouldProtectHtmlRoute } from '@/lib/route-access'
 
 function request(path: string) {
   return new NextRequest(`http://localhost${path}`)
@@ -37,5 +37,12 @@ describe('shouldProtectHtmlRoute', () => {
     expect(shouldProtectHtmlRoute(request('/opengraph-image'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/twitter-image'))).toBe(false)
     expect(shouldProtectHtmlRoute(request('/zaliha'))).toBe(true)
+  })
+
+  it('never lists the owner panel as public (ROADMAP O1)', () => {
+    expect(isPublicRoute(request('/owner'))).toBe(false)
+    expect(isPublicRoute(request('/owner/accounts/abc'))).toBe(false)
+    expect(isPublicRoute(request('/api/owner/ping'))).toBe(false)
+    expect(shouldProtectHtmlRoute(request('/owner'))).toBe(true)
   })
 })

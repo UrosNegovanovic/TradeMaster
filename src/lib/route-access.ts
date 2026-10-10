@@ -17,6 +17,7 @@ export const isPublicRoute = createRouteMatcher([
   '/api/shared/catalog/(.*)', // Revocable token-based catalog JSON
   '/shared/invoice/(.*)', // Public invoice view for the buyer
   '/api/shared/invoice/(.*)', // Revocable token-based invoice JSON
+  '/api/cron/(.*)', // Vercel Cron; each handler checks Authorization: Bearer $CRON_SECRET
   '/robots.txt',
   '/sitemap.xml',
 ])

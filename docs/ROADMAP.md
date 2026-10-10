@@ -217,7 +217,7 @@ Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađe
 | B6 | **Upit sa javnog kataloga**: kupac upiše količine i pošalje, stiže kao nacrt predračuna (bez korpe i plaćanja) | Visoka | M | Najjači razlog da kupac koristi link; treba odobrenje vlasnika jer je blizu korpe. |
 | B7 | Štampa nalepnica sa barkodom za robu bez barkoda | Srednja | S-M | Mali proizvođači i prepakovana roba. |
 | B8 | Brisanje slike iz Storage-a kad se ukloni sa proizvoda | Niska | S | Sada ostaju fajlovi bez vlasnika. |
-| B9 | Naplata pretplate u aplikaciji, faza 1: račun sa IPS QR i ručna potvrda | Srednja | M | Kad bude 10 firmi koje plaćaju. Do tada: `docs/billing-runbook.md` (predračun iz vlasnikovog TradeMaster naloga, `npm run billing:due`, `npm run access:extend --ref --paid` sa evidencijom u `access_extensions`; kalendarski mesec sa istim danom obnove, 7 dana obaveštenje, 2 dana roka, pa samo pregled, aktivacija najkasnije narednog radnog dana). Odluka vlasnika 2026-10-10. |
+| B9 | Naplata pretplate u aplikaciji, faza 1: račun sa IPS QR i ručna potvrda | Srednja | M | Kad bude 10 firmi koje plaćaju. Do tada: `docs/billing-runbook.md` (predračun iz vlasnikovog TradeMaster naloga, `npm run billing:due`, `npm run access:extend --ref --paid` sa evidencijom u `access_extensions`; kalendarski mesec sa istim danom obnove, 7 dana obaveštenje, 2 dana roka, pa samo pregled, aktivacija najkasnije narednog radnog dana). Predračun ide automatski (Vercel Cron + Resend, 20 € + PDV po srednjem kursu NBS, iz T&G Nest naloga, kopija vlasniku); uplata, SEF faktura i `access:extend` ostaju ručni. Odluka vlasnika 2026-10-10. |
 
 ## Faza C: 2027
 

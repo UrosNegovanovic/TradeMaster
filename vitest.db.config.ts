@@ -12,6 +12,7 @@ export default defineConfig({
       'src/app/api/tenant-isolation.db.test.ts',
       'src/app/api/catalogs/catalog-access.db.test.ts',
       'src/lib/access-extension.db.test.ts',
+      'src/lib/billing-run.db.test.ts',
     ],
     fileParallelism: false,
   },

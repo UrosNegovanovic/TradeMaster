@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { accessStatus } from '@/lib/access-period'
-import { MONTHLY_PRICE } from '@/lib/landing-copy'
+import { PRICE_WITH_VAT } from '@/lib/landing-copy'
 
-export const ACCESS_EXPIRED_MESSAGE = `Pristup je istekao. Aplikacija je u režimu samo za pregled dok ne produžite pristup (${MONTHLY_PRICE} mesečno).`
+export const ACCESS_EXPIRED_MESSAGE = `Pristup je istekao. Aplikacija je u režimu samo za pregled dok ne produžite pristup (${PRICE_WITH_VAT} mesečno).`
 
 /**
  * Manual billing: after the paid period ends the account becomes read-only. Write routes call this right

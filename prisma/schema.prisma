@@ -39,6 +39,7 @@ model Profile {
   clients        Client[]
   sefCredential  SefCredential?
   accessExtensions AccessExtension[]
+  billingNotices   BillingNotice[]
 
   @@map("profiles")
 }
@@ -62,6 +63,33 @@ model AccessExtension {
 
   @@index([profileId, createdAt])
   @@map("access_extensions")
+}
+
+/// Automatic subscription predračun, one per company and paid month (src/lib/billing-run.ts).
+/// (profileId, periodFrom) is unique: the daily job never sends two predračuni for the same month.
+model BillingNotice {
+  id            String    @id @default(cuid())
+  profileId     String // The paying company (not the issuer)
+  periodFrom    DateTime  @db.Date
+  periodUntil   DateTime  @db.Date
+  status        String // 'pending' | 'sent' | 'failed'
+  invoiceId     String?   @unique // The predračun in the issuer's account
+  invoiceNumber String?
+  recipient     String?
+  eurRate       Decimal?  @db.Decimal(10, 4) // NBS middle rate used for the amount
+  messageId     String? // Resend e-mail id (look it up in the Resend dashboard)
+  error         String?
+  attempts      Int       @default(0)
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@unique([profileId, periodFrom])
+  @@index([status])
+  @@map("billing_notices")
 }
 
 /// One SEF API key per company (ROADMAP A3), AES-256-GCM encrypted (src/lib/sef-key-crypto.ts).
@@ -277,6 +305,8 @@ model Invoice {
   @@index([profileId, paidAt])
   @@index([profileId, documentType])
   @@index([profileId, sefStatus])
+  billingNotice BillingNotice?
+
   @@map("invoices")
 }
 

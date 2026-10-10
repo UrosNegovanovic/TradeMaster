@@ -18,7 +18,7 @@ import { SefSettingsCard } from '@/components/sef/SefSettingsCard'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
-import { ACCESS_ACTIVATION, BILLING_PERIOD_RULE, MONTHLY_PRICE, PRICING_OFFER } from '@/lib/landing-copy'
+import { ACCESS_ACTIVATION, BILLING_PERIOD_RULE, PRICE_WITH_VAT, PRICING_OFFER } from '@/lib/landing-copy'
 import { ACCESS_WARNING_DAYS, accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
 import { accessNotice } from '@/lib/access-notice'
 import { billingMailto, billingWhatsApp } from '@/lib/billing-request'
@@ -170,8 +170,8 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <p className="font-medium">Kako da platite</p>
             <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-              <li>Predračun sa IPS QR kodom šaljemo na mejl firme najkasnije {ACCESS_WARNING_DAYS} dana pre isteka. Možete ga zatražiti i ranije.</li>
-              <li>Uplatite {MONTHLY_PRICE} u dinarima po kursu NBS na dan predračuna, sa pozivom na broj sa predračuna.</li>
+              <li>Predračun sa IPS QR kodom stiže na mejl firme {ACCESS_WARNING_DAYS} dana pre isteka (mejl iz ovih Podešavanja, a ako ga nema, mejl naloga). Možete ga zatražiti i ranije.</li>
+              <li>Uplatite {PRICE_WITH_VAT} u dinarima po srednjem kursu NBS na dan predračuna, sa pozivom na broj sa predračuna.</li>
               <li>{ACCESS_ACTIVATION} Javljamo vam do kog datuma važi.</li>
             </ol>
             <div className="flex flex-col gap-2 pt-1 sm:flex-row">

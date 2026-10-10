@@ -15,7 +15,7 @@ async function fetchProfile(): Promise<{ accessExpiresAt?: string | null; create
 }
 
 /**
- * Billing notice on every page (manual billing): amber in the last 14 days, red during the 2 grace days
+ * Billing notice on every page (manual billing): amber in the last 7 days, red during the 2 grace days
  * after expiry (everything still works, pay by the date shown), red after that (read-only until paid).
  * The button leads to Podešavanja → Pristup, where the payment details are.
  */

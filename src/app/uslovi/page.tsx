@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
 import { operator } from '@/lib/operator'
-import { PRICING_OFFER } from '@/lib/landing-copy'
+import { FREE_PERIOD, MONTHLY_PRICE } from '@/lib/landing-copy'
+import { ACCESS_GRACE_DAYS, ACCESS_WARNING_DAYS } from '@/lib/access-period'
 
 export const metadata: Metadata = {
   title: 'Uslovi',
@@ -45,12 +46,23 @@ export default function UsloviPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="Naknada">
+      <LegalSection title="Cena, plaćanje i pristup">
         <p>
-          Aktuelna naknada: {PRICING_OFFER}, navedena na početnoj stranici. Po isteku plaćenog perioda aplikacija prelazi u režim samo za pregled do produženja pristupa.
-          Nema pretplate ni checkout-a u aplikaciji — naplata je ručna,
-          dogovorom. Nema skrivene cene pored te objavljene. Otkaz pretplate ne
-          postoji dok nema pretplate.
+          Prvih {FREE_PERIOD} su besplatni (probni period), bez kartice i bez obaveze. Posle toga naknada je {MONTHLY_PRICE} za svakih 30 dana korišćenja,
+          plativo u dinarima po kursu NBS na dan izdavanja predračuna, uplatom na račun naveden na predračunu (može i skeniranjem IPS QR koda).
+        </p>
+        <p>
+          Najkasnije {ACCESS_WARNING_DAYS} dana pre isteka perioda šaljemo predračun na mejl firme, a obaveštenje se vidi i u aplikaciji. Pristup
+          produžavamo za 30 dana kada uplata bude vidljiva na izvodu banke. Uplata pre isteka ne skraćuje tekući period: novih 30 dana se nastavlja na njega.
+        </p>
+        <p>
+          Ako uplata ne stigne do isteka, još {ACCESS_GRACE_DAYS} dana aplikacija radi kao i do tada, uz upozorenje. Posle toga prelazi u režim samo za
+          pregled: podaci ostaju vidljivi i mogu da se izvezu, a linkovi koje ste poslali kupcima i dalje rade. Dodavanje i izmene ponovo rade čim uplata
+          stigne.
+        </p>
+        <p>
+          Nema automatske naplate ni skrivenih troškova. Ako ne želite da nastavite, dovoljno je da ne platite sledeći predračun. Cenu menjamo samo
+          uz obaveštenje najmanje 30 dana unapred, a već plaćeni period se ne menja.
         </p>
       </LegalSection>
 

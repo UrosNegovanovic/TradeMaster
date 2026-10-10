@@ -22,6 +22,7 @@
     "test:db:down": "node scripts/test-db.mjs down",
     "e2e:user": "node scripts/create-e2e-user.mjs",
     "access:extend": "tsx scripts/extend-access.ts",
+    "billing:due": "tsx scripts/billing-due.ts",
     "e2e": "playwright test",
     "e2e:public": "playwright test --project=public-desktop --project=public-mobile",
     "e2e:app": "playwright test --project=app-desktop --project=app-mobile",

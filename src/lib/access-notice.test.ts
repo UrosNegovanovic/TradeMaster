@@ -6,7 +6,7 @@ const created = new Date('2026-08-11T10:00:00.000Z')
 const trialEnd = initialAccessExpiry(created) // expiry day 10.10.2026
 
 describe('accessNotice (billing banner)', () => {
-  it('says nothing while more than 14 days remain', () => {
+  it('says nothing while more than 7 days remain', () => {
     expect(accessNotice(trialEnd, created, new Date('2026-09-01T10:00:00.000Z'))).toBeNull()
     expect(accessNotice(null, created)).toBeNull()
   })

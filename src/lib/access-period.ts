@@ -10,8 +10,11 @@ import { addLocalDays, startOfLocalDay, formatLocalYmd } from '@/lib/local-date'
 /** Length of the first access period given to a new company. */
 export const INITIAL_ACCESS_DAYS = 60
 
-/** The banner starts showing this many days before the date. */
-export const ACCESS_WARNING_DAYS = 14
+/**
+ * The banner starts this many days before the date: the owner sends the predračun then and a bank transfer
+ * needs 1-2 working days (docs/billing-runbook.md).
+ */
+export const ACCESS_WARNING_DAYS = 7
 
 /**
  * Days after the expiry day in which everything still works, with a red notice to pay (dunning grace).

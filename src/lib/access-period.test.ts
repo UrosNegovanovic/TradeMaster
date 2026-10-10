@@ -37,10 +37,10 @@ describe('accessStatus', () => {
     expect(status).toMatchObject({ state: 'active', daysLeft: 60, untilYmd: '2026-12-09' })
   })
 
-  it('starts warning inside the last 14 days, including the expiry day itself', () => {
-    expect(ACCESS_WARNING_DAYS).toBe(14)
-    expect(accessStatus('2026-10-23T22:00:00.000Z', now)).toMatchObject({ state: 'expiring', daysLeft: 14 })
-    expect(accessStatus('2026-10-24T22:00:00.000Z', now)).toMatchObject({ state: 'active', daysLeft: 15 })
+  it('starts warning inside the last 7 days, including the expiry day itself', () => {
+    expect(ACCESS_WARNING_DAYS).toBe(7)
+    expect(accessStatus('2026-10-16T22:00:00.000Z', now)).toMatchObject({ state: 'expiring', daysLeft: 7 })
+    expect(accessStatus('2026-10-17T22:00:00.000Z', now)).toMatchObject({ state: 'active', daysLeft: 8 })
     expect(accessStatus('2026-10-09T22:00:00.000Z', now)).toMatchObject({ state: 'expiring', daysLeft: 0 })
   })
 

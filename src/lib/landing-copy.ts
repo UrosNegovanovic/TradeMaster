@@ -25,13 +25,13 @@ export const pricingIncludes = [
 export const pricingCardPeriod = `mesečno, posle ${FREE_PERIOD} besplatno`
 
 export const pricingCardNote =
-  'Bez kartice. Posle probnog perioda šaljemo predračun jednom mesečno.'
+  'Bez kartice. Predračun stiže na mejl firme 7 dana pre isteka, jednom mesečno.'
 
 export const pricingNote = 'Naplata u dinarima po kursu NBS na dan izdavanja predračuna.'
 
 export const paymentFaq = {
   q: 'Šta se dešava posle 60 besplatnih dana?',
-  a: `${PRICING_OFFER}. Za sada nema pretplate u aplikaciji: predračun za svaki mesec šaljemo ručno, najkasnije 7 dana pre isteka. ${BILLING_PERIOD_RULE} ${ACCESS_ACTIVATION} Kada pristup istekne, imate još 2 dana da uplatite i sve radi kao do tada; posle toga aplikacija prelazi u režim samo za pregled (vaši podaci ostaju vidljivi i mogu da se izvezu) dok ne proverimo uplatu. Nema otkaza pretplate jer pretplata još ne postoji.`,
+  a: `${PRICING_OFFER}. Za sada nema pretplate u aplikaciji ni plaćanja karticom: predračun za svaki mesec stiže na mejl firme 7 dana pre isteka, a uplatu radite ručno, nalogom ili IPS QR kodom. ${BILLING_PERIOD_RULE} ${ACCESS_ACTIVATION} Kada pristup istekne, imate još 2 dana da uplatite i sve radi kao do tada; posle toga aplikacija prelazi u režim samo za pregled (vaši podaci ostaju vidljivi i mogu da se izvezu) dok ne proverimo uplatu. Nema otkaza pretplate jer pretplata još ne postoji.`,
 } as const
 
 /*

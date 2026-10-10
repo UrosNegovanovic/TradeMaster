@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
-import { operator } from '@/lib/operator'
+import { operator, operatorLegal, operatorLegalLine } from '@/lib/operator'
 
 export const metadata: Metadata = {
   title: 'Privatnost',
@@ -20,9 +20,8 @@ export default function PrivatnostPage() {
           početni ekran.
         </p>
         <p>
-          Operater usluge je {operator.name}, PIB {operator.pib}. Kontakt:{' '}
-          {operator.email}, {operator.phone}. Adresa koju je vlasnik naveo je
-          „{operator.address}“.
+          Operater usluge je {operator.name}, {operatorLegalLine(operatorLegal())}. Kontakt:{' '}
+          {operator.email}, {operator.phone}.
         </p>
       </LegalSection>
 
@@ -32,6 +31,14 @@ export default function PrivatnostPage() {
           unesete pri otvaranju naloga (npr. e-poštu) i postavlja kolačiće
           potrebne da ostanete prijavljeni. TradeMaster čuva vezu tog naloga
           (Clerk korisnički ID) sa podacima firme u aplikaciji.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Mejlovi za naplatu (Resend)">
+        <p>
+          Predračun za korišćenje TradeMaster-a šaljemo mejlom preko servisa Resend, na mejl firme iz Podešavanja, a
+          ako ga nema, na mejl kojim je nalog otvoren. Resend za to dobija adresu primaoca i sadržaj mejla (naziv
+          firme, iznos, rok i link ka predračunu). Drugi mejlovi se preko njega ne šalju.
         </p>
       </LegalSection>
 

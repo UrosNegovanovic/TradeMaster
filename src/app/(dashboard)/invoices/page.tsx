@@ -62,11 +62,12 @@ function getStatusBadge(invoice: Invoice) {
   return <Badge variant={INVOICE_TONE_BADGE_VARIANT[view.tone]}>{view.label}</Badge>
 }
 
-type InvoiceListView = 'open' | 'paid' | 'proforma' | 'sef-rejected'
+type InvoiceListView = 'open' | 'paid' | 'proforma' | 'sef-rejected' | 'subscription'
 
 function parseInvoiceView(status: string | null, view: string | null): InvoiceListView {
   if (view === 'proforma') return 'proforma'
   if (view === 'sef-rejected') return 'sef-rejected'
+  if (view === 'subscription') return 'subscription'
   return status === 'paid' ? 'paid' : 'open'
 }
 
@@ -91,6 +92,7 @@ function InvoiceCard({ invoice, onDelete, isDeleting }: InvoiceCardProps) {
           </div>
           <div className="flex flex-col items-end gap-1">
             {getStatusBadge(invoice)}
+            {invoice.subscription ? <Badge variant="outline">Pretplata TradeMaster</Badge> : null}
             <SefStatusBadge status={invoice.sefStatus} />
           </div>
         </div>
@@ -216,7 +218,7 @@ export default function InvoicesPage() {
 
   const handleDelete = async (id: string) => {
     const confirmed = await confirmDialog({
-      title: view === 'proforma' ? 'Obrisati ovaj predračun?' : 'Obrisati ovu fakturu?',
+      title: view === 'proforma' || view === 'subscription' ? 'Obrisati ovaj predračun?' : 'Obrisati ovu fakturu?',
       description: 'Ova radnja se ne može opozvati.',
       confirmLabel: 'Obriši',
       cancelLabel: 'Otkaži',
@@ -234,6 +236,7 @@ export default function InvoicesPage() {
     if (nextView === 'paid') params.set('status', 'paid')
     if (nextView === 'proforma') params.set('view', 'proforma')
     if (nextView === 'sef-rejected') params.set('view', 'sef-rejected')
+    if (nextView === 'subscription') params.set('view', 'subscription')
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
@@ -243,13 +246,15 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const searching = search.trim().length > 0
 
-  const { openInvoices, paidInvoices, proformas, sefRejected, visibleInvoices } = useMemo(() => {
+  const { openInvoices, paidInvoices, proformas, sefRejected, subscriptionDocs, visibleInvoices } = useMemo(() => {
     const found = searching ? invoices.filter((invoice) => matchesInvoiceQuery(invoice, search)) : invoices
     const realInvoices = onlyInvoices(found)
     // Open invoices: what is due first is collected first.
     const open = sortByDueDate(realInvoices.filter((invoice) => !isPaidInvoiceStatus(invoice.status)))
     const paid = realInvoices.filter((invoice) => isPaidInvoiceStatus(invoice.status))
-    const proformaList = found.filter((invoice) => isProforma(invoice))
+    // Automatic TradeMaster subscription predračuni (owner's account only) get their own tab, not "Predračuni".
+    const proformaList = found.filter((invoice) => isProforma(invoice) && !invoice.subscription)
+    const subscriptionList = found.filter((invoice) => invoice.subscription)
     // ROADMAP A3: what the buyer rejected in SEF, so it is fixed first.
     const rejected = realInvoices.filter((invoice) => invoice.sefStatus === 'REJECTED')
     return {
@@ -257,8 +262,17 @@ export default function InvoicesPage() {
       paidInvoices: paid,
       proformas: proformaList,
       sefRejected: rejected,
+      subscriptionDocs: subscriptionList,
       visibleInvoices:
-        view === 'paid' ? paid : view === 'proforma' ? proformaList : view === 'sef-rejected' ? rejected : open,
+        view === 'paid'
+          ? paid
+          : view === 'proforma'
+            ? proformaList
+            : view === 'sef-rejected'
+              ? rejected
+              : view === 'subscription'
+                ? subscriptionList
+                : open,
     }
   }, [invoices, view, search, searching])
 
@@ -354,6 +368,17 @@ export default function InvoicesPage() {
                 onClick={() => setView('sef-rejected')}
               >
                 Odbijene u SEF-u ({sefRejected.length})
+              </Button>
+            ) : null}
+            {subscriptionDocs.length > 0 || view === 'subscription' ? (
+              <Button
+                type="button"
+                variant={view === 'subscription' ? 'default' : 'outline'}
+                className="min-h-11 flex-1 sm:flex-none"
+                aria-pressed={view === 'subscription'}
+                onClick={() => setView('subscription')}
+              >
+                Pretplate TradeMaster ({subscriptionDocs.length})
               </Button>
             ) : null}
           </div>

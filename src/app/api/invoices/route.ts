@@ -16,6 +16,7 @@ import { syncInvoiceStock } from '@/lib/invoice-stock'
 import { reserveNextInvoiceNumber } from '@/lib/invoice-number'
 import { accessExpiredResponse } from '@/lib/access-guard'
 import { PROFORMA_PAID_MESSAGE, stockStatusFor } from '@/lib/document-type'
+import { subscriptionInvoiceIds } from '@/lib/subscription-documents'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,13 +56,16 @@ export async function GET() {
             },
           },
         },
+        billingNotice: { select: { id: true } },
       },
       orderBy: {
         createdAt: 'desc',
       },
     })
 
-    return NextResponse.json(invoices)
+    // TradeMaster subscription documents (platform billing) are marked so the owner can filter them.
+    const subscription = subscriptionInvoiceIds(invoices)
+    return NextResponse.json(invoices.map(({ billingNotice: _notice, ...invoice }) => ({ ...invoice, subscription: subscription.has(invoice.id) })))
   } catch (error) {
     console.error('Error fetching invoices:', error)
     return NextResponse.json(

@@ -213,7 +213,7 @@ Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađe
 | # | Funkcija | Vrednost | Trud | Zašto |
 |---|---|---|---|---|
 | B1 | SEF slanje, ako nije stiglo u A3; zatim knjižno odobrenje (povraćaj robe) kroz SEF | Visoka | M-L | PDV firme su najveći deo tržišta. |
-| B2 | **Tim, prvi korak**: 1-3 člana, uloge Vlasnik i Prodaja/Magacin (Prodaja ne vidi finansije ni nabavne cene) | Visoka | L | Menja model (`Profile.clerkUserId` je jedinstven): tabela članstva, svi upiti po firmi. Zasebna migracija i test izolacije pre koda. Tek kad ga pilot firme traže. |
+| B2 | **Tim (Admin + Magacioner)**: vidi "Owner panel i tim", faza T (T0-T7) | Visoka | L | Menja model (`Profile.clerkUserId` je jedinstven): prvo jedna funkcija "trenutna firma", pa tabela članstva, pa provera uloge na serveru. |
 | B3 | **Prijem robe kao dokument**: Ulaz sa više stavki skeniranjem u nizu, dobavljač i broj njegove fakture, nabavne cene | Visoka | M | Najduži ručni posao; priprema za C1. |
 | B4 | **Inventura skenerom**: skeniraj i prebroj, razlika prema stanju, potvrda kroz postojeće "Ažuriraj stanje" | Srednja | M | Veleprodaja radi popis bar jednom godišnje. |
 | B5 | Cenovnik po kupcu (popust ili posebna cena po kupcu u predračunu i katalogu) | Srednja | M | Veleprodaja to danas ima u Excelu; Konty to prodaje. |
@@ -222,6 +222,88 @@ Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađe
 | B8 | Brisanje slike iz Storage-a kad se ukloni sa proizvoda | Niska | S | Sada ostaju fajlovi bez vlasnika. |
 | B9 | Naplata pretplate u aplikaciji, faza 1: račun sa IPS QR i ručna potvrda | Srednja | M | Kad bude 10 firmi koje plaćaju. Do tada: `docs/billing-runbook.md` (predračun iz vlasnikovog TradeMaster naloga, `npm run billing:due`, `npm run access:extend --ref --paid` sa evidencijom u `access_extensions`; kalendarski mesec sa istim danom obnove, 7 dana obaveštenje, 2 dana roka, pa samo pregled, aktivacija najkasnije narednog radnog dana). Predračun ide automatski (Vercel Cron + Resend, 20 € po srednjem kursu NBS, bez PDV-a jer je T&G Nest paušalac, iz T&G Nest naloga; kupcima tek uz `BILLING_AUTO_SEND=on`, do tada samo vlasniku); uplata, SEF faktura i `access:extend` ostaju ručni. Odluka vlasnika 2026-10-10. |
 
+## Owner panel i tim: smernice (odluka vlasnika 2026-10-10)
+
+Dva odvojena unapređenja, po redu: **O** = panel vlasnika platforme (samo Uroš: statistika i nalozi), **T** = tim unutar firme korisnika (Admin + Magacioner, zamenjuje B2). O ide prvi jer ne menja model podataka korisnika; T menja kako se firma pronalazi u svakoj API ruti i zato ide tek posle lansiranja, korak po korak.
+
+### Kako je danas (provereno u kodu 2026-10-10)
+
+- Clerk daje samo identitet (`userId`). Firma je `Profile` sa jedinstvenim `clerkUserId`: jedan nalog = jedna firma, nema uloga ni članstva. `GET /api/profile` lenjo pravi profil i daje 60 dana probnog perioda.
+- Svaka API ruta sama traži profil (`prisma.profile.findUnique({ where: { clerkUserId } })`, 28 ruta, 36 mesta sa "Profile not found"). Ne postoji jedna funkcija "trenutna firma".
+- Pristup: `Profile.accessExpiresAt` + `accessStatus()` (`src/lib/access-period.ts`: unlimited/active/expiring/grace/expired, `daysLeft`), `accessExpiredResponse` na rutama koje pišu. Produženje: `npm run access:extend` → `applyAccessExtension` (`src/lib/access-extension.ts`) sa tragom u `access_extensions`. Spisak za naplatu: `npm run billing:due`. Automatski predračun (#138): Vercel Cron `/api/cron/billing`, tabela `billing_notices` (`isTest`, `ownerOnly`), izdavalac `BILLING_ISSUER_PROFILE_ID` (T&G Nest), firme vlasnika koje se ne naplaćuju `BILLING_EXCLUDE_PROFILE_IDS`; dokumenti pretplate su odvojeni od faktura korisnika (`src/lib/subscription-documents.ts`).
+- Javne rute su samo u `isPublicRoute` (`src/lib/route-access.ts`); sve ostalo štiti Clerk middleware.
+
+Zaključak: panel vlasnika može da se napravi **pored** aplikacije, nad postojećim tabelama i postojećim funkcijama (`accessStatus`, `planAccessExtension`, `applyAccessExtension`, logika iz `billing:due`), bez ijedne izmene korisničkih stranica. Tim traži prvo jednu funkciju za "trenutnu firmu", pa tek onda članstvo.
+
+### Pravila koja važe za svaki O i T korak
+
+1. **Korisnik ne vidi razliku** dok ne postoji drugi član firme. Firma sa jednim nalogom radi tačno kao danas: iste stranice, isti API odgovori, isti testovi. Postojeći unit, DB i E2E testovi prolaze **bez izmene** očekivanja (menjaju se samo ako korak to izričito traži).
+2. **Server odlučuje.** Uloga i "owner" se proveravaju u API ruti i u server komponenti, nikad samo sakrivanjem dugmeta. Zod na klijentu i serveru kao i do sada.
+3. **Prekidač pre svega.** Svaka nova mogućnost ima env prekidač (`OWNER_PANEL=on`, `TEAM_ROLES=on` + `TEAM_ROLES_PROFILES=<id,id>` kao `SEF_SENDING_PROFILES` u #108). Isključeno = kod se ne izvršava. Prvo na test nalogu, pa na T&G Nest, pa za sve.
+4. **Migracije samo dodaju** (nova tabela ili nova kolona sa podrazumevanom vrednošću), SQL u `supabase/migrations/` + `prisma/schema.prisma`, primena na produkciju samo uz odobrenje vlasnika, pre toga `prisma migrate status`. Nijedna postojeća kolona se ne briše niti menja tip u istom koraku.
+5. **Jedan mali draft PR po koraku**, `npm run typecheck && npm run lint && npm run test:run`, `npm run build` lokalno (nove stranice i server importi), zelen Vercel check; merge samo kad vlasnik kaže "merge".
+6. **Privatnost korisnika.** Panel vlasnika vidi metapodatke naloga i brojeve (koliko proizvoda, faktura), **nikad** sadržaj: ne artikle, ne kupce, ne iznose faktura, ne nabavne cene. Nema "uloguj se kao korisnik" (impersonacija) u ovom planu. `/privatnost` dobija rečenicu o tome šta operater vidi pre O3 na produkciji.
+7. **Landing ne pominje tim** dok T5 ne radi u produkciji.
+
+### Faza O: panel vlasnika platforme
+
+**Ko je vlasnik.** Lista Clerk user id-jeva u server env `PLATFORM_OWNER_USER_IDS` (ne mejl: mejl se u Clerku menja i dodaje; id je stalan). Prazno = niko. Clerk nalog vlasnika ima uključenu 2FA; akcije koje menjaju podatke traže svežu potvrdu (Clerk reverification, `auth().has({ reverification: 'strict' })`) . Ne koristi se `Profile` niti Clerk `publicMetadata` za ovu ulogu, da je korisnik nikako ne može dobiti preko svog profila.
+
+**Gde.** Stranice `/owner/*` u svojoj grupi `src/app/(owner)/` sa svojim layout-om (ne `DashboardLayout`, bez korisničke navigacije), API `/api/owner/*`. Nisu u `isPublicRoute`. Svaki handler i server stranica počinje sa `requirePlatformOwner()` (`src/lib/platform-owner.ts`), koji za ne-vlasnika vraća **404** (ne 403, da se ne otkriva da panel postoji). `robots` noindex. Nijedan link iz korisničke aplikacije ne vodi na `/owner`.
+
+**Uroševa firma.** T&G Nest ostaje običan tenant (iz njega idu predračuni za pretplatu, `BILLING_ISSUER_PROFILE_ID`). Posle prijave vlasnik ide na `/owner` (`src/lib/after-auth.ts` gleda listu vlasnika), a u panelu je link "Moja firma (T&G Nest)" ka `/dashboard`. Korisničke stranice se zbog toga ne menjaju.
+
+| # | Šta | Menja za korisnike | Migracija | Detalj |
+|---|---|---|---|---|
+| O1 | **Kapija vlasnika** | Ništa | Ne | `src/lib/platform-owner.ts` (`isPlatformOwner(userId)`, `requirePlatformOwner()`), prekidač `OWNER_PANEL`, prazna `/owner` stranica "Panel vlasnika", `GET /api/owner/ping`. Testovi: bez env-a niko nije vlasnik; običan korisnik dobija 404 na stranici i na API-ju; `isPublicRoute` ne sadrži `/owner`; `after-auth` vodi vlasnika na `/owner`, sve ostale na `/dashboard` kao do sada. |
+| O2 | **Statistika** (samo čitanje) | Ništa | Ne | `src/lib/owner-stats.ts` (čista funkcija nad redovima, sa testom) + `GET /api/owner/stats` + stranica. Brojevi: ukupno firmi; nove po nedelji (12 nedelja); po stanju pristupa (probni / plaća / ističe za 7 dana / rok 2 dana / samo pregled / bez ograničenja) iz `accessStatus` + `isTrialPeriod`; aktivacija (ima proizvod, izdao prvu fakturu ili predračun, podelio katalog: isto što `src/lib/onboarding.ts`); aktivni u 7/30 dana (poslednji upis u `products`, `invoices`, `stock_movements`); prelazak probni → plaćen (firme sa bar jednim `access_extensions` redom); mesečni prihod = broj firmi sa aktivnom pretplatom × cena (`MONTHLY_PRICE`); otkazi = firme koje su prošle "samo pregled" bez nove uplate. Sve sume računa baza (`count`, `groupBy`), ne učitavaju se svi redovi. Firme vlasnika (`BILLING_ISSUER_PROFILE_ID`, `BILLING_EXCLUDE_PROFILE_IDS`) i demo nalozi se ne broje kao korisnici; `billing_notices` sa `isTest` se nikad ne računaju. |
+| O3 | **Nalozi** (samo čitanje) | Ništa | Ne | Tabela: firma, mejl za prijavu (Clerk `users.getUserList` po `clerkUserId`, keš po zahtevu), PIB, otvoren, probni/pretplata, **dana ostalo** (`daysLeft`, crveno ≤ 7), stanje, poslednja uplata (`access_extensions`), poslednji automatski predračun i njegov status (`billing_notices`), broj proizvoda/faktura, poslednja aktivnost. Filteri: "ističe za 10 dana" (isto kao `billing:due`), "u roku", "samo pregled", "probni", pretraga po nazivu/PIB-u/mejlu. Detalj naloga `/owner/accounts/[id]`: istorija produženja i predračuna. Pre produkcije: rečenica u `/privatnost`. |
+| O4 | **Produženje iz panela** | Ništa (korisnik vidi novi datum kao i posle skripte) | Da: `owner_audit_log` | Isti tok kao `access:extend`: forma (broj predračuna, datum sa izvoda) → **pregled** (`previewAccessExtension`: stari datum, period, "na vreme / posle zaključavanja") → potvrda sa Clerk reverification → `applyAccessExtension`. Jedinstveni `reference` već sprečava dvostruko produženje. Tabela `owner_audit_log` (ko, kada, akcija, profileId, pre/posle, razlog) za svaku izmenu iz panela. Dodatno: "poklon dana" sa obaveznim razlogom (osnivačka ponuda, kompenzacija), isto kroz audit. Skripte ostaju kao rezerva. Bez brisanja naloga iz panela. |
+| O5 | **Naplata u panelu** | Ništa | Ne | Ekran "Danas": `billing:due` logika prebačena u `src/lib/billing-due.ts` (skripta i panel je dele), stanje `billing_notices` (poslato / neuspelo, greška, broj pokušaja), dugme "Pošalji ponovo" za neuspeo predračun kroz postojeći `billing-run`. Posle ovoga dnevni rad sa laptopa nije potreban; skripte ostaju za hitne slučajeve. |
+| O6 | Kasnije, po potrebi | Ništa | Možda | `lastSeenAt` na profilu (jedan upis dnevno iz `GET /api/profile`) ako aktivnost iz O2 nije dovoljna; obaveštenje vlasniku (mejl) za neuspeo predračun i za firme koje padaju u "samo pregled"; privremeno blokiranje naloga (Clerk ban) samo uz audit. |
+
+Redosled i rokovi: O1-O3 samo čitaju i ne diraju korisničke stranice, pa mogu i pre zamrzavanja koda (28. okt), ali A-stavke za lansiranje imaju prednost. O4-O5 moraju raditi pre isteka prvih probnih perioda (registracija 1. novembra → istek 31. decembra), znači do sredine decembra.
+
+### Faza T: tim u firmi (Admin + Magacioner), zamenjuje B2
+
+**Ponuda (predlog, čeka potvrdu vlasnika A1.6):** pretplata uključuje 1 Admin nalog (sve stranice, kao danas) i 1 Magacioner nalog. Dodatni članovi kasnije, uz doplatu.
+
+**Šta vidi Magacioner (odluka vlasnika 2026-10-10):**
+
+| Deo | Admin | Magacioner |
+|---|---|---|
+| Početna | sve | brze akcije i lager upozorenja, bez novca (naplaćeno, profit, "Kasni naplata") |
+| Asortiman | sve | vidi i dodaje/menja artikle i Brzi sken; **ne vidi i ne menja nabavnu cenu** (`costPrice`), novi artikal bez nabavne kao Brzi sken, Admin je dopunjava |
+| Magacin | sve | Ulaz/Izlaz, lager lista **bez** nabavne vrednosti |
+| Predračuni | sve | pravi, menja, deli i štampa predračun; bira postojećeg kupca ili upisuje novog na dokumentu |
+| Fakture (izdate), "Pretvori u fakturu", otpremnica, SEF, izvoz | sve | ne |
+| Katalozi | sve | ne (prvi korak; lako se doda kasnije) |
+| Kupci, Finansije, Podešavanja, Tim | sve | ne |
+
+Pravilo uz to: što magacioner ne sme da vidi, **server ne šalje** (npr. `costPrice`, `unitCost`, vrednost lagera po nabavnoj se brišu iz JSON-a za tu ulogu), ne samo da UI ne prikazuje.
+
+**Zašto sopstvena tabela članstva, a ne Clerk Organizations:** svi podaci i svi upiti su već po `profileId`, izolacija je testirana u našoj bazi (`tenant-isolation.db.test.ts`), a dve uloge ne traže Clerk organizacije, njihove role i biranje aktivne organizacije u UI-ju. Clerk ostaje samo za identitet i pozivnice. Ako jednog dana zatreba više firmi po korisniku ili SSO, prelazak na Clerk Organizations ide preko iste funkcije iz T0.
+
+| # | Šta | Menja za korisnike | Migracija | Detalj |
+|---|---|---|---|---|
+| T0 | **Jedna funkcija "trenutna firma"** | Ništa | Ne | `src/lib/company-context.ts`: `getCompanyContext()` vraća `{ userId, profile, role: 'ADMIN' }` ili gotov 401/404 odgovor. Zamenjuje 28 kopija traženja profila, ruta po ruta, u 2-3 PR-a (proizvodi + magacin, fakture, ostalo). Odgovori i statusi ostaju bajt-za-bajt isti; `tenant-isolation.db.test.ts` i `access-expired.test.ts` prolaze bez izmene. Zaštitni test: nijedna ruta u `src/app/api` (osim `profile`, `public`, `shared`, `cron`, `owner`) ne zove `profile.findUnique({ where: { clerkUserId` direktno. |
+| T1 | **Matrica dozvola u kodu** | Ništa | Ne | `src/lib/permissions.ts`: uloge `ADMIN`, `WAREHOUSE`; akcije (`product:write`, `product:cost:read`, `stock:write`, `proforma:write`, `invoice:issue`, `invoice:read`, `finance:read`, `clients:manage`, `catalog:manage`, `settings:manage`, `team:manage`); `can(role, action)`. Test za svaku ćeliju tabele iznad. Još se nigde ne koristi osim `ADMIN` = sve. |
+| T2 | **Tabela članstva** | Ništa | Da: `company_members` | `company_members(id, profileId, clerkUserId UNIQUE, role, status, invitedEmail, createdAt)`. Backfill: jedan `ADMIN` red po postojećem profilu iz `profiles.clerkUserId` (to je postojeći podatak, ne izmišljen). `getCompanyContext()` traži član → profil, sa rezervom na `Profile.clerkUserId` ako reda nema. `Profile.clerkUserId` ostaje i dalje jedinstven i upisan (ne briše se). DB test: svaki postojeći profil ima tačno jednog Admina; nova registracija pravi profil + Admin člana u istoj transakciji. |
+| T3 | **Server proverava ulogu** | Ništa za Admina | Ne | Svaka ruta zove `requirePermission(ctx, akcija)` → 403 "Nemate dozvolu". Fakture: magacioner sme samo `documentType = PROFORMA` (kreiranje, izmena, PDF, deljenje), nikad `convert`, `PATCH` statusa na fakturi, SEF, export. Uklanjanje `costPrice`/`unitCost` iz odgovora za ulogu bez `product:cost:read`, i ignorisanje tih polja u upisu (PUT proizvoda ne briše postojeću nabavnu). Novi DB test "magacioner": 403 na finansije, izvoz, kupce, podešavanja, SEF, izdavanje; nijedan JSON ne sadrži `costPrice`/`unitCost`; i dalje ne vidi drugu firmu. Iza `TEAM_ROLES` prekidača. |
+| T4 | **UI po ulozi** | Ništa za Admina | Ne | `GET /api/profile` vraća i `role` (dodato polje, ništa uklonjeno). `navigation.ts` filtrira stavke kroz `can()`; stranice van uloge u server komponenti preusmeravaju na `/dashboard`; Početna bez novčanih kartica; forma proizvoda bez polja nabavne; Fakture za magacionera prikazuje samo predračune. E2E: postojeći testovi nepromenjeni + novi `@writes` test sa magacionerom. |
+| T5 | **Pozivanje člana** | Admin vidi novu karticu Podešavanja → Tim (samo kad je `TEAM_ROLES` uključen za firmu) | Ne | Admin upiše mejl → Clerk invitation (`clerkClient.invitations.createInvitation` sa `publicMetadata.inviteId`) → `company_members` red `INVITED`. Prihvatanje: **`GET /api/profile` ne sme da napravi novu firmu** za korisnika koji ima pozivnicu ili članstvo (najveći rizik ovog koraka, poseban test). Uklanjanje člana: status `REMOVED` + Clerk revoke sesija. Limit: 1 Admin + 1 Magacioner po firmi. Admin ne može da ukloni sebe ako je jedini Admin. `accessExpiredResponse` važi za celu firmu (članovi nasleđuju pristup). |
+| T6 | **Ko je šta uradio** | Novi podatak na dokumentima | Da: kolone `createdByUserId` | Na `invoices` i `stock_movements` (nullable, stari redovi ostaju NULL, ne izmišlja se). "Izdao: ime" na predračunu u aplikaciji, ne na PDF-u. Pun dnevnik izmena ostaje C4. |
+| T7 | Landing i uslovi | Tekst | Ne | Tek kad T5 radi u produkciji kod bar jedne pilot firme: "Admin + Magacioner u ceni", FAQ, `/uslovi` (ko je odgovoran za članove). |
+
+Redosled: T0 i T1 posle lansiranja (novembar), čist refaktor bez promene ponašanja. T2-T5 kad prve firme to traže ili kad vlasnik potvrdi ponudu sa magacionerom. Svaki korak se pusti prvo na test nalogu (`TEAM_ROLES_PROFILES`), pa T&G Nest, pa svi.
+
+### Šta namerno ne radimo
+
+- Impersonacija ("uđi u nalog korisnika") i čitanje sadržaja firmi iz panela vlasnika.
+- Brisanje naloga ili podataka iz panela (ide kroz ručni postupak uz zahtev korisnika).
+- Uloge u Clerk `publicMetadata` kao jedini izvor istine (lako se pokvari ručnom izmenom u Clerk dashboard-u, nema istorije).
+- Više firmi po jednom korisniku i SSO (C4 ili kasnije).
+
 ## Faza C: 2027
 
 | # | Funkcija | Vrednost | Trud | Uslov |
@@ -229,7 +311,7 @@ Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađe
 | C1 | **AI: Ulaz iz fotografije ili PDF-a fakture dobavljača** → nacrt prijema sa artiklima, količinama i nabavnim cenama; korisnik potvrđuje pre snimanja | Visoka | M | Ako pilot korisnici potvrde da je prijem robe problem; dopuna politike privatnosti. |
 | C2 | AI: uvoz neurednog cenovnika dobavljača i predlog kategorije/opisa za katalog | Srednja | S-M | Posle C1. |
 | C3 | **E-otpremnice**: B2B obaveza od 1. oktobra 2027 (akcizni proizvodi i javni sektor od 1. januara 2026) | Visoka | L | Početi u proleće 2027; dobar prodajni razlog za veleprodaju pića. |
-| C4 | Tim, pun: više magacina/lokacija, dnevnik izmena po korisniku | Srednja | L | Posle B2. |
+| C4 | Tim, pun: više magacina/lokacija, dnevnik izmena po korisniku | Srednja | L | Posle T6. |
 | C5 | Kartica za pretplatu (domaći procesor), Paddle za strane kupce | Srednja | M | Posle B9. |
 
 ## Namerno van plana

@@ -35,3 +35,21 @@ export const testCompany = () => ({
 export function uniqueSku(label: string): string {
   return `E2E-${label}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`.toUpperCase()
 }
+
+type Api = import('@playwright/test').APIRequestContext
+
+/**
+ * Makes sure the signed-in company can issue an invoice, without overwriting real company data:
+ * the fake company is written only when PIB, MB, address or žiro-račun is missing.
+ */
+export async function ensureCompanyProfile(api: Api): Promise<void> {
+  const response = await api.get('/api/profile')
+  if (!response.ok()) throw new Error(`GET /api/profile ${response.status()}`)
+  const profile = (await response.json()) as Record<string, unknown>
+  const complete = ['companyName', 'pib', 'registrationNumber', 'address', 'giroAccount'].every(
+    (field) => typeof profile[field] === 'string' && (profile[field] as string).trim() !== ''
+  )
+  if (complete) return
+  const put = await api.put('/api/profile', { data: testCompany() })
+  if (!put.ok()) throw new Error(`PUT /api/profile ${put.status()} ${await put.text()}`)
+}

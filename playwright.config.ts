@@ -10,7 +10,9 @@ import { e2eEnv } from './e2e/support/env'
  *   only defined when E2E_USER_EMAIL and a Clerk test secret are present.
  * Tests that write data are tagged @writes and are skipped unless the target is allowed (support/env.ts).
  */
+// .env.e2e first (E2E settings win), then the app's .env for the Clerk keys; loadEnvFile never overrides.
 if (existsSync('.env.e2e')) process.loadEnvFile('.env.e2e')
+if (existsSync('.env')) process.loadEnvFile('.env')
 
 const env = e2eEnv()
 const AUTH_FILE = 'playwright/.auth/user.json'
@@ -52,6 +54,8 @@ export default defineConfig({
   use: {
     baseURL: env.baseURL,
     trace: 'retain-on-failure',
+    // The PWA service worker would hide requests from page.route(); tests talk to the network directly.
+    serviceWorkers: 'block',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     // Protected Vercel previews: https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection

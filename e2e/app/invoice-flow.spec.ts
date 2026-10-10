@@ -1,7 +1,7 @@
 import type { APIRequestContext } from '@playwright/test'
 import { test, expect } from '../support/test'
 import { e2eEnv } from '../support/env'
-import { testCompany, uniqueSku } from '../support/test-data'
+import { ensureCompanyProfile, uniqueSku } from '../support/test-data'
 
 const env = e2eEnv()
 
@@ -21,43 +21,68 @@ test.describe('invoice flow @writes', () => {
     return response.status() === 204 ? null : response.json()
   }
 
+  /** There is no GET /api/products/[id]: read the product's stock from the list. */
+  async function stockOf(request: APIRequestContext, productId: string): Promise<number | undefined> {
+    const products: Array<{ id: string; quantity: number }> = await json(request, 'GET', '/api/products')
+    return products.find((product) => product.id === productId)?.quantity
+  }
+
+  // Buyers made by this worker; their documents are removed even after a failure (deleting an issued
+  // invoice puts its stock back). Only these names: the phone and desktop projects run in parallel.
+  const buyers = new Set<string>()
+  const buyerName = (label: string) => {
+    const name = `E2E ${label} ${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`
+    buyers.add(name)
+    return name
+  }
+
+  test.afterAll(async ({ browser }) => {
+    if (buyers.size === 0) return
+    const context = await browser.newContext({ storageState: 'playwright/.auth/user.json' })
+    const page = await context.newPage()
+    await page.goto('/dashboard')
+    const invoices: Array<{ id: string; clientName: string }> = await json(page.request, 'GET', '/api/invoices')
+    for (const invoice of invoices.filter((row) => buyers.has(row.clientName))) {
+      await page.request.delete(`/api/invoices/${invoice.id}`)
+    }
+    await context.close()
+  })
+
   test('issuing an invoice takes stock out and deleting it puts stock back', async ({ page, isMobile }) => {
     test.skip(isMobile, 'one run is enough; the phone layout is covered by navigation')
     await page.goto('/dashboard')
     const api = page.request
-    await json(api, 'GET', '/api/profile')
-    await json(api, 'PUT', '/api/profile', testCompany())
+    await ensureCompanyProfile(api)
 
     const sku = uniqueSku('INV')
     const product = await json(api, 'POST', '/api/products', {
       name: `E2E proizvod ${sku}`,
       sku,
       quantity: 5,
-      costPrice: '400',
-      price: '1000',
+      costPrice: 400,
+      price: 1000,
     })
 
+    const buyer = buyerName('Kupac')
     try {
       await page.goto('/invoices/new')
-      await page.getByLabel('Naziv kupca').fill('E2E Kupac DOO')
+      await page.getByLabel('Naziv kupca').fill(buyer)
       await page.getByRole('button', { name: /Izaberi proizvod/ }).first().click()
       await page.getByLabel('Traži proizvod').fill(sku)
-      await page.getByRole('listbox', { name: 'Proizvodi' }).getByText(sku).click()
+      await page.getByRole('listbox', { name: 'Proizvodi' }).getByRole('option', { name: new RegExp(sku.slice(0, 20)) }).click()
       await page.getByLabel('Količina').first().fill('2')
       await page.getByRole('button', { name: 'Sačuvaj fakturu' }).click()
       await expect(page.getByText('Faktura je sačuvana')).toBeVisible()
       await expect(page).toHaveURL(/\/invoices$/)
 
-      const stored = await json(api, 'GET', `/api/products/${product.id}`)
-      expect(stored.quantity).toBe(3)
+      expect(await stockOf(api, product.id)).toBe(3)
 
       const invoices: Array<{ id: string; clientName: string; items?: Array<{ productId: string }> }> = await json(api, 'GET', '/api/invoices')
-      const invoice = invoices.find((row) => row.clientName === 'E2E Kupac DOO' && row.items?.some((item) => item.productId === product.id))
+      const invoice = invoices.find((row) => row.clientName === buyer && row.items?.some((item) => item.productId === product.id))
       expect(invoice, 'new invoice in the list').toBeTruthy()
 
       await json(api, 'DELETE', `/api/invoices/${invoice!.id}`)
-      const restored = await json(api, 'GET', `/api/products/${product.id}`)
-      expect(restored.quantity).toBe(5)
+      expect(await stockOf(api, product.id)).toBe(5)
     } finally {
       await api.delete(`/api/products/${product.id}`)
     }
@@ -67,8 +92,8 @@ test.describe('invoice flow @writes', () => {
     test.skip(isMobile, 'one run is enough')
     await page.goto('/dashboard')
     const api = page.request
-    await json(api, 'PUT', '/api/profile', testCompany())
-    const buyer = `E2E Usluga ${Date.now()}`
+    await ensureCompanyProfile(api)
+    const buyer = buyerName('Usluga')
 
     await page.goto('/invoices/new')
     await page.getByLabel('Naziv kupca').fill(buyer)
@@ -89,8 +114,8 @@ test.describe('invoice flow @writes', () => {
     test.skip(isMobile, 'one run is enough')
     await page.goto('/dashboard')
     const api = page.request
-    await json(api, 'PUT', '/api/profile', testCompany())
-    const buyer = `E2E Kupac ${Date.now()}`
+    await ensureCompanyProfile(api)
+    const buyer = buyerName('Kupac')
 
     await page.goto('/invoices/new')
     await page.getByLabel('Naziv kupca').fill(buyer)

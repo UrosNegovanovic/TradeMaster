@@ -34,6 +34,10 @@ First time: `npx playwright install chromium`.
 2. `cp .env.e2e.example .env.e2e` and set `E2E_USER_EMAIL`. `CLERK_SECRET_KEY` (sk_test_) and the publishable key come from `.env`.
 3. `auth.setup.ts` signs in once with a Clerk sign-in ticket (`@clerk/testing`) and saves `playwright/.auth/user.json` (gitignored).
 
+**Real accounts**: while the app is in trial the owner allowed running the suite as their own account (2026-10-10). Tests never overwrite company data: `ensureCompanyProfile` writes the fake company only when PIB, MB, address or žiro-račun is missing. Every document a test makes has a unique "E2E …" buyer and is deleted afterwards (also after a failure); test products are deleted too. Issued test invoices still use numbers from the company's series.
+
+**Service worker**: the PWA worker is blocked in tests (`serviceWorkers: 'block'`), otherwise `page.route()` cannot fake API failures.
+
 **Writes**: `@writes` tests run only with `E2E_ALLOW_WRITES=1` and only against localhost or a host listed in `E2E_WRITE_HOSTS`, and never with a live Clerk key (`support/env.ts`). Point the local app's `DATABASE_URL` at a test database first: the local `.env` normally points at production. The planned test database is the Supabase project used for the backup-restore drill (ROADMAP A1.9).
 
 ## CI

@@ -1,6 +1,6 @@
 import { test, expect } from '../support/test'
 import { e2eEnv } from '../support/env'
-import { testCompany } from '../support/test-data'
+import { ensureCompanyProfile } from '../support/test-data'
 
 const env = e2eEnv()
 
@@ -11,7 +11,7 @@ test.describe('invoice page header @writes', () => {
   test('main actions in view, secondary ones behind "Više radnji" on a phone', async ({ page, isMobile }) => {
     await page.goto('/dashboard')
     const api = page.request
-    expect((await api.put('/api/profile', { data: testCompany() })).ok()).toBeTruthy()
+    await ensureCompanyProfile(api)
     const created = await api.post('/api/invoices', {
       data: {
         dueDate: '2030-01-31',

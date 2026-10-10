@@ -96,6 +96,8 @@ export default defineConfig({
       'src/app/api/categories/route.test.ts',
       'src/app/api/clients/route.test.ts',
       'src/lib/client-fill.test.ts',
+      'src/lib/billing-request.test.ts',
+      'src/lib/access-notice.test.ts',
       'src/lib/sales-ranking.test.ts',
       'src/lib/product-margin.test.ts',
       'src/lib/inventory-view.test.ts',

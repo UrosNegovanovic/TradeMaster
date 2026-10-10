@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { LoadErrorState } from '@/components/layout/LoadErrorState'
 import { failedBeforeFirstLoad } from '@/lib/query-state'
@@ -85,6 +86,14 @@ export default function WarehousePage() {
   const queryClient = useQueryClient()
   const request = useAuthorizedFetch()
   const [stockInOpen, setStockInOpen] = useState(false)
+  // "Ulaz robe" on Početna opens /warehouse?action=ulaz (ROADMAP A9.17): open the form once, then drop the param.
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  useEffect(() => {
+    if (searchParams.get('action') !== 'ulaz') return
+    setStockInOpen(true)
+    router.replace('/warehouse', { scroll: false })
+  }, [searchParams, router])
   const [stockOutOpen, setStockOutOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [adjustOpen, setAdjustOpen] = useState(false)

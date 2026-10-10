@@ -24,8 +24,10 @@ import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist
 import { AnalyticsMilestones } from '@/components/analytics/AnalyticsMilestones'
 import { InstallAppCard } from '@/components/pwa/InstallAppCard'
 import { getOnboardingProgress } from '@/lib/onboarding'
-import { formatLocalYmd, startOfLocalDay, startOfLocalTomorrow } from '@/lib/local-date'
-import { formatRsd } from '@/lib/invoice-finance'
+import { formatLocalYmd, startOfLocalDay, startOfLocalMonth, startOfLocalTomorrow } from '@/lib/local-date'
+import { formatRsd, sumInvoiceBaseAmounts } from '@/lib/invoice-finance'
+import { countSr } from '@/lib/sr-format'
+import { FilePlus2, PackagePlus } from 'lucide-react'
 import { fetchLowStockProducts } from '@/lib/low-stock'
 import { sr } from '@/lib/ui-copy'
 import { DASHBOARD_OVERDUE_PREVIEW, daysOverdue, formatDaysOverdue } from '@/lib/overdue-invoices'
@@ -79,6 +81,7 @@ async function getDashboardData(profileId: string) {
     lowStock,
     todayMovementGroups,
     todayMovements,
+    paidThisMonth,
   ] = await Promise.all([
     prisma.$queryRaw<Array<{ totalQuantity: bigint | number | null; stockValue: Decimal | number | null }>>(
       Prisma.sql`
@@ -182,6 +185,11 @@ async function getDashboardData(profileId: string) {
       orderBy: { createdAt: 'desc' },
       take: 40,
     }),
+    // ROADMAP A9.17: "Naplaćeno ovog meseca", the same figure as "Prihod ovog meseca" on Finansije (bez PDV-a).
+    prisma.invoice.findMany({
+      where: { profileId, documentType: 'INVOICE', status: InvoiceStatus.PAID, paidAt: { gte: startOfLocalMonth() } },
+      select: { totalAmount: true, vatAmount: true },
+    }),
   ])
 
   const stock = stockRows[0]
@@ -217,6 +225,7 @@ async function getDashboardData(profileId: string) {
     todayTotals,
     todayIntakes: previewTodayIntakes(todayMovements),
     todayMovementPreview: previewTodayMovements(todayMovements),
+    paidThisMonthTotal: sumInvoiceBaseAmounts(paidThisMonth),
   }
 }
 
@@ -257,6 +266,7 @@ export default async function DashboardPage() {
     todayTotals,
     todayIntakes,
     todayMovementPreview,
+    paidThisMonthTotal,
   } = await getDashboardData(profile.id)
 
   const onboarding = getOnboardingProgress({
@@ -281,6 +291,27 @@ export default async function DashboardPage() {
         <div className="w-full sm:max-w-sm">
           <QuickScanButton presentation="hero" />
           <p className="mt-1.5 text-xs text-muted-foreground">{sr.scan.missingCostNote}</p>
+          {/* ROADMAP A9.17: the next step is one tap away. */}
+          <nav aria-label="Brze akcije" className="mt-3 grid grid-cols-3 gap-2">
+            <Button variant="outline" className="h-auto min-h-11 flex-col gap-1 px-2 py-2 text-xs" asChild>
+              <Link href="/invoices/new">
+                <FilePlus2 className="h-4 w-4" aria-hidden="true" />
+                Nova faktura
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto min-h-11 flex-col gap-1 px-2 py-2 text-xs" asChild>
+              <Link href="/invoices/new?type=proforma">
+                <FileText className="h-4 w-4" aria-hidden="true" />
+                Novi predračun
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-auto min-h-11 flex-col gap-1 px-2 py-2 text-xs" asChild>
+              <Link href="/warehouse?action=ulaz">
+                <PackagePlus className="h-4 w-4" aria-hidden="true" />
+                Ulaz robe
+              </Link>
+            </Button>
+          </nav>
         </div>
       </div>
 
@@ -304,7 +335,7 @@ export default async function DashboardPage() {
               Kasni naplata
             </CardTitle>
             <CardDescription>
-              {overdueLateCount} {overdueLateCount === 1 ? 'faktura je' : 'faktura su'} van roka, ukupno{' '}
+              {countSr(overdueLateCount, 'faktura je', 'fakture su', 'faktura je')} van roka, ukupno{' '}
               <span className="font-semibold text-foreground">{formatRsd(overdueTotal)}</span>
             </CardDescription>
           </CardHeader>
@@ -438,6 +469,13 @@ export default async function DashboardPage() {
               {overdueCount > 0
                 ? `${overdueCount} van roka od ${openCount} otvorenih`
                 : 'Nacrti i neplaćene fakture'}
+              <span className="mt-1 block">
+                Naplaćeno ovog meseca:{' '}
+                <Link href="/finance" className="font-medium text-foreground underline-offset-2 hover:underline">
+                  {formatRsd(paidThisMonthTotal)}
+                </Link>{' '}
+                (bez PDV-a)
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 p-4 pt-0 sm:p-5 sm:pt-0">
@@ -447,7 +485,9 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 <div>
                   <p className="text-xl font-bold tabular-nums [overflow-wrap:anywhere]">{formatRsd(openReceivables)}</p>
-                  <p className="text-sm text-muted-foreground">{openCount} otvorenih</p>
+                  <p className="text-sm text-muted-foreground">
+                    {countSr(openCount, 'otvorena faktura', 'otvorene fakture', 'otvorenih faktura')}
+                  </p>
                 </div>
                 <ul className="space-y-2">
                   {openInvoices.map((invoice) => {

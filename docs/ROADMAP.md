@@ -156,10 +156,10 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 | A9.11 | ✅ (#119) **Stavka bez proizvoda** (prevoz, usluga, ambalaža) | Visoka | S-M | Server već prima `productId: null`, a forma briše naziv i cenu. Bez kretanja lagera; nova faktura ne traži pun asortiman. |
 | A9.12 | ✅ (#121) **Kupac iz fakture i faktura iz kupca** | Visoka | S | "Sačuvaj kupca" na fakturi (kao u katalogu; XML traži MB iz Kupaca) i "Nova faktura / predračun" na kupcu. |
 | A9.13 | ✅ (#116) **Minimalna zaliha po proizvodu** | Visoka | S | `minStock` postoji (podrazumevano 2), ali se ne može menjati, pa je "Nizak lager" besmislen za robu u kutijama. Polje u ProductForm, bez migracije. |
-| A9.14 | ✅ (PR otvoren) Asortiman: "šta treba dopuniti" | Srednja | S | Filteri "Bez nabavne cene", "Bez prodajne cene", "Nizak lager" i sortiranje (naziv, stanje, cena). Brzi sken namerno ostavlja nabavnu praznu. |
+| A9.14 | ✅ (#129) Asortiman: "šta treba dopuniti" | Srednja | S | Filteri "Bez nabavne cene", "Bez prodajne cene", "Nizak lager" i sortiranje (naziv, stanje, cena). Brzi sken namerno ostavlja nabavnu praznu. |
 | A9.15 | ✅ (#123) Predračun iz kataloga | Srednja | S | Katalog ima kupca, popust i proizvode; dugme "Napravi predračun" kroz postojeći prefill (`copyFrom`). Zatvara korak katalog → faktura. |
-| A9.16 | Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
-| A9.17 | Brze akcije na Početnoj | Srednja | S | "Nova faktura", "Novi predračun", "Ulaz robe" pored Brzog skena; "Naplaćeno ovog meseca". |
+| A9.16 | ✅ (PR otvoren) Marža u formi proizvoda | Srednja | S | "Razlika X RSD · Marža Y%" kad su obe cene unete. |
+| A9.17 | ✅ (PR otvoren) Brze akcije na Početnoj | Srednja | S | "Nova faktura", "Novi predračun", "Ulaz robe" pored Brzog skena; "Naplaćeno ovog meseca". |
 
 **Izveštaji**
 

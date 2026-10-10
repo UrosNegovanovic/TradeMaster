@@ -5,7 +5,7 @@ vi.mock('@clerk/nextjs/server', () => ({
 }))
 
 import { auth } from '@clerk/nextjs/server'
-import { isPlatformOwner, requirePlatformOwner } from './platform-owner'
+import { isPlatformOwner, ownerRedirectFromTenantPages, requirePlatformOwner } from './platform-owner'
 
 const on = { OWNER_PANEL: 'on', PLATFORM_OWNER_USER_IDS: 'user_owner' }
 
@@ -80,6 +80,40 @@ describe('requirePlatformOwner', () => {
     const check = await requirePlatformOwner()
     expect(check.ok).toBe(false)
     if (!check.ok) expect(check.response.status).toBe(404)
+    expect(auth).not.toHaveBeenCalled()
+  })
+})
+
+describe('ownerRedirectFromTenantPages', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubEnv('OWNER_PANEL', 'on')
+    vi.stubEnv('PLATFORM_OWNER_USER_IDS', 'user_owner')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('sends the owner from tenant pages to the owner panel', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: 'user_owner' } as never)
+    expect(await ownerRedirectFromTenantPages()).toBe('/owner')
+  })
+
+  it('leaves a regular user on the tenant pages', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: 'user_tenant' } as never)
+    expect(await ownerRedirectFromTenantPages()).toBeNull()
+  })
+
+  it('leaves a signed-out visitor to the middleware', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: null } as never)
+    expect(await ownerRedirectFromTenantPages()).toBeNull()
+  })
+
+  it('does nothing and does not ask Clerk while the panel is off', async () => {
+    vi.stubEnv('OWNER_PANEL', '')
+    vi.mocked(auth).mockResolvedValue({ userId: 'user_owner' } as never)
+    expect(await ownerRedirectFromTenantPages()).toBeNull()
     expect(auth).not.toHaveBeenCalled()
   })
 })

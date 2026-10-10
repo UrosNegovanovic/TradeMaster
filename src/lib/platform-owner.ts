@@ -36,3 +36,14 @@ export async function requirePlatformOwner(): Promise<PlatformOwnerCheck> {
   if (!userId || !isPlatformOwner(userId)) return notFound()
   return { ok: true, userId }
 }
+
+/**
+ * Tenant pages are closed to the platform owner, who works only in the owner panel: returns the path the
+ * `(dashboard)` layout redirects to, or null for everyone else. With the panel off Clerk is not even asked,
+ * so tenant pages render exactly as before.
+ */
+export async function ownerRedirectFromTenantPages(): Promise<string | null> {
+  if (process.env.OWNER_PANEL !== 'on') return null
+  const { userId } = await auth()
+  return isPlatformOwner(userId) ? OWNER_HOME_PATH : null
+}

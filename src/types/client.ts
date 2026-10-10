@@ -4,4 +4,6 @@ export type Client = {
   pib: string | null
   registrationNumber?: string | null
   address: string | null
+  phone?: string | null
+  email?: string | null
 }

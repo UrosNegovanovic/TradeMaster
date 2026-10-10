@@ -43,6 +43,8 @@ export type InvoiceDraftFields = {
   clientName: string
   clientAddress: string
   clientPib: string
+  /** Note on the document (ROADMAP A9.22). */
+  note?: string
   items: readonly InvoiceDraftItem[]
 }
 
@@ -54,6 +56,7 @@ export function invoiceDraftSnapshot(fields: InvoiceDraftFields): string {
     clientName: fields.clientName,
     clientAddress: fields.clientAddress,
     clientPib: fields.clientPib,
+    note: (fields.note ?? '').trim(),
     items: fields.items.map((item) => [
       item.productId ?? null,
       item.productName ?? '',

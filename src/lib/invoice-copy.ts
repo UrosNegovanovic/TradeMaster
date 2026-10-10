@@ -15,6 +15,7 @@ export type CopySourceItem = {
 export type CopySource = {
   clientName: string
   clientAddress: string | null
+  note?: string | null
   clientPib: string | null
   vatEnabled: boolean
   items: CopySourceItem[]
@@ -25,6 +26,8 @@ export type CopyProduct = PickerProduct & { name: string; price: Amount | null }
 export type InvoiceCopyPrefill = {
   clientName: string
   clientAddress: string
+  /** Undefined = use the company default note. */
+  note?: string
   clientPib: string
   items: {
     productId: string | null
@@ -50,6 +53,7 @@ export function invoiceCopyPrefill(
   return {
     clientName: source.clientName,
     clientAddress: source.clientAddress ?? '',
+    ...(source.note ? { note: source.note } : {}),
     clientPib: source.clientPib ?? '',
     items: source.items.map((item) => {
       const product = pickerProductForId(products, item.productId)

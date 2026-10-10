@@ -5,7 +5,7 @@ import { BellRing, Loader2, MessageCircle, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getSafeInvoiceSharePath } from '@/lib/public-invoice'
 import { paymentReminderMessage, paymentReminderSubject } from '@/lib/payment-reminder'
-import { buildMessageTargets } from '@/lib/share-links'
+import { buildMessageTargets, type ShareRecipient } from '@/lib/share-links'
 import { readApiErrorMessage } from '@/lib/api-error'
 import { notify } from '@/lib/notify'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
@@ -18,6 +18,8 @@ type PaymentReminderButtonsProps = {
   companyName?: string | null
   /** Active share path (`/shared/invoice/<token>`), or null when the invoice has no link yet. */
   sharePath: string | null
+  /** Saved buyer's phone/e-mail: the reminder opens straight to them (ROADMAP A9.21). */
+  recipient?: ShareRecipient
 }
 
 /**
@@ -31,6 +33,7 @@ export function PaymentReminderButtons({
   dueDate,
   companyName,
   sharePath,
+  recipient,
 }: PaymentReminderButtonsProps) {
   const request = useAuthorizedFetch()
   const [path, setPath] = useState(() => getSafeInvoiceSharePath(sharePath))
@@ -71,7 +74,8 @@ export function PaymentReminderButtons({
   const url = new URL(path, origin).href
   const targets = buildMessageTargets(
     paymentReminderMessage({ invoiceNumber, amount, dueDate, companyName, url }),
-    paymentReminderSubject(invoiceNumber)
+    paymentReminderSubject(invoiceNumber),
+    recipient
   )
 
   return (

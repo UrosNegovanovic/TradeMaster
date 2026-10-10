@@ -55,6 +55,9 @@ interface InvoiceFormProps {
   documentType?: 'INVOICE' | 'PROFORMA'
   /** New documents only: buyer and lines copied from another document ("Kopiraj"). */
   prefill?: InvoiceCopyPrefill
+  /** Company defaults for a new document (ROADMAP A9.22). */
+  defaultPaymentDays?: number | null
+  defaultNote?: string | null
 }
 
 interface InvoiceItemRow {
@@ -87,6 +90,8 @@ export function InvoiceForm({
   cancelHref,
   documentType: newDocumentType = 'INVOICE',
   prefill,
+  defaultPaymentDays,
+  defaultNote,
 }: InvoiceFormProps) {
   const documentType: 'INVOICE' | 'PROFORMA' =
     initialData?.documentType === 'PROFORMA' || (!initialData && newDocumentType === 'PROFORMA')
@@ -103,7 +108,9 @@ export function InvoiceForm({
   const itemTracks = vatEnabled ? INVOICE_ITEM_TRACKS_VAT : INVOICE_ITEM_TRACKS
   const [invoiceNumber, setInvoiceNumber] = useState('')
   // 30 Belgrade calendar days from today.
-  const [dueDate, setDueDate] = useState(() => defaultDueDateYmd(30))
+  const [dueDate, setDueDate] = useState(() => defaultDueDateYmd(defaultPaymentDays ?? 30))
+  // A copied document keeps its note; a new one starts from the company default.
+  const [note, setNote] = useState(() => prefill?.note ?? defaultNote ?? '')
   const [clientName, setClientName] = useState(prefill?.clientName ?? '')
   const [clientAddress, setClientAddress] = useState(prefill?.clientAddress ?? '')
   const [clientPib, setClientPib] = useState(prefill?.clientPib ?? '')
@@ -150,6 +157,7 @@ export function InvoiceForm({
       setClientName(initialData.clientName || '')
       setClientAddress(initialData.clientAddress || '')
       setClientPib(initialData.clientPib || '')
+      setNote(initialData.note || '')
       
       if (initialData.items && initialData.items.length > 0) {
         setItems(
@@ -192,7 +200,7 @@ export function InvoiceForm({
     clientName.trim().length > 0 && !findSavedClientForInvoice(clients, { clientName, clientPib })
 
   // Unsaved-changes guard: compare what the user can edit with what the form started from.
-  const draftSnapshot = invoiceDraftSnapshot({ invoiceNumber, dueDate, clientName, clientAddress, clientPib, items })
+  const draftSnapshot = invoiceDraftSnapshot({ invoiceNumber, dueDate, clientName, clientAddress, clientPib, note, items })
   const newInvoiceBaseline = useRef(draftSnapshot)
   const baselineSnapshot = useMemo(() => {
     if (!initialData) return newInvoiceBaseline.current
@@ -203,6 +211,7 @@ export function InvoiceForm({
       clientName: initialData.clientName || '',
       clientAddress: initialData.clientAddress || '',
       clientPib: initialData.clientPib || '',
+      note: initialData.note || '',
       items:
         storedItems.length > 0
           ? storedItems
@@ -417,6 +426,7 @@ export function InvoiceForm({
       clientName: clientName.trim(),
       clientAddress: clientAddress.trim() || undefined,
       clientPib: clientPib.trim() || undefined,
+      note: note.trim() || null,
       items: items.map((item) => ({
         productId: item.productId || null,
         ...(item.free && !item.productId ? { free: true } : {}),
@@ -475,6 +485,7 @@ export function InvoiceForm({
       clientName: validation.data.clientName,
       clientAddress: validation.data.clientAddress || undefined,
       clientPib: validation.data.clientPib || undefined,
+      note: validation.data.note ?? null,
       ...(initialData ? {} : { status: InvoiceStatus.UNPAID, documentType }),
       items: validation.data.items.map((item) => ({
         productId: item.productId ?? null,
@@ -643,6 +654,18 @@ export function InvoiceForm({
                 ) : null}
               </div>
             ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="invoiceNote">Napomena na dokumentu</Label>
+              <textarea
+                id="invoiceNote"
+                rows={2}
+                maxLength={1000}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Opciono. Štampa se ispod iznosa na PDF-u."
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
         </CardContent>
       </Card>
 

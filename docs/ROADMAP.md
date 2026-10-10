@@ -173,8 +173,8 @@ Odluka vlasnika 2026-10-09: preostale nedelje idu na doradu funkcija i izgleda, 
 
 | # | Šta | Vrednost | Trud | Detalj |
 |---|---|---|---|---|
-| A9.21 | Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
-| A9.22 | Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
+| A9.21 | ✅ (PR otvoren; migracija u produkciji 2026-10-10) Telefon i mejl kupca | Srednja | M | Podsetnik i deljenje idu direktno kupcu (`wa.me/<broj>`, `mailto:`). |
+| A9.22 | ✅ (PR otvoren; migracija u produkciji 2026-10-10) Podrazumevani rok plaćanja i napomena na fakturi | Srednja | S-M | Polja u Podešavanjima; danas je rok uvek 30 dana. |
 
 Redosled: A9.1-A9.5 i A9.9-A9.13 urađeni 2026-10-09. A9.15, A9.18, A9.19 urađeni (#123, #124, A9.19 PR). Sledeće: A9.8, A9.6, A9.7, A9.14, A9.16, A9.17; A9.20-A9.22 ako ostane vremena (A9.21-22 traže migraciju i odobrenje). Jedan mali PR po stavci, sa E2E testom gde menja tok.
 

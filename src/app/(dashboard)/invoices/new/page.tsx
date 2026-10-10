@@ -25,7 +25,7 @@ async function fetchProducts(): Promise<Product[]> {
   return response.json()
 }
 
-async function fetchProfile(): Promise<{ inVatSystem?: boolean }> {
+async function fetchProfile(): Promise<{ inVatSystem?: boolean; defaultPaymentDays?: number | null; invoiceNote?: string | null }> {
   const response = await fetch('/api/profile')
   if (!response.ok) {
     throw new Error('Failed to fetch profile')
@@ -184,6 +184,8 @@ export default function NewInvoicePage() {
         cancelHref={listHref}
         documentType={documentType}
         prefill={prefill}
+        defaultPaymentDays={profile?.defaultPaymentDays}
+        defaultNote={profile?.invoiceNote}
       />
     </div>
   )

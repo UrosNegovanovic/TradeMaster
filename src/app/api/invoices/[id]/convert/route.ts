@@ -96,6 +96,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
           dueDate: convertedDueDate(proforma),
           clientName: proforma.clientName,
           clientAddress: proforma.clientAddress,
+          note: proforma.note,
           clientPib: proforma.clientPib,
           status,
           totalAmount,

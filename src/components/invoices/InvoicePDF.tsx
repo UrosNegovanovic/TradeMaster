@@ -317,6 +317,8 @@ export type InvoicePdfData = {
   clientName: string
   clientAddress: string | null
   clientPib: string | null
+  /** Note printed on this document (ROADMAP A9.22). */
+  note?: string | null
   status: string
   totalAmount: Amount
   vatEnabled?: boolean
@@ -563,6 +565,13 @@ export function InvoicePDF({ invoice, variant = 'document', delivery }: InvoiceP
             </View>
           </View>
         </View>
+
+        {invoice.note ? (
+          <View style={{ marginTop: 16 }} wrap={false}>
+            <Text style={styles.invoiceLabel}>Napomena:</Text>
+            <Text style={{ fontSize: 9, color: '#374151', marginTop: 2 }}>{invoice.note}</Text>
+          </View>
+        ) : null}
 
         {ipsQr ? (
           <View style={styles.paymentQr} wrap={false}>

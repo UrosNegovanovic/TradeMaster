@@ -18,8 +18,10 @@ import { SefSettingsCard } from '@/components/sef/SefSettingsCard'
 import { useAuthorizedFetch } from '@/lib/use-authorized-fetch'
 import type { SessionFetch } from '@/lib/authorized-fetch'
 import type { Profile } from '@/types/profile'
-import { PRICING_OFFER } from '@/lib/landing-copy'
+import { MONTHLY_PRICE, PRICING_OFFER } from '@/lib/landing-copy'
 import { accessStatus, formatAccessDate, formatDaysLeft } from '@/lib/access-period'
+import { accessNotice } from '@/lib/access-notice'
+import { billingMailto, billingWhatsApp } from '@/lib/billing-request'
 import { sr } from '@/lib/ui-copy'
 import { PIB_LENGTH, REGISTRATION_NUMBER_LENGTH, digitsOnly } from '@/lib/company-fields'
 
@@ -136,26 +138,55 @@ export default function SettingsPage() {
         description="Podaci o firmi i kontakt"
       />
 
-      <Card className="mb-6">
+      {/* Billing (manual until in-app payment exists): state, deadline and how to pay. Banner links here. */}
+      <Card id="pristup" className="mb-6 scroll-mt-20">
         <CardHeader>
-          <CardTitle>Pristup</CardTitle>
-          <CardDescription>{PRICING_OFFER}. Naplata je ručna, računom.</CardDescription>
+          <CardTitle>Pristup i uplata</CardTitle>
+          <CardDescription>{PRICING_OFFER}. Naplata je ručna: šaljemo račun, a pristup produžavamo za 30 dana čim uplata stigne.</CardDescription>
         </CardHeader>
-        <CardContent className="text-sm">
+        <CardContent className="space-y-4 text-sm">
           {(() => {
             const status = accessStatus(profile?.accessExpiresAt)
             if (status.state === 'unlimited' || !status.untilYmd) return <p>Pristup nije vremenski ograničen.</p>
+            const notice = accessNotice(profile?.accessExpiresAt, profile?.createdAt)
             const date = formatAccessDate(status.untilYmd)
-            return status.state === 'expired' ? (
-              <p>
-                Period pristupa je istekao <span className="font-medium">{date}</span>.
-              </p>
+            return notice ? (
+              <div
+                className={
+                  notice.tone === 'danger'
+                    ? 'rounded-md border border-destructive/40 bg-destructive/10 p-3'
+                    : 'rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-950'
+                }
+              >
+                <p className="font-semibold">{notice.title}</p>
+                <p className="mt-1">{notice.detail}</p>
+              </div>
             ) : (
               <p>
                 Pristup važi do <span className="font-medium">{date}</span> (ističe {formatDaysLeft(status.daysLeft ?? 0)}).
               </p>
             )
           })()}
+          <div className="space-y-2">
+            <p className="font-medium">Kako da platite</p>
+            <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
+              <li>Zatražite račun: pošaljemo ga sa IPS QR kodom za uplatu iz mobilnog bankarstva.</li>
+              <li>Uplatite {MONTHLY_PRICE} u dinarima po kursu NBS na dan računa.</li>
+              <li>Čim uplata stigne, pristup produžavamo za 30 dana i javljamo vam.</li>
+            </ol>
+            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+              <Button asChild className="min-h-11">
+                <a href={billingMailto(profile)}>Zatraži račun mejlom</a>
+              </Button>
+              {billingWhatsApp(profile) ? (
+                <Button asChild variant="outline" className="min-h-11">
+                  <a href={billingWhatsApp(profile)!} target="_blank" rel="noopener noreferrer">
+                    WhatsApp
+                  </a>
+                </Button>
+              ) : null}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

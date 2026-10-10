@@ -25,7 +25,7 @@ export const pricingNote = 'Naplata u dinarima po važećem kursu NBS na dan fak
 
 export const paymentFaq = {
   q: 'Šta se dešava posle 60 besplatnih dana?',
-  a: `${PRICING_OFFER}. Za sada nema pretplate u aplikaciji: račun za svaki mesec šaljemo ručno, a pristup se produžava posle uplate. Kada pristup istekne, aplikacija prelazi u režim samo za pregled (vaši podaci ostaju vidljivi i mogu da se izvezu) dok ne produžite. Nema otkaza pretplate jer pretplata još ne postoji.`,
+  a: `${PRICING_OFFER}. Za sada nema pretplate u aplikaciji: račun za svaki mesec šaljemo ručno, a pristup se produžava posle uplate. Kada pristup istekne, imate još 2 dana da uplatite i sve radi kao do tada; posle toga aplikacija prelazi u režim samo za pregled (vaši podaci ostaju vidljivi i mogu da se izvezu) dok uplata ne stigne. Svaka uplata produžava pristup za 30 dana. Nema otkaza pretplate jer pretplata još ne postoji.`,
 } as const
 
 /*

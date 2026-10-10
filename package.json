@@ -21,6 +21,7 @@
     "test:db:reset": "node scripts/test-db.mjs reset",
     "test:db:down": "node scripts/test-db.mjs down",
     "e2e:user": "node scripts/create-e2e-user.mjs",
+    "access:extend": "tsx scripts/extend-access.ts",
     "e2e": "playwright test",
     "e2e:public": "playwright test --project=public-desktop --project=public-mobile",
     "e2e:app": "playwright test --project=app-desktop --project=app-mobile",

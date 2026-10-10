@@ -58,7 +58,7 @@ DEMO_SEED=1 DEMO_USER_EMAIL=demo+clerk_test@example.com DEMO_IMAGES=0 E2E_SERVER
 DEMO_SEED=1 DEMO_USER_EMAIL=demo+clerk_test@example.com E2E_BASE_URL=https://<site> npx playwright test --project=demo-seed      # a deployment, with images
 ```
 
-It refuses an account that already has products and writes the public links to `playwright/.demo/demo-links.json`. After the switch to Clerk Production (A1.11) the demo account must be created and seeded again there.
+It refuses an account that already has products and writes the public links to `playwright/.demo/demo-links.json`. Seeded on production 2026-10-10; the landing example buttons use those links (`landingExamples`). Shared links live in the database, so they survive the switch to Clerk Production; signing in to the demo account there needs a new user and a new seed.
 
 ## CI
 

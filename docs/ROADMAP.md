@@ -75,7 +75,7 @@ Migracije `invoice_document_type` i `registration_numbers` su u produkciji od 20
 | A1.4 | Pravi podaci operatera za `src/lib/operator.ts` (naziv, PIB od 9 cifara, adresa) | 20. okt | /uslovi i /privatnost sada imaju `12312412312` i "test" |
 | A1.5 | Kontakt za podršku (telefon/WhatsApp), slika i dve rečenice "ko stoji iza" | 20. okt | Ulazi u landing (A2.9) |
 | A1.6 | Odluka o ceni: 20 € ili predlog 1.990 RSD + osnivačka ponuda za prvih 20 firmi | 20. okt | Ulazi u landing |
-| A1.7 | Demo firma sa izmišljenim podacima (20-30 artikala sa slikama, katalog, predračun, faktura) za javne primere i video | 24. okt | "Otvori primer" dugmad i snimanje videa |
+| A1.7 | ✅ (2026-10-10, PR otvoren) Demo firma sa izmišljenim podacima (20-30 artikala sa slikama, katalog, predračun, faktura) za javne primere i video. "Sunčano Polje Veleprodaja d.o.o." na produkciji (nalog `demo+clerk_test@example.com`, alat `e2e/demo`); dugmad "Pogledajte primer kataloga/fakture" na landingu. Za video se vlasnik prijavljuje tim nalogom (ili isti seed na novom nalogu) | 24. okt | "Otvori primer" dugmad i snimanje videa |
 | A1.8 | Snimiti demo video 60-90 s i 3 kratka videa (vidi marketing dokument) | 27. okt | Landing i mreže |
 | A1.9 | Probno vraćanje Supabase backupa na test projekat | 27. okt | Odgovor na "šta ako izgubim podatke" |
 | A1.10 | **Domen** (kupiti najkasnije 28. okt, da ostanu 3 dana za DNS i Clerk), povezati na Vercel, `NEXT_PUBLIC_APP_URL` | 28. okt | Odluka: prodaja 1. novembra |

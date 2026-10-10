@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { getSafeCatalogSharePath } from './public-catalog'
+import { getSafeInvoiceSharePath } from './public-invoice'
 import {
   MONTHLY_PRICE,
   PRICING_OFFER,
@@ -88,10 +90,12 @@ describe('landing page copy (A2.9)', () => {
     expect(installFaq.a).toContain(`„${installButtonLabel(true)}“`)
   })
 
-  it('takes the support phone from operator.ts and keeps example buttons hidden until set', () => {
+  it('takes the support phone from operator.ts and links only to safe share paths of the demo', () => {
     expect(landingContact.phone).toBe(operator.phone)
     expect(contactLinks(landingContact.phone)).not.toBeNull()
-    expect(landingExamples).toEqual({ catalogPath: null, invoicePath: null })
+    // Example buttons render only for a valid public share path (getSafe*SharePath), never an owner page.
+    expect(getSafeCatalogSharePath(landingExamples.catalogPath)).toBe(landingExamples.catalogPath)
+    expect(getSafeInvoiceSharePath(landingExamples.invoicePath)).toBe(landingExamples.invoicePath)
   })
 })
 

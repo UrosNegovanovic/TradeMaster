@@ -48,6 +48,18 @@ npm run test:db:reset   # empty it again; npm run test:db:down removes the conta
 - **Service worker**: the PWA worker is blocked in tests (`serviceWorkers: 'block'`), otherwise `page.route()` cannot fake API failures.
 - Known first-run flake: on a brand-new test account a parallel test may fill the company while Podešavanja hydrate (React #418/#422, recovered). Not reproducible in 52 repeated runs.
 
+## Demo company (ROADMAP A1.7)
+
+`e2e/demo/` seeds an invented wholesaler ("Sunčano Polje Veleprodaja d.o.o.") through the app's API: 24 products with generated packshot images (invented brands), 5 categories, 3 buyers (example.com, no phones), a shared catalog, a predračun from the catalog, an open shared invoice with IPS QR (žiro-račun bank code 999: no real bank) and two paid invoices.
+
+```bash
+npm run e2e:user -- demo+clerk_test@example.com            # once per Clerk instance
+DEMO_SEED=1 DEMO_USER_EMAIL=demo+clerk_test@example.com DEMO_IMAGES=0 E2E_SERVER=start npx playwright test --project=demo-seed   # test database, no uploads
+DEMO_SEED=1 DEMO_USER_EMAIL=demo+clerk_test@example.com E2E_BASE_URL=https://<site> npx playwright test --project=demo-seed      # a deployment, with images
+```
+
+It refuses an account that already has products and writes the public links to `playwright/.demo/demo-links.json`. Seeded on production 2026-10-10; the landing example buttons use those links (`landingExamples`). Shared links live in the database, so they survive the switch to Clerk Production; signing in to the demo account there needs a new user and a new seed.
+
 ## CI
 
 `.github/workflows/playwright.yml` runs the public suite on every successful Vercel `deployment_status` (preview and production) and on demand (`workflow_dispatch` with a URL). Previews are behind Vercel Deployment Protection: until the repo secret `VERCEL_AUTOMATION_BYPASS_SECRET` is set (Vercel → Project → Settings → Deployment Protection → Protection Bypass for Automation), preview runs are skipped with a warning; production deployments are tested. Signed-in suites and DB tests run in `.github/workflows/test-database.yml` on a Postgres service container: `db-tests` always; `e2e-app` once the repo secrets `E2E_CLERK_SECRET_KEY` (sk_test_) and `E2E_CLERK_PUBLISHABLE_KEY` exist (skipped with a warning before that).

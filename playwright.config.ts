@@ -78,6 +78,10 @@ export default defineConfig({
       ? [{ name: 'public-iphone', testDir: './e2e/public', use: { ...devices['iPhone 14'], ...browserDefaults } }]
       : []),
     ...appProjects,
+    // ROADMAP A1.7: demo company seed, only on request (DEMO_SEED=1, see e2e/demo/seed-demo.spec.ts).
+    ...(process.env.DEMO_SEED === '1'
+      ? [{ name: 'demo-seed', testDir: './e2e/demo', use: { ...devices['Desktop Chrome'], ...browserDefaults } }]
+      : []),
   ],
   // Local runs start the app; a remote E2E_BASE_URL is tested as deployed.
   // E2E_SERVER=start tests a production build (no first-compile delays); default is the dev server.

@@ -126,9 +126,11 @@ export const faqs = [
  */
 export const landingContact: { phone: string | null } = { phone: operator.phone }
 
+// Demo company "Sunčano Polje Veleprodaja d.o.o." (invented), seeded with e2e/demo on 2026-10-10.
+// The shared links live in the database, so they keep working after the switch to Clerk Production.
 export const landingExamples: { catalogPath: string | null; invoicePath: string | null } = {
-  catalogPath: null,
-  invoicePath: null,
+  catalogPath: '/shared/catalog/ef75826456bdcec23c3e9f96ae0c8ad422e1c6b82db5e69c78199f374a77b003',
+  invoicePath: '/shared/invoice/27fbee82d97de0fd2b406a2f46cf980c8fc1e5c82bb4a1a3ee6c38c3ca5003a6',
 }
 
 export type ContactLinks = { display: string; tel: string; whatsapp: string; viber: string }

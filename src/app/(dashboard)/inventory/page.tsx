@@ -9,6 +9,17 @@ import { Product } from '@/types/product'
 import { ProductForm } from '@/components/inventory/ProductForm'
 import { ProductList } from '@/components/inventory/ProductList'
 import { InventoryFilters } from '@/components/inventory/InventoryFilters'
+import {
+  INVENTORY_FILTERS,
+  INVENTORY_FILTER_LABELS,
+  INVENTORY_SORTS,
+  INVENTORY_SORT_LABELS,
+  applyInventoryView,
+  inventoryFilterCounts,
+  parseInventoryFilter,
+  type InventoryFilter,
+  type InventorySort,
+} from '@/lib/inventory-view'
 import { ProductActionToast } from '@/components/inventory/ProductActionToast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -103,6 +114,9 @@ export default function InventoryPage() {
   const [scannedData, setScannedData] = useState<Partial<ProductFormData> | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(PRODUCT_LIST_PAGE_SIZE)
+  // ROADMAP A9.14: "what needs completing" and order; ?filter= comes from Finansije and Početna.
+  const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>(() => parseInventoryFilter(searchParams.get('filter')))
+  const [inventorySort, setInventorySort] = useState<InventorySort>('newest')
   const selectedDate = useMemo(
     () => parseLocalYmd(searchParams.get('date')),
     [searchParams]
@@ -202,12 +216,14 @@ export default function InventoryPage() {
       )
     }
 
-    return filtered
-  }, [products, searchQuery, selectedCategory, selectedDate])
+    return applyInventoryView(filtered, inventoryFilter, inventorySort)
+  }, [products, searchQuery, selectedCategory, selectedDate, inventoryFilter, inventorySort])
+
+  const filterCounts = useMemo(() => inventoryFilterCounts(products), [products])
 
   useEffect(() => {
     setVisibleCount(PRODUCT_LIST_PAGE_SIZE)
-  }, [searchQuery, selectedCategory, selectedDate])
+  }, [searchQuery, selectedCategory, selectedDate, inventoryFilter, inventorySort])
 
   const visibleProducts = useMemo(
     () => filteredProducts.slice(0, visibleCount),
@@ -401,6 +417,40 @@ export default function InventoryPage() {
           onCategoryChange={setSelectedCategory}
           onDateChange={handleDateChange}
         />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Šta treba dopuniti">
+            {INVENTORY_FILTERS.map((filter) =>
+              filter === 'all' || filterCounts[filter] > 0 || inventoryFilter === filter ? (
+                <Button
+                  key={filter}
+                  type="button"
+                  size="sm"
+                  variant={inventoryFilter === filter ? 'default' : 'outline'}
+                  aria-pressed={inventoryFilter === filter}
+                  className="min-h-9"
+                  onClick={() => setInventoryFilter(filter)}
+                >
+                  {INVENTORY_FILTER_LABELS[filter]} ({filterCounts[filter]})
+                </Button>
+              ) : null
+            )}
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            Redosled
+            <select
+              value={inventorySort}
+              onChange={(event) => setInventorySort(event.target.value as InventorySort)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              {INVENTORY_SORTS.map((sort) => (
+                <option key={sort} value={sort}>
+                  {INVENTORY_SORT_LABELS[sort]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
       {isEmptyAssortment ? (
@@ -421,7 +471,7 @@ export default function InventoryPage() {
         <div className="text-center py-12">
           <p className="font-medium">Nema rezultata za izabrane filtere</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Uklonite datum, kategoriju ili pretragu da vidite ceo asortiman.
+            Uklonite datum, kategoriju, pretragu ili filter da vidite ceo asortiman.
           </p>
           <Button
             variant="outline"
@@ -430,6 +480,7 @@ export default function InventoryPage() {
               setSearchQuery('')
               setSelectedCategory(null)
               handleDateChange(null)
+              setInventoryFilter('all')
             }}
           >
             Ukloni filtere

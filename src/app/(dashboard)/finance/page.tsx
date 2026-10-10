@@ -151,6 +151,9 @@ export default async function FinancePage() {
                     <p className="text-sm text-muted-foreground">
                       {sr.finance.missingCostDescription(snapshot.monthMissingCostCount)}
                     </p>
+                    <Link href="/inventory?filter=missing-cost" className="text-sm font-medium text-primary underline-offset-2 hover:underline">
+                      Proizvodi bez nabavne cene →
+                    </Link>
                   </>
                 ) : (
                   <>
@@ -198,6 +201,9 @@ export default async function FinancePage() {
                     <p className="text-sm text-muted-foreground">
                       {sr.finance.missingCostDescription(snapshot.yearMissingCostCount)}
                     </p>
+                    <Link href="/inventory?filter=missing-cost" className="text-sm font-medium text-primary underline-offset-2 hover:underline">
+                      Proizvodi bez nabavne cene →
+                    </Link>
                   </>
                 ) : (
                   <>

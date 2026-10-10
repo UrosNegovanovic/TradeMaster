@@ -1,4 +1,4 @@
--- Automatic predračun, part 2 (docs/billing-runbook.md). NOT applied yet: needs the owner's approval.
+-- Automatic predračun, part 2 (docs/billing-runbook.md). Applied in production 2026-10-10 with the owner's approval.
 -- 1) isTest: a predračun made by `npm run billing:send -- --test` (sent only to the owner's test address, note
 --    "TEST, ne plaćati"). Test rows never count as the real predračun for that month.
 -- 2) ownerOnly: sent only to the owner (BILLING_EMAIL_BCC) because BILLING_AUTO_SEND was off; the customer did

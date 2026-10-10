@@ -12,6 +12,8 @@ export const pricingIncludes = [
   'Skener, magacin, katalozi sa linkom za kupca',
   'Predračun, faktura sa PDV-om i otpremnica',
   'IPS QR, izvoz za knjigovođu, lista kupaca',
+  'Finansije: ko vam duguje i šta se najbolje prodaje',
+  'Lager lista u Excelu sa nabavnom vrednošću',
 ] as const
 
 export const pricingCardPeriod = `mesečno, posle ${FREE_PERIOD} besplatno`
@@ -43,9 +45,9 @@ export const benefits = [
 /** "Ceo posao iz telefona": the product loop in six steps. */
 export const workflowSteps = [
   { title: 'Skenirajte robu', line: 'Kamera telefona čita barkod; ponovni sken istog artikla povećava količinu.' },
-  { title: 'Pratite lager', line: 'Ulaz, izlaz i trenutno stanje, uz upozorenje kad je zaliha niska.' },
+  { title: 'Pratite lager', line: 'Ulaz, izlaz i trenutno stanje, uz upozorenje kad zaliha padne na minimum koji sami zadate.' },
   { title: 'Pošaljite katalog', line: 'Katalog sa cenama kao PDF ili link na WhatsApp i Viber. Vidite koliko puta je link otvoren.' },
-  { title: 'Napravite predračun', line: 'Stavke birate iz asortimana ili skeniranjem. Predračun ne skida robu sa lagera.' },
+  { title: 'Napravite predračun', line: 'Iz kataloga koji ste poslali kupcu jednim dodirom, ili birate stavke i skenirate. Predračun ne skida robu sa lagera.' },
   { title: 'Faktura i otpremnica', line: 'Predračun pretvarate u fakturu jednim dodirom; otpremnica se štampa bez cena.' },
   { title: 'Kupac plaća QR kodom', line: 'Faktura ima IPS QR kod koji kupac skenira u mobilnom bankarstvu.' },
 ] as const
@@ -53,8 +55,10 @@ export const workflowSteps = [
 export const invoicePoints = [
   'Predračun, faktura i otpremnica iz istih stavki',
   'PDV 20% i 10%, obračunat po stavkama',
+  'Stavke i za usluge, prevoz ili ambalažu, ne samo za robu sa lagera',
   'IPS QR kod za plaćanje iz mobilnog bankarstva',
-  'Podsetnik za naplatu preko WhatsApp-a i Vibera',
+  'Podsetnik za naplatu direktno kupcu na WhatsApp, ili preko Vibera',
+  'Vaš rok plaćanja i stalna napomena na svakoj fakturi',
   'Izvoz za knjigovođu u Excel',
 ] as const
 
@@ -68,7 +72,7 @@ export const notList = [
 
 export const dataPoints = [
   'Baza je na serverima u EU (Irska).',
-  'Fakture izvozite u CSV ili Excel kad god hoćete.',
+  'Fakture i lager listu izvozite u CSV ili Excel kad god hoćete.',
   'Kad pristup istekne, podaci ostaju vidljivi i mogu da se izvezu; aplikacija prelazi u režim samo za pregled.',
   'Javni linkovi ka katalogu i fakturi mogu da se opozovu i ne prikazuju nabavne cene ni stanje lagera.',
 ] as const
@@ -99,6 +103,14 @@ export const faqs = [
   {
     q: 'Da li TradeMaster zamenjuje fiskalnu kasu ili šalje fakture u SEF?',
     a: 'Ne. TradeMaster vodi vašu robu, zalihe, predračune i interne B2B fakture. Koristite ga uz svoju fiskalnu kasu i SEF, ne umesto njih.',
+  },
+  {
+    q: 'Mogu li da fakturišem uslugu ili prevoz?',
+    a: 'Da. Na fakturi i predračunu svaka stavka može biti „slobodna“: upišete naziv i cenu, bez proizvoda iz asortimana i bez promene lagera.',
+  },
+  {
+    q: 'Šta dobija knjigovođa?',
+    a: 'Izvoz faktura za izabrani period (osnovica, PDV, ukupno) i lager listu sa nabavnom i prodajnom vrednošću, oba u Excelu ili CSV-u. Na fakturi su matični broj, datum prometa i mesto izdavanja.',
   },
   {
     q: 'Mogu li da uvezem postojeći asortiman odjednom (Excel/CSV)?',

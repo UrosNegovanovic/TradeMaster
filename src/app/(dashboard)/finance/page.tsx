@@ -14,10 +14,22 @@ import {
 import { PageHeader } from '@/components/layout/PageHeader'
 import { sr } from '@/lib/ui-copy'
 import { buyerInvoicesHref, receivablesByBuyer } from '@/lib/receivables-by-buyer'
+import {
+  SALES_PERIODS,
+  SALES_PERIOD_LABELS,
+  parseSalesPeriod,
+  salesPeriodStart,
+  topBuyers,
+  topProducts,
+} from '@/lib/sales-ranking'
 import { formatDaysOverdue } from '@/lib/overdue-invoices'
 import { countSr, formatPercent } from '@/lib/sr-format'
 
-export default async function FinancePage() {
+export default async function FinancePage({
+  searchParams,
+}: {
+  searchParams?: { period?: string | string[] }
+}) {
   const { userId } = await auth()
 
   if (!userId) {
@@ -47,7 +59,10 @@ export default async function FinancePage() {
       paidAt: true,
       items: {
         select: {
+          productId: true,
+          productName: true,
           quantity: true,
+          total: true,
           unitCost: true,
         },
       },
@@ -86,6 +101,27 @@ export default async function FinancePage() {
     }))
   )
   const DEBTORS_SHOWN = 10
+
+  // ROADMAP A9.20: best sellers and best buyers in a period (paid invoices, without PDV).
+  const salesPeriod = parseSalesPeriod(searchParams?.period)
+  const salesFrom = salesPeriodStart(salesPeriod)
+  const rankingInput = invoices.map((invoice) => ({
+    status: invoice.status,
+    paidAt: invoice.paidAt,
+    clientName: invoice.clientName,
+    clientPib: invoice.clientPib,
+    totalAmount: invoice.totalAmount.toString(),
+    vatAmount: invoice.vatAmount.toString(),
+    items: invoice.items.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity,
+      total: item.total.toString(),
+      unitCost: item.unitCost?.toString() ?? null,
+    })),
+  }))
+  const bestProducts = topProducts(rankingInput, salesFrom)
+  const bestBuyers = topBuyers(rankingInput, salesFrom)
 
   const maxMonthTotal = Math.max(...snapshot.months.map((month) => month.total), 0)
   const hasAnyInvoices = invoices.length > 0
@@ -232,6 +268,78 @@ export default async function FinancePage() {
           </div>
 
           <p className="text-sm text-muted-foreground">{sr.finance.profitNote}</p>
+
+          <Card>
+            <CardHeader className="space-y-3">
+              <div>
+                <CardTitle>Najprodavanije i najbolji kupci</CardTitle>
+                <CardDescription>Plaćene fakture u periodu, bez PDV-a. Profit samo gde je poznata nabavna cena.</CardDescription>
+              </div>
+              <nav aria-label="Period" className="flex flex-wrap gap-2">
+                {SALES_PERIODS.map((period) => (
+                  <Button key={period} size="sm" variant={period === salesPeriod ? 'default' : 'outline'} asChild>
+                    <Link href={`/finance?period=${period}`} aria-current={period === salesPeriod ? 'page' : undefined} scroll={false}>
+                      {SALES_PERIOD_LABELS[period]}
+                    </Link>
+                  </Button>
+                ))}
+              </nav>
+            </CardHeader>
+            <CardContent className="grid gap-6 md:grid-cols-2">
+              <div className="min-w-0">
+                <h3 className="mb-2 text-sm font-semibold">Proizvodi</h3>
+                {bestProducts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nema naplaćene prodaje u ovom periodu.</p>
+                ) : (
+                  <ol className="divide-y text-sm">
+                    {bestProducts.map((row, index) => (
+                      <li key={`${row.productName}-${index}`} className="flex items-start justify-between gap-3 py-2">
+                        <span className="min-w-0">
+                          <span className="break-words font-medium [overflow-wrap:anywhere]">
+                            {index + 1}. {row.productName}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">{row.quantity} kom</span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="block font-semibold tabular-nums">{formatRsd(row.revenue)}</span>
+                          <span className="block text-xs text-muted-foreground tabular-nums">
+                            {row.profit === null ? 'profit: nedostaje nabavna' : `profit ${formatRsd(row.profit)}`}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+              <div className="min-w-0">
+                <h3 className="mb-2 text-sm font-semibold">Kupci</h3>
+                {bestBuyers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nema naplaćene prodaje u ovom periodu.</p>
+                ) : (
+                  <ol className="divide-y text-sm">
+                    {bestBuyers.map((row, index) => (
+                      <li key={`${row.clientPib ?? ''}-${row.clientName}`}>
+                        <Link
+                          href={buyerInvoicesHref(row)}
+                          className="flex items-start justify-between gap-3 py-2 hover:underline"
+                        >
+                          <span className="min-w-0">
+                            <span className="break-words font-medium [overflow-wrap:anywhere]">
+                              {index + 1}. {row.clientName}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {countSr(row.invoiceCount, 'plaćena faktura', 'plaćene fakture', 'plaćenih faktura')}
+                            </span>
+                          </span>
+                          <span className="shrink-0 font-semibold tabular-nums">{formatRsd(row.revenue)}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {debtors.length > 0 ? (
             <Card>

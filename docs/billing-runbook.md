@@ -27,8 +27,7 @@ Uputstvo za vlasnika. Važi do faze B9 (plaćanje u aplikaciji). Pravila su u ko
 2. Knjigovođa da potvrdi koji dokument izdajete posle uplate (račun za avans ili račun za izvršenu uslugu) i da li ste u
    sistemu PDV-a. TradeMaster faktura iz predračuna je interni dokument; ako vam treba SEF, ide kroz SEF.
 3. Koristite slobodnu stavku „TradeMaster pretplata, 1 mesec (od DD.MM.GGGG. do DD.MM.GGGG.)”.
-4. Migracija `supabase/migrations/20261010150000_access_extensions.sql` mora biti primenjena u produkciji (evidencija
-   produženja). Bez nje `access:extend` javlja grešku i ništa ne menja.
+4. Evidencija produženja (tabela `access_extensions`, migracija `20261010150000_access_extensions.sql`) je u produkciji od 10.10.2026.
 
 ## Svakog radnog dana (2 minuta)
 

@@ -1,5 +1,5 @@
 -- Manual billing (docs/billing-runbook.md): one row per confirmed payment that extended a company's access.
--- NOT applied yet: needs the owner's separate approval before it runs in production.
+-- Applied in production 2026-10-10 with the owner's approval (Supabase migration "access_extensions").
 -- 1) The trace: which document/payment (reference), the bank statement date (paidOn), the period it paid for
 --    and the expiry before and after. Written by scripts/extend-access.ts in the same transaction as
 --    profiles."accessExpiresAt".

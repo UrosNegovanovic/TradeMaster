@@ -1,3 +1,5 @@
+import { countSr } from '@/lib/sr-format'
+
 /** Central Serbian UI copy for shared product, catalog, media, and scanner flows. */
 export const sr = {
   common: {
@@ -37,7 +39,7 @@ export const sr = {
   },
   pages: {
     inventory:
-      'Šta prodajete i po kojoj ceni. Ukupno stanje po šifri vidite u Magacinu.',
+      'Šta prodajete i po kojoj ceni.',
     warehouse: 'Koliko robe imate i kretanje robe: ulaz, izlaz i uvoz.',
   },
   product: {
@@ -80,8 +82,9 @@ export const sr = {
     profitNote:
       'Profit = naplaćeno (osnovica, bez PDV-a) minus nabavna vrednost prodate robe. Ne uključuje ostale troškove firme (zakup, plate, prevoz, porez).',
     missingCost: 'Nedostaje nabavna cena',
+    // Filling the purchase price in Asortiman helps new invoices only; issued ones keep their snapshot.
     missingCostDescription: (count: number) =>
-      `${count} ${count === 1 ? 'plaćena faktura nema kompletne troškove' : 'plaćene fakture nemaju kompletne troškove'}.`,
+      `${countSr(count, 'plaćena faktura nema', 'plaćene fakture nemaju', 'plaćenih faktura nema')} kompletne troškove. Nabavna cena dopunjena u Asortimanu važi za nove fakture.`,
   },
   category: {
     label: 'Kategorija',

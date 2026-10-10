@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalDocument, LegalSection } from '@/components/landing/LegalDocument'
-import { operator } from '@/lib/operator'
+import { operator, operatorLegal, operatorLegalLine } from '@/lib/operator'
 import { ACCESS_ACTIVATION, FREE_PERIOD, MONTHLY_PRICE } from '@/lib/landing-copy'
 import { ACCESS_GRACE_DAYS, ACCESS_WARNING_DAYS } from '@/lib/access-period'
 
@@ -23,9 +23,8 @@ export default function UsloviPage() {
           Play-a.
         </p>
         <p>
-          Uslugu nudi {operator.name}, PIB {operator.pib}. Kontakt:{' '}
-          {operator.email}, {operator.phone}. Adresa koju je vlasnik naveo je
-          „{operator.address}“.
+          Uslugu nudi {operator.name}, {operatorLegalLine(operatorLegal())}. Kontakt:{' '}
+          {operator.email}, {operator.phone}.
         </p>
       </LegalSection>
 
@@ -48,7 +47,7 @@ export default function UsloviPage() {
 
       <LegalSection title="Cena, plaćanje i pristup">
         <p>
-          Prvih {FREE_PERIOD} su besplatni (probni period), bez kartice i bez obaveze. Posle toga naknada je {MONTHLY_PRICE} + PDV mesečno, za svaki
+          Prvih {FREE_PERIOD} su besplatni (probni period), bez kartice i bez obaveze. Posle toga naknada je {MONTHLY_PRICE} mesečno, za svaki
           kalendarski mesec korišćenja, plativo u dinarima po srednjem kursu NBS na dan izdavanja predračuna, uplatom na račun naveden na predračunu (može i
           skeniranjem IPS QR koda).
         </p>

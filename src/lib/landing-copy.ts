@@ -5,9 +5,7 @@ export const FREE_PERIOD = '60 dana'
 /** Non-breaking space keeps the number and the euro sign on one line. */
 export const MONTHLY_PRICE = '20 €'
 /** "Prvih 60 dana besplatno, zatim 20 € mesečno" */
-/** B2B price excluding PDV; the predračun adds 20% PDV (owner decision 2026-10-10). */
-export const PRICE_WITH_VAT = `${MONTHLY_PRICE} + PDV`
-export const PRICING_OFFER = `Prvih ${FREE_PERIOD} besplatno, zatim ${PRICE_WITH_VAT} mesečno`
+export const PRICING_OFFER = `Prvih ${FREE_PERIOD} besplatno, zatim ${MONTHLY_PRICE} mesečno`
 /** One payment = one calendar month (src/lib/access-period.ts, planAccessExtension). */
 export const BILLING_PERIOD_RULE =
   'Jedna uplata produžava pristup za jedan kalendarski mesec, do istog dana u sledećem mesecu. Uplata pre isteka se nastavlja na tekući period, pa ne gubite nijedan dan.'
@@ -24,7 +22,7 @@ export const pricingIncludes = [
   'Lager lista u Excelu sa nabavnom vrednošću',
 ] as const
 
-export const pricingCardPeriod = `+ PDV mesečno, posle ${FREE_PERIOD} besplatno`
+export const pricingCardPeriod = `mesečno, posle ${FREE_PERIOD} besplatno`
 
 export const pricingCardNote =
   'Bez kartice. Predračun stiže na mejl firme 7 dana pre isteka, jednom mesečno.'

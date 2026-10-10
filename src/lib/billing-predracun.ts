@@ -4,9 +4,14 @@ import type { EurRate } from '@/lib/nbs-rate'
 /**
  * Automatic predračun for the TradeMaster subscription (manual billing, docs/billing-runbook.md): pure rules.
  * The owner's company (BILLING_ISSUER_PROFILE_ID) issues it from its own TradeMaster account; the daily job
- * (src/lib/billing-run.ts) sends it by e-mail. Price: 20 € + PDV per calendar month, in dinars at the NBS
- * middle rate of the day the predračun is issued.
+ * (src/lib/billing-run.ts) sends it by e-mail. Price: 20 € per calendar month, in dinars at the NBS middle rate of
+ * the day the predračun is issued. PDV depends only on the ISSUER's Profile.inVatSystem (now false: paušalac),
+ * never on the paying company's own PDV setting: that belongs to the company's own invoices (A), not to this (B).
  */
+
+/** First words of the note and the e-mail on a `billing:send --test` predračun. */
+export const TEST_MARK = 'TEST, ne plaćati.'
+export const NOT_IN_VAT_NOTE = 'Obveznik nije u sistemu PDV-a.'
 
 export const MONTHLY_PRICE_EUR = 20
 /** Predračun goes out this many days before the expiry day (same as the in-app warning). */
@@ -49,13 +54,25 @@ export function predracunLineName(period: Pick<AccessExtensionPlan, 'fromYmd' | 
   return `TradeMaster pretplata, 1 mesec (od ${formatAccessDate(period.fromYmd)} do ${formatAccessDate(period.untilYmd)})`
 }
 
-export function predracunNote(rate: EurRate): string {
+export type BillingIssuer = { companyName: string; pib: string | null; giroAccount: string | null; inVatSystem: boolean }
+
+/** Who issues it and that it is not a document of the buyer's own business (owner requirement, A vs B). */
+export function subscriptionDisclaimer(issuerName: string): string {
+  return `Predračun za korišćenje aplikacije TradeMaster, izdavalac ${issuerName}. Nije dokument iz vašeg poslovanja.`
+}
+
+export function predracunNote(rate: EurRate, issuer: Pick<BillingIssuer, 'companyName' | 'inVatSystem'>, test = false): string {
   const list = rate.listNumber ? `, kursna lista br. ${rate.listNumber}` : ''
   return [
-    `Cena: ${MONTHLY_PRICE_EUR} € + PDV mesečno, preračunato po srednjem kursu NBS ${rateText(rate)} RSD za 1 EUR na dan ${formatAccessDate(rate.date)}${list}.`,
+    test ? TEST_MARK : null,
+    subscriptionDisclaimer(issuer.companyName),
+    `Cena: ${MONTHLY_PRICE_EUR} €${issuer.inVatSystem ? ' + PDV' : ''} mesečno, preračunato po srednjem kursu NBS ${rateText(rate)} RSD za 1 EUR na dan ${formatAccessDate(rate.date)}${list}.`,
+    issuer.inVatSystem ? null : NOT_IN_VAT_NOTE,
     'Poziv na broj: broj ovog predračuna.',
     'Pristup se produžava posle provere uplate, najkasnije narednog radnog dana od dana kada uplata stigne.',
-  ].join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 }
 
 const rsd = (value: string | number) =>
@@ -70,9 +87,11 @@ export type PredracunEmailInput = {
   totalAmount: string | number
   vatAmount: string | number
   rate: EurRate
-  issuer: { companyName: string; pib: string | null; giroAccount: string | null }
+  issuer: BillingIssuer
   /** Public predračun page with the IPS QR code and PDF. */
   link: string
+  /** `billing:send --test`: marked "TEST, ne plaćati" in the subject and the first line. */
+  test?: boolean
 }
 
 const escapeHtml = (value: string) =>
@@ -81,12 +100,19 @@ const escapeHtml = (value: string) =>
 /** Subject, plain text and HTML of the predračun e-mail (Serbian, "vi"). The same facts in both bodies. */
 export function predracunEmail(input: PredracunEmailInput): { subject: string; text: string; html: string } {
   const until = formatAccessDate(input.expiryYmd)
+  const amount = input.issuer.inVatSystem
+    ? `${rsd(input.totalAmount)} (${MONTHLY_PRICE_EUR} € + PDV ${rsd(input.vatAmount)}, srednji kurs NBS ${rateText(input.rate)} na dan ${formatAccessDate(input.rate.date)})`
+    : `${rsd(input.totalAmount)} (${MONTHLY_PRICE_EUR} €, srednji kurs NBS ${rateText(input.rate)} na dan ${formatAccessDate(input.rate.date)}; obveznik nije u sistemu PDV-a)`
   const lines = [
+    input.test ? `${TEST_MARK} Ovaj mejl je probni i ide samo vlasniku.` : null,
+    input.test ? '' : null,
     'Poštovani,',
     '',
     `pristup TradeMaster-u za ${input.buyerName} važi do ${until} Za sledeći mesec (${formatAccessDate(input.period.fromYmd)} - ${formatAccessDate(input.period.untilYmd)}) šaljemo predračun ${input.invoiceNumber}.`,
     '',
-    `Iznos za uplatu: ${rsd(input.totalAmount)} (${MONTHLY_PRICE_EUR} € + PDV ${rsd(input.vatAmount)}, srednji kurs NBS ${rateText(input.rate)} na dan ${formatAccessDate(input.rate.date)})`,
+    subscriptionDisclaimer(input.issuer.companyName),
+    '',
+    `Iznos za uplatu: ${amount}`,
     `Primalac: ${input.issuer.companyName}${input.issuer.pib ? `, PIB ${input.issuer.pib}` : ''}`,
     input.issuer.giroAccount ? `Žiro-račun: ${input.issuer.giroAccount}` : null,
     `Poziv na broj: ${input.invoiceNumber}`,
@@ -114,8 +140,39 @@ export function predracunEmail(input: PredracunEmailInput): { subject: string; t
     .join('')}</body></html>`
 
   return {
-    subject: `TradeMaster: predračun ${input.invoiceNumber} za pretplatu (pristup do ${until.slice(0, -1)})`,
+    subject: `${input.test ? '[TEST, ne plaćati] ' : ''}TradeMaster: predračun ${input.invoiceNumber} za korišćenje aplikacije (pristup do ${until.slice(0, -1)})`,
     text,
     html,
   }
+}
+
+/**
+ * Where e-mails go:
+ * - dry: nothing is written or sent (preview);
+ * - customer: the company's e-mail (BILLING_AUTO_SEND=on), with the owner's copy;
+ * - owner: only the owner (BILLING_AUTO_SEND off), who forwards it; the customer gets nothing;
+ * - test: `billing:send --test`, one company, only the given address, marked "TEST, ne plaćati", never counted as
+ *   the real predračun for that month.
+ */
+export type BillingDelivery =
+  | { kind: 'dry' }
+  | { kind: 'customer' }
+  | { kind: 'owner'; to: string }
+  | { kind: 'test'; to: string }
+
+/** The switch: customers get e-mail only with BILLING_AUTO_SEND=on; otherwise only the owner, or nobody. */
+export function chooseDelivery(input: {
+  autoSend: string | undefined
+  ownerAddresses: string[]
+  test?: { only?: string; to?: string }
+}): BillingDelivery {
+  if (input.test) {
+    if (!input.test.only || !isDeliverableRecipient(input.test.to)) {
+      throw new Error('--test radi samo uz --only <PIB> i --to <mejl>.')
+    }
+    return { kind: 'test', to: input.test.to.trim() }
+  }
+  if (input.autoSend === 'on') return { kind: 'customer' }
+  const owner = input.ownerAddresses.find((address) => isDeliverableRecipient(address))
+  return owner ? { kind: 'owner', to: owner } : { kind: 'dry' }
 }

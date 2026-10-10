@@ -17,6 +17,8 @@ export type OutgoingEmail = {
   html: string
   /** Same key → Resend sends at most once (24 h), so a retried job never sends twice. */
   idempotencyKey: string
+  /** false: no owner copy (the e-mail already goes only to the owner: test run or BILLING_AUTO_SEND off). */
+  ownerCopy?: boolean
 }
 
 export type SendResult = { id: string }
@@ -27,6 +29,11 @@ const list = (value: string | undefined) =>
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
+
+/** BILLING_EMAIL_BCC as a list: the owner's address(es). */
+export function ownerAddresses(env: NodeJS.ProcessEnv = process.env): string[] {
+  return list(env.BILLING_EMAIL_BCC)
+}
 
 export function resendMailer(env: NodeJS.ProcessEnv = process.env, fetchImpl: typeof fetch = fetch): Mailer {
   const apiKey = env.RESEND_API_KEY?.trim()
@@ -46,7 +53,7 @@ export function resendMailer(env: NodeJS.ProcessEnv = process.env, fetchImpl: ty
       body: JSON.stringify({
         from,
         to: [email.to],
-        ...(bcc.length ? { bcc } : {}),
+        ...(bcc.length && email.ownerCopy !== false ? { bcc } : {}),
         ...(replyTo.length ? { reply_to: replyTo } : {}),
         subject: email.subject,
         text: email.text,

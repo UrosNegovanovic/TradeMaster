@@ -35,9 +35,10 @@ async function main() {
       accessExpiresAt: true,
       accessExtensions: { orderBy: { createdAt: 'desc' }, take: 1, select: { anchorDay: true, newExpiresAt: true } },
       billingNotices: {
+        where: { isTest: false },
         orderBy: { createdAt: 'desc' },
         take: 1,
-        select: { periodFrom: true, status: true, invoiceNumber: true, recipient: true, sentAt: true, error: true },
+        select: { periodFrom: true, status: true, invoiceNumber: true, recipient: true, sentAt: true, error: true, ownerOnly: true },
       },
     },
   })
@@ -67,7 +68,9 @@ async function main() {
       const forThisMonth = notice && notice.periodFrom.toISOString().slice(0, 10) === next.fromYmd ? notice : null
       if (forThisMonth?.status === 'sent') {
         const sentOn = forThisMonth.sentAt ? formatAccessDate(formatLocalYmd(forThisMonth.sentAt)) : '-'
-        action = `predračun ${forThisMonth.invoiceNumber} poslat ${sentOn} na ${forThisMonth.recipient}`
+        action = forThisMonth.ownerOnly
+          ? `predračun ${forThisMonth.invoiceNumber} poslat ${sentOn} SAMO VAMA (${forThisMonth.recipient}); prosledite ga kupcu`
+          : `predračun ${forThisMonth.invoiceNumber} poslat ${sentOn} na ${forThisMonth.recipient}`
       } else if (forThisMonth) {
         action = `SLANJE NIJE USPELO (${forThisMonth.invoiceNumber ?? 'bez predračuna'}): ${forThisMonth.error ?? forThisMonth.status}`
       } else {

@@ -1,5 +1,5 @@
 import { ACCESS_GRACE_DAYS, accessStatus, formatAccessDate, formatDaysLeft, isTrialPeriod, type AccessState } from '@/lib/access-period'
-import { PRICE_WITH_VAT } from '@/lib/landing-copy'
+import { MONTHLY_PRICE } from '@/lib/landing-copy'
 
 /** Text of the billing notice (banner on every page and Podešavanja → Pristup). Null when nothing to say. */
 export type AccessNotice = {
@@ -27,7 +27,7 @@ export function accessNotice(
       state: status.state,
       tone: 'warning',
       title: `${period} ističe ${formatDaysLeft(status.daysLeft ?? 0)} (${until}).`,
-      detail: `Za nastavak rada uplatite ${PRICE_WITH_VAT} za sledeći mesec. Predračun šaljemo na mejl firme. Uplata pre isteka se nastavlja na tekući period. Posle isteka imate još ${ACCESS_GRACE_DAYS} dana za uplatu.`,
+      detail: `Za nastavak rada uplatite ${MONTHLY_PRICE} za sledeći mesec. Predračun šaljemo na mejl firme. Uplata pre isteka se nastavlja na tekući period. Posle isteka imate još ${ACCESS_GRACE_DAYS} dana za uplatu.`,
       action: 'Uplata i produženje',
     }
   }
@@ -37,7 +37,7 @@ export function accessNotice(
       state: status.state,
       tone: 'danger',
       title: `${period} ${expired} ${until} Uplatite do ${graceUntil} (rok ističe ${left === 0 ? 'danas' : left === 1 ? 'sutra' : `za ${left} dana`}).`,
-      detail: `Do tada sve radi normalno. Posle roka aplikacija prelazi u režim samo za pregled dok ne proverimo uplatu. Iznos: ${PRICE_WITH_VAT} za jedan mesec. Pristup produžavamo posle provere izvoda, najkasnije narednog radnog dana od dana kada uplata stigne.`,
+      detail: `Do tada sve radi normalno. Posle roka aplikacija prelazi u režim samo za pregled dok ne proverimo uplatu. Iznos: ${MONTHLY_PRICE} za jedan mesec. Pristup produžavamo posle provere izvoda, najkasnije narednog radnog dana od dana kada uplata stigne.`,
       action: 'Kako da platim',
     }
   }

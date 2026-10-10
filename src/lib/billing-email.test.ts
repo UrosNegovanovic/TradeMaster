@@ -25,6 +25,13 @@ describe('resendMailer', () => {
     expect(body).toMatchObject({ from: RESEND_TEST_SENDER, to: ['kupac@firma.rs'], bcc: ['owner@gmail.com'], reply_to: ['owner@gmail.com'] })
   })
 
+  it('sends no owner copy when the e-mail already goes only to the owner', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(json(200, { id: 'msg_2' }))
+    const send = resendMailer({ RESEND_API_KEY: 're_x', BILLING_EMAIL_BCC: 'owner@gmail.com' } as unknown as NodeJS.ProcessEnv, fetchImpl)
+    await send({ ...email, to: 'owner@gmail.com', ownerCopy: false })
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).not.toHaveProperty('bcc')
+  })
+
   it('throws with Resend’s message when the e-mail is refused', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(json(403, { message: 'You can only send testing emails to your own email address' }))
     const send = resendMailer({ RESEND_API_KEY: 're_x' } as unknown as NodeJS.ProcessEnv, fetchImpl)

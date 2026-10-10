@@ -66,7 +66,7 @@ model AccessExtension {
 }
 
 /// Automatic subscription predračun, one per company and paid month (src/lib/billing-run.ts).
-/// (profileId, periodFrom) is unique: the daily job never sends two predračuni for the same month.
+/// (profileId, periodFrom, isTest) is unique: never two real predračuni for the same month; tests never count.
 model BillingNotice {
   id            String    @id @default(cuid())
   profileId     String // The paying company (not the issuer)
@@ -80,6 +80,8 @@ model BillingNotice {
   messageId     String? // Resend e-mail id (look it up in the Resend dashboard)
   error         String?
   attempts      Int       @default(0)
+  isTest        Boolean   @default(false) // `billing:send --test`: owner's test address only, "TEST, ne plaćati"
+  ownerOnly     Boolean   @default(false) // BILLING_AUTO_SEND off: sent only to the owner (BILLING_EMAIL_BCC)
   sentAt        DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -87,7 +89,7 @@ model BillingNotice {
   profile Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
-  @@unique([profileId, periodFrom])
+  @@unique([profileId, periodFrom, isTest])
   @@index([status])
   @@map("billing_notices")
 }

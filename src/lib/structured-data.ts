@@ -3,7 +3,7 @@ import { absoluteUrl } from '@/lib/site-url'
 
 /**
  * schema.org SoftwareApplication for the home page (ROADMAP A2.11). Only facts that are true today:
- * web app, the published price (20 EUR + PDV a month after the free period), Serbian.
+ * web app, the published price (20 EUR a month after the free period), Serbian.
  */
 /** "20 €" → "20": the price stays defined once, in landing-copy. */
 export const MONTHLY_PRICE_EUR = MONTHLY_PRICE.replace(/[^\d.,]/g, '').replace(',', '.')
@@ -22,7 +22,6 @@ export function softwareApplicationJsonLd(env: NodeJS.ProcessEnv = process.env):
       '@type': 'Offer',
       price: MONTHLY_PRICE_EUR,
       priceCurrency: 'EUR',
-      priceSpecification: { '@type': 'UnitPriceSpecification', price: MONTHLY_PRICE_EUR, priceCurrency: 'EUR', valueAddedTaxIncluded: false },
       description: `Prvih ${FREE_PERIOD} besplatno, zatim mesečno`,
     },
   }
